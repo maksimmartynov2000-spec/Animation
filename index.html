@@ -474,11 +474,15 @@
             PUZZLE_PIECE_PATHS.push(row);
         }
 
-        // Порядок заполнения: снизу-слева направо, затем ряд выше и т.д.
-        const PUZZLE_FILL_ORDER = [];
-        for (let rowFromBottom = 0; rowFromBottom < PUZZLE_GRID; rowFromBottom++) {
-            const r = PUZZLE_GRID - 1 - rowFromBottom;
+        // Базовый список всех 100 клеток — порядок их появления перемешивается заново
+        // для каждого нового пазла в shufflePuzzleFillOrder() (см. startNewPuzzle), поэтому
+        // кусочки проявляются в случайных свободных местах, а не строчка за строчкой.
+        let PUZZLE_FILL_ORDER = [];
+        for (let r = 0; r < PUZZLE_GRID; r++) {
             for (let c = 0; c < PUZZLE_GRID; c++) PUZZLE_FILL_ORDER.push([r, c]);
+        }
+        function shufflePuzzleFillOrder() {
+            PUZZLE_FILL_ORDER = shuffleArray(PUZZLE_FILL_ORDER);
         }
 
         const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -631,6 +635,7 @@
             imgEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', PUZZLE_IMAGE_SRCS[idx]);
 
             regeneratePieceShapes();
+            shufflePuzzleFillOrder();
 
             document.getElementById('miniPiecesGroup').innerHTML = '';
             document.getElementById('bigPiecesGroup').innerHTML = '';
