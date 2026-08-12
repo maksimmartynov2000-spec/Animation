@@ -63,14 +63,13 @@
         .puzzle-mini { cursor: pointer; padding: 5px 10px; }
         .puzzle-mini:active { transform: scale(0.96); }
         .puzzle-mini-thumb {
-            width: clamp(120px, 36vw, 190px); height: clamp(120px, 36vw, 190px);
+            width: clamp(140px, 42vw, 220px); height: clamp(140px, 42vw, 220px);
             border-radius: 14px; overflow: hidden;
             border: 1px solid rgba(255, 215, 0, 0.3); background: #0b0e18; margin: 2px 0;
             box-shadow: 0 0 14px rgba(255, 215, 0, 0.14);
         }
         .puzzle-mini-thumb svg { width: 100%; height: 100%; display: block; }
-        .puzzle-mini-status { margin-top: 3px; white-space: nowrap; }
-        .puzzle-mini-status .res-val { font-size: clamp(0.75rem, 2.8vw, 0.95rem); font-weight: bold; }
+        .puzzle-mini-status { display: none; }
         .puzzle-collection-badge {
             font-size: 0.68rem; color: var(--gold); font-weight: bold; white-space: nowrap;
         }
@@ -232,7 +231,7 @@
             .math-box { padding: 8px; max-width: 320px; }
             .math-question { font-size: 1.6rem; margin-bottom: 6px; }
             .btn-answer { padding: 8px; font-size: 1.1rem; min-height: 52px; }
-            .puzzle-mini-thumb { width: clamp(100px, 30vw, 150px); height: clamp(100px, 30vw, 150px); }
+            .puzzle-mini-thumb { width: clamp(110px, 34vw, 170px); height: clamp(110px, 34vw, 170px); }
         }
     </style>
 </head>
