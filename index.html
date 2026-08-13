@@ -1,1 +1,1204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Математическая Цитадель</title>
+    <meta name="apple-mobile-web-app-title" content="Математическая Цитадель">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0; padding: 0;
+            font-family: 'Georgia', serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        :root {
+            --bg-dark: #07080e;
+            --panel-bg: rgba(15, 18, 32, 0.94);
+            --gold: #ffd700;
+            --cyan: #06b6d4;
+            --royal: #a855f7;
+            --text-light: #f8fafc;
+        }
+        html, body { height: 100%; width: 100%; overflow: hidden; }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            display: flex; flex-direction: column;
+            background: radial-gradient(circle at center, #111428 0%, #06b6d4 100%);
+            transition: background 0.5s ease;
+        }
+        body.mega-storm {
+            background: radial-gradient(circle at center, #2e1065 0%, #030712 100%) !important;
+            animation: cosmicVibe 4s infinite linear;
+        }
+        @keyframes cosmicVibe { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+
+        .top-panel-wrapper {
+            flex-shrink: 0; background: var(--panel-bg);
+            border-bottom: 2px solid rgba(255, 215, 0, 0.15); z-index: 10;
+            display: flex; flex-direction: column; width: 100%; overflow: hidden;
+        }
+        .game-clock-bar {
+            text-align: center; font-size: 0.7rem; color: var(--gold);
+            background: rgba(0, 0, 0, 0.25); padding: 2px 0; font-weight: bold;
+            padding-top: calc(2px + env(safe-area-inset-top));
+        }
+        header {
+            display: flex; justify-content: center; align-items: stretch; gap: 6px;
+            flex-wrap: wrap; padding: 5px 6px;
+            padding-left: calc(5px + env(safe-area-inset-left));
+            padding-right: calc(5px + env(safe-area-inset-right));
+            width: 100%;
+        }
+        .resource-card {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 4px 10px; border-radius: 10px; background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255,255,255,0.05); min-width: 0;
+        }
+        .res-label { font-size: 0.62rem; color: #94a3b8; white-space: nowrap; }
+        .res-val { font-size: clamp(0.8rem, 3vw, 1.05rem); font-weight: bold; margin-top: 1px; white-space: nowrap; }
+
+        .puzzle-mini { cursor: pointer; padding: 5px 10px; }
+        .puzzle-mini:active { transform: scale(0.96); }
+        .puzzle-mini-thumb {
+            width: clamp(160px, 52vw, 250px); height: clamp(160px, 52vw, 250px);
+            border-radius: 14px; overflow: hidden;
+            border: 1px solid rgba(255, 215, 0, 0.3); background: #0b0e18; margin: 2px 0;
+            box-shadow: 0 0 14px rgba(255, 215, 0, 0.14);
+        }
+        .puzzle-mini-thumb svg { width: 100%; height: 100%; display: block; }
+        .puzzle-mini-status { display: none; }
+        .puzzle-collection-badge {
+            font-size: 0.68rem; color: var(--gold); font-weight: bold; white-space: nowrap;
+        }
+
+        .collection-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; margin-bottom: 14px;
+        }
+        .collection-item {
+            aspect-ratio: 1 / 1; border-radius: 12px; overflow: hidden; position: relative;
+            border: 2px solid rgba(255,255,255,0.12); background: #0b0e18;
+        }
+        .collection-item img {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+        .collection-item.locked img { filter: grayscale(1) brightness(0.25); }
+        .collection-item.locked::after {
+            content: '?'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; color: rgba(255,255,255,0.35); font-weight: bold;
+        }
+        .collection-item.unlocked { border-color: rgba(255, 215, 0, 0.5); box-shadow: 0 0 14px rgba(255,215,0,0.2); }
+
+        .game-space {
+            flex: 1; position: relative; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; padding: 6px 10px; min-height: 0; width: 100%;
+            overflow-y: auto;
+        }
+        #cityCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+        .math-box {
+            position: relative; z-index: 2; background: rgba(5, 7, 15, 0.9);
+            border: 2px solid var(--cyan); box-shadow: 0 0 25px rgba(6, 182, 212, 0.25);
+            border-radius: 16px; padding: 16px; text-align: center; width: 100%; max-width: 360px;
+            backdrop-filter: blur(8px);
+            transition: background-color 0.15s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .badge-container { display: flex; justify-content: center; gap: 8px; margin-bottom: 8px; }
+        .combo-badge {
+            background: linear-gradient(45deg, #ef4444, #f59e0b); color: white;
+            padding: 2px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;
+        }
+        .combo-badge.frenzy { background: linear-gradient(45deg, #a855f7, #ec4899); }
+        .speed-badge { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; }
+        .speed-badge.active-speed { background: linear-gradient(45deg, #0284c7, #06b6d4); color: white; border: none; }
+
+        .stats-counter-row {
+            font-size: 0.75rem; color: #94a3b8; margin-bottom: 10px;
+            background: rgba(255,255,255,0.03); padding: 4px; border-radius: 6px;
+            display: flex; justify-content: center; gap: 16px; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .stats-counter-row span { font-weight: bold; }
+
+        .timer-bar-container { width: 100%; height: 5px; background: rgba(255,255,255,0.05); border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
+        .timer-bar { width: 100%; height: 100%; background: var(--cyan); }
+        .math-question { font-size: 2.2rem; font-weight: bold; margin-bottom: 14px; color: var(--text-light); }
+        .answers-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        .btn-answer {
+            background: rgba(6, 182, 212, 0.06); border: 1px solid rgba(6, 182, 212, 0.3);
+            color: white; padding: 14px; border-radius: 12px; font-size: 1.25rem; font-weight: bold;
+            cursor: pointer; position: relative; transition: background 0.1s, transform 0.1s;
+            min-height: 64px; display: flex; align-items: center; justify-content: center;
+            text-align: center; line-height: 1.15;
+        }
+        .btn-answer:active { transform: scale(0.95); background: rgba(6, 182, 212, 0.2); }
+
+        .floating-reward {
+            position: fixed; pointer-events: none; font-weight: 900; font-size: 1.4rem; z-index: 300;
+            font-family: 'Impact', 'Arial Black', sans-serif; text-align: center;
+            text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 4px 8px rgba(0,0,0,0.7);
+            animation: rewardFlyFast 0.52s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+        .floating-reward.crit { font-size: 2.0rem; animation: critFlyFast 0.62s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes rewardFlyFast {
+            0% { transform: translate(-50%, 0px) scale(0.6); opacity: 0; }
+            12% { opacity: 1; transform: translate(-50%, -35px) scale(1.15); }
+            80% { opacity: 1; transform: translate(-50%, -60px) scale(1.0); }
+            100% { transform: translate(-50%, -85px) scale(0.8); opacity: 0; }
+        }
+        @keyframes critFlyFast {
+            0% { transform: translate(-50%, 0px) scale(0.5); opacity: 0; }
+            15% { opacity: 1; transform: translate(-50%, -45px) scale(1.35); }
+            35% { transform: translate(-50%, -40px) scale(1.15); }
+            80% { opacity: 1; transform: translate(-50%, -70px) scale(1.05); }
+            100% { transform: translate(-50%, -100px) scale(0.75); opacity: 0; }
+        }
+
+        .control-panel {
+            flex-shrink: 0; background: var(--panel-bg); backdrop-filter: blur(15px);
+            border-top: 2px solid rgba(255, 255, 255, 0.08); padding: 12px;
+            padding-bottom: calc(14px + env(safe-area-inset-bottom));
+            padding-left: calc(10px + env(safe-area-inset-left));
+            padding-right: calc(10px + env(safe-area-inset-right));
+            z-index: 10; width: 100%;
+        }
+        .btn-final {
+            width: 100%; background: linear-gradient(45deg, #1e1b4b, #4c1d95);
+            border: 1px solid var(--royal); text-align: center; padding: 14px; border-radius: 12px; cursor: pointer;
+        }
+        .btn-final .name { color: #f3e8ff; font-size: 0.95rem; display: block; font-weight: bold; }
+        .btn-final:active { transform: scale(0.98); }
+
+        .win-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #030712; z-index: 100; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center; padding: 20px;
+            opacity: 0; pointer-events: none; transition: opacity 0.8s ease;
+        }
+        .win-screen.active { opacity: 1; pointer-events: auto; }
+
+        /* ===== ПАЗЛ ===== */
+        .puzzle-modal {
+            position: fixed; inset: 0; background: rgba(2, 3, 8, 0.94); z-index: 250;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            padding: 18px; padding-top: calc(18px + env(safe-area-inset-top));
+            padding-bottom: calc(18px + env(safe-area-inset-bottom));
+            overflow-y: auto;
+        }
+        .puzzle-modal.active { display: flex; }
+        .puzzle-modal-inner { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; position: relative; }
+        .puzzle-close {
+            position: absolute; top: -6px; right: 0; background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.18); color: #fff; width: 34px; height: 34px;
+            border-radius: 50%; font-size: 1rem; cursor: pointer; z-index: 5;
+        }
+        .puzzle-modal-title { color: var(--gold); font-size: 1.1rem; font-weight: bold; margin-bottom: 12px; text-align: center; }
+        .puzzle-big-thumb {
+            width: 100%; aspect-ratio: 1 / 1; border-radius: 16px; overflow: hidden;
+            border: 2px solid rgba(255, 215, 0, 0.28); box-shadow: 0 0 35px rgba(0,0,0,0.55);
+            background: #0b0e18;
+        }
+        .puzzle-big-thumb svg { width: 100%; height: 100%; display: block; }
+        .puzzle-complete-panel {
+            display: none; flex-direction: column; align-items: center; gap: 10px;
+            margin-top: 16px; text-align: center; width: 100%;
+        }
+        .puzzle-complete-panel.show { display: flex; }
+        .puzzle-complete-panel p.title-line { color: var(--gold); font-size: 1.15rem; font-weight: bold; }
+        .puzzle-complete-panel .stats-line { color: #94a3b8; font-size: 0.85rem; }
+        .puzzle-complete-img {
+            width: 100%; max-width: 280px; aspect-ratio: 1 / 1; object-fit: cover;
+            border-radius: 14px; border: 2px solid rgba(255, 215, 0, 0.35);
+            box-shadow: 0 0 25px rgba(0,0,0,0.5);
+        }
+        .collection-added-line { color: #34d399; font-size: 0.9rem; font-weight: bold; }
+        .btn-save-puzzle {
+            background: linear-gradient(45deg, #0284c7, #06b6d4); border: none; color: white;
+            padding: 13px 24px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+            width: 100%; max-width: 300px;
+        }
+        .btn-save-puzzle:active { transform: scale(0.97); }
+        .btn-restart-puzzle {
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: white;
+            padding: 11px 24px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 0.9rem;
+            width: 100%; max-width: 300px;
+        }
+        .puzzle-save-hint { color: #64748b; font-size: 0.72rem; margin-top: -2px; }
+
+        @media (max-height: 600px) {
+            .math-box { padding: 8px; max-width: 320px; }
+            .math-question { font-size: 1.6rem; margin-bottom: 6px; }
+            .btn-answer { padding: 8px; font-size: 1.1rem; min-height: 52px; }
+            .puzzle-mini-thumb { width: clamp(130px, 42vw, 200px); height: clamp(130px, 42vw, 200px); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Общие SVG-ресурсы пазла: картинка + все 100 clip-path кусочков. Переиспользуются
+         и в мини-превью в шапке, и в большом окне пазла — без дублирования картинки. -->
+    <svg width="0" height="0" style="position:absolute;">
+        <defs id="puzzleDefs">
+            <image id="puzzleFullImg" href="" x="0" y="0" width="1000" height="1000"></image>
+        </defs>
+    </svg>
+
+    <div class="top-panel-wrapper">
+        <div class="game-clock-bar" id="gameClock">⏳ Время Эпохи: <span id="clockTimeText">00:00</span> &nbsp;·&nbsp; 🪙 <span id="val-gold">0</span></div>
+        <header>
+            <div class="resource-card puzzle-mini" id="puzzleMiniBtn">
+                <div class="puzzle-mini-thumb">
+                    <svg viewBox="0 0 1000 1000" id="miniPuzzleSvg">
+                        <rect width="1000" height="1000" fill="#0b0e18"></rect>
+                        <g id="miniPiecesGroup"></g>
+                        <g id="miniSeamGroup" opacity="0.45"></g>
+                    </svg>
+                </div>
+                <div class="puzzle-mini-status">
+                    <span class="res-val" id="puzzleMiniCount">0/100</span>
+                    &nbsp;·&nbsp;
+                    <span class="puzzle-collection-badge" id="puzzleCollectionBadge">🏆 0/3</span>
+                </div>
+            </div>
+        </header>
+    </div>
+
+    <div class="game-space">
+        <canvas id="cityCanvas"></canvas>
+        <div class="math-box" id="mainMathBox">
+            <div class="stats-counter-row">
+                <div>✅ Верно: <span id="stat-correct" style="color:#10b981;">0</span></div>
+                <div>❌ Ошибки: <span id="stat-wrong" style="color:#ef4444;">0</span></div>
+            </div>
+            <div class="badge-container">
+                <div class="combo-badge" id="comboBadge" style="display:none;">Серия: 🔥 х1.0</div>
+                <div class="speed-badge" id="speedBadge">Скорость: +0%</div>
+            </div>
+            <div class="timer-bar-container">
+                <div class="timer-bar" id="timerBar"></div>
+            </div>
+            <div class="math-question" id="mathQuestion">Загрузка...</div>
+            <div class="answers-grid" id="answersGrid"></div>
+        </div>
+    </div>
+
+    <div class="control-panel">
+        <button class="btn-final" id="btn-exam">
+            <span class="name">⚔️ Завершить испытание</span>
+        </button>
+    </div>
+
+    <div class="win-screen" id="winScreen">
+        <h1 style="color:var(--gold); font-size:2.2rem; margin-bottom:15px;">Экзамен сдан!</h1>
+        <p id="winDesc" style="padding:0 25px; color:#94a3b8; line-height:1.5; font-size: 1.1rem; white-space: pre-line;"></p>
+        <button style="margin-top:30px; padding:12px 25px; background:var(--gold); border:none; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="location.reload()">Начать заново</button>
+    </div>
+
+    <!-- Полноэкранное окно пазла -->
+    <div class="puzzle-modal" id="puzzleModal">
+        <div class="puzzle-modal-inner">
+            <button class="puzzle-close" id="puzzleCloseBtn">✕</button>
+            <div class="puzzle-modal-title">🧩 Пазл собирается: <span id="puzzleModalCount">0/100</span></div>
+            <div class="puzzle-big-thumb">
+                <svg viewBox="0 0 1000 1000" id="bigPuzzleSvg">
+                    <rect width="1000" height="1000" fill="#0b0e18"></rect>
+                    <g id="bigPiecesGroup"></g>
+                    <g id="bigSeamGroup" opacity="0.5"></g>
+                </svg>
+            </div>
+            <div class="puzzle-complete-panel" id="puzzleCompletePanel">
+                <p class="title-line">🎉 Пазл собран полностью!</p>
+                <img class="puzzle-complete-img" id="puzzleCompleteImg" alt="Собранный пазл">
+                <p class="stats-line" id="puzzleCompleteStats"></p>
+                <p class="collection-added-line" id="collectionAddedLine">🏆 Добавлено в коллекцию!</p>
+                <button class="btn-save-puzzle" id="btnViewCollection">🖼️ Моя коллекция</button>
+                <button class="btn-restart-puzzle" id="btnContinuePlaying">▶️ Продолжить игру</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Окно коллекции собранных пазлов -->
+    <div class="puzzle-modal" id="collectionModal">
+        <div class="puzzle-modal-inner">
+            <button class="puzzle-close" id="collectionCloseBtn">✕</button>
+            <div class="puzzle-modal-title">🏆 Моя коллекция: <span id="collectionCountLabel">0/3</span></div>
+            <div class="collection-grid" id="collectionGrid"></div>
+            <div class="puzzle-save-hint">Собери все картинки — после этого они снова начнут попадаться</div>
+        </div>
+    </div>
+
+    <script>
+        // ===================== ГЕНЕРАЦИЯ: СЛОЖЕНИЕ ПОЛОЖИТЕЛЬНЫХ ЧИСЕЛ, СЛОЖНОСТЬ 1 =====================
+        function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+        function shuffleArray(arr) {
+            const copy = arr.slice();
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        const ADD_RANGE_LEVEL1 = 10;
+
+        function genAddPositiveLevel1() {
+            const sum = randInt(2, ADD_RANGE_LEVEL1);
+            const n1 = randInt(1, sum - 1);
+            const n2 = sum - n1;
+            return { text: `${n1} + ${n2}`, answer: sum, a: n1, b: n2 };
+        }
+
+        function noCarryAdd(a, b) {
+            const sa = String(a), sb = String(b);
+            const maxLen = Math.max(sa.length, sb.length);
+            const pa = sa.padStart(maxLen, '0');
+            const pb = sb.padStart(maxLen, '0');
+            let digits = '';
+            for (let i = 0; i < maxLen; i++) {
+                digits += (parseInt(pa[i]) + parseInt(pb[i])) % 10;
+            }
+            const val = parseInt(digits, 10);
+            return Number.isNaN(val) ? null : val;
+        }
+
+        function pushStructural(arr, val, correctAnswer) {
+            if (val === undefined || val === null || !Number.isFinite(val)) return;
+            val = Math.round(val);
+            if (val === correctAnswer) return;
+            if (val < 0) return;
+            if (arr.includes(val)) return;
+            arr.push(val);
+        }
+
+        function buildDistractors(a, b, correctAnswer, count) {
+            let structural = [];
+            const noCarryVal = noCarryAdd(a, b);
+            if (noCarryVal !== null) pushStructural(structural, noCarryVal, correctAnswer);
+            pushStructural(structural, a - b, correctAnswer);
+            structural = shuffleArray(structural);
+
+            const used = new Set([correctAnswer]);
+            const result = [];
+            for (const v of structural) {
+                if (result.length >= count) break;
+                if (!used.has(v)) { result.push(v); used.add(v); }
+            }
+
+            const deltaMax = Math.max(3, Math.round(correctAnswer * 0.5));
+            let guard = 0;
+            while (result.length < count && guard < 100) {
+                guard++;
+                let delta = randInt(-deltaMax, deltaMax);
+                if (delta === 0) delta = 1;
+                const fake = correctAnswer + delta;
+                if (fake < 0) continue;
+                if (fake === a || fake === b) continue;
+                if (used.has(fake)) continue;
+                result.push(fake); used.add(fake);
+            }
+            let widen = deltaMax;
+            while (result.length < count) {
+                widen++;
+                const fake = correctAnswer + widen * (Math.random() < 0.5 ? -1 : 1);
+                if (fake < 0) continue;
+                if (fake === a || fake === b) continue;
+                if (used.has(fake)) continue;
+                result.push(fake); used.add(fake);
+            }
+            return result;
+        }
+
+        // ===================== ПАЗЛ: ГЕНЕРАЦИЯ КУСОЧКОВ (jigsaw) =====================
+        const PUZZLE_GRID = 10;
+        const PUZZLE_TOTAL = PUZZLE_GRID * PUZZLE_GRID; // 100
+        const PUZZLE_SIZE = 1000; // координатное пространство SVG
+        const PUZZLE_TILE = PUZZLE_SIZE / PUZZLE_GRID;
+        const PUZZLE_TAB = PUZZLE_TILE * 0.24; // высота "замка" пазла
+
+        // Случайное направление "замка" для каждой внутренней границы между кусочками.
+        // ampH[r][c] — граница между рядом r и r+1 в столбце c (горизонтальная линия, выступ по вертикали)
+        // ampV[r][c] — граница между столбцом c и c+1 в ряду r (вертикальная линия, выступ по горизонтали)
+        function buildAmpGrid(rows, cols) {
+            const g = [];
+            for (let i = 0; i < rows; i++) {
+                const row = [];
+                for (let j = 0; j < cols; j++) row.push(Math.random() < 0.5 ? -1 : 1);
+                g.push(row);
+            }
+            return g;
+        }
+        let ampH = buildAmpGrid(PUZZLE_GRID - 1, PUZZLE_GRID);
+        let ampV = buildAmpGrid(PUZZLE_GRID, PUZZLE_GRID - 1);
+
+        // Строит одну "выпуклость" замка от точки (x1,y1) до (x2,y2). amp=0 — обычная прямая линия
+        // (используется на внешней границе всего пазла). Кривая строится перпендикулярно
+        // направлению отрезка — то есть одно и то же значение amp даёт ИДЕАЛЬНО совпадающую
+        // границу у двух соседних кусочков (не нужно инвертировать знак у соседа).
+        function bumpSeg(x1, y1, x2, y2, amp) {
+            if (!amp) return `L ${x2} ${y2}`;
+            const dx = x2 - x1, dy = y2 - y1;
+            let px = 0, py = 0;
+            if (Math.abs(dx) >= Math.abs(dy)) { py = 1; } else { px = 1; }
+            const lerp = (t) => ({ x: x1 + dx * t, y: y1 + dy * t });
+            const p1 = lerp(0.35), p2 = lerp(0.5), p3 = lerp(0.65);
+            const P1 = { x: p1.x + px * amp * 0.9, y: p1.y + py * amp * 0.9 };
+            const P2 = { x: p2.x + px * amp * 1.18, y: p2.y + py * amp * 1.18 };
+            const P3 = { x: p3.x + px * amp * 0.9, y: p3.y + py * amp * 0.9 };
+            return `C ${P1.x} ${P1.y} ${P1.x} ${P1.y} ${P2.x} ${P2.y} C ${P3.x} ${P3.y} ${P3.x} ${P3.y} ${x2} ${y2}`;
+        }
+
+        function buildPiecePath(r, c) {
+            const x0 = c * PUZZLE_TILE, y0 = r * PUZZLE_TILE;
+            const w = PUZZLE_TILE, h = PUZZLE_TILE;
+            const ampTop = r === 0 ? 0 : ampH[r - 1][c] * PUZZLE_TAB;
+            const ampRight = c === PUZZLE_GRID - 1 ? 0 : ampV[r][c] * PUZZLE_TAB;
+            const ampBottom = r === PUZZLE_GRID - 1 ? 0 : ampH[r][c] * PUZZLE_TAB;
+            const ampLeft = c === 0 ? 0 : ampV[r][c - 1] * PUZZLE_TAB;
+
+            const p0 = { x: x0, y: y0 }, p1 = { x: x0 + w, y: y0 }, p2 = { x: x0 + w, y: y0 + h }, p3 = { x: x0, y: y0 + h };
+
+            let d = `M ${p0.x} ${p0.y} `;
+            d += bumpSeg(p0.x, p0.y, p1.x, p1.y, ampTop) + ' ';
+            d += bumpSeg(p1.x, p1.y, p2.x, p2.y, ampRight) + ' ';
+            d += bumpSeg(p2.x, p2.y, p3.x, p3.y, ampBottom) + ' ';
+            d += bumpSeg(p3.x, p3.y, p0.x, p0.y, ampLeft) + ' Z';
+            return d;
+        }
+
+        const PUZZLE_PIECE_PATHS = []; // [r][c] -> d-строка пути кусочка
+        for (let r = 0; r < PUZZLE_GRID; r++) {
+            const row = [];
+            for (let c = 0; c < PUZZLE_GRID; c++) row.push(buildPiecePath(r, c));
+            PUZZLE_PIECE_PATHS.push(row);
+        }
+
+        // Базовый список всех 100 клеток — порядок их появления перемешивается заново
+        // для каждого нового пазла в shufflePuzzleFillOrder() (см. startNewPuzzle), поэтому
+        // кусочки проявляются в случайных свободных местах, а не строчка за строчкой.
+        let PUZZLE_FILL_ORDER = [];
+        for (let r = 0; r < PUZZLE_GRID; r++) {
+            for (let c = 0; c < PUZZLE_GRID; c++) PUZZLE_FILL_ORDER.push([r, c]);
+        }
+        function shufflePuzzleFillOrder() {
+            PUZZLE_FILL_ORDER = shuffleArray(PUZZLE_FILL_ORDER);
+        }
+
+        const SVG_NS = 'http://www.w3.org/2000/svg';
+
+        // Ссылки на уже созданные DOM-элементы (path внутри clipPath и в группах швов),
+        // чтобы при смене картинки просто обновлять атрибут 'd', не пересоздавая узлы.
+        const clipPathEls = []; // [r][c] -> <path>
+        let seamPathElsMini = []; // [r][c] -> <path>
+        let seamPathElsBig = [];  // [r][c] -> <path>
+
+        // Добавляем в <defs> все 100 clipPath — один раз, переиспользуются везде по id.
+        function initPuzzleDefs() {
+            const defs = document.getElementById('puzzleDefs');
+            for (let r = 0; r < PUZZLE_GRID; r++) {
+                const row = [];
+                for (let c = 0; c < PUZZLE_GRID; c++) {
+                    const clip = document.createElementNS(SVG_NS, 'clipPath');
+                    clip.setAttribute('id', `piece-${r}-${c}`);
+                    const path = document.createElementNS(SVG_NS, 'path');
+                    path.setAttribute('d', PUZZLE_PIECE_PATHS[r][c]);
+                    clip.appendChild(path);
+                    defs.appendChild(clip);
+                    row.push(path);
+                }
+                clipPathEls.push(row);
+            }
+        }
+
+        // Тонкие контуры швов — рисуются один раз, всегда видны (и на пустых, и на собранных
+        // местах), создают ощущение "разрезанной на пазл" картинки даже когда всё собрано.
+        // Возвращает [r][c] -> <path>, чтобы потом можно было обновить их форму без пересоздания.
+        function renderSeamGroup(groupId) {
+            const g = document.getElementById(groupId);
+            const rows = [];
+            for (let r = 0; r < PUZZLE_GRID; r++) {
+                const row = [];
+                for (let c = 0; c < PUZZLE_GRID; c++) {
+                    const path = document.createElementNS(SVG_NS, 'path');
+                    path.setAttribute('d', PUZZLE_PIECE_PATHS[r][c]);
+                    path.setAttribute('fill', 'none');
+                    path.setAttribute('stroke', 'rgba(255,255,255,0.5)');
+                    path.setAttribute('stroke-width', '2.2');
+                    g.appendChild(path);
+                    row.push(path);
+                }
+                rows.push(row);
+            }
+            return rows;
+        }
+
+        // Перегенерирует случайную форму замков (для нового пазла) и обновляет все уже
+        // существующие DOM-узлы на месте — без пересоздания элементов.
+        function regeneratePieceShapes() {
+            ampH = buildAmpGrid(PUZZLE_GRID - 1, PUZZLE_GRID);
+            ampV = buildAmpGrid(PUZZLE_GRID, PUZZLE_GRID - 1);
+            for (let r = 0; r < PUZZLE_GRID; r++) {
+                for (let c = 0; c < PUZZLE_GRID; c++) {
+                    const d = buildPiecePath(r, c);
+                    PUZZLE_PIECE_PATHS[r][c] = d;
+                    clipPathEls[r][c].setAttribute('d', d);
+                    seamPathElsMini[r][c].setAttribute('d', d);
+                    seamPathElsBig[r][c].setAttribute('d', d);
+                }
+            }
+        }
+
+        function makePieceUse(r, c) {
+            const use = document.createElementNS(SVG_NS, 'use');
+            use.setAttribute('href', '#puzzleFullImg');
+            use.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#puzzleFullImg');
+            use.setAttribute('clip-path', `url(#piece-${r}-${c})`);
+            use.setAttribute('class', 'piece-use');
+            use.style.opacity = '0';
+            use.style.transition = 'opacity .3s ease';
+            return use;
+        }
+
+        let puzzleFilled = 0;
+        let puzzleRenderedCount = 0;
+        let puzzleCompleteTriggered = false;
+        let puzzlesCompletedCount = 0;
+        let currentPuzzleImageIndex = -1;
+        const miniUseRefs = [];
+        const bigUseRefs = [];
+
+        // Тигр уже вшит в атрибут href самого <image> — переиспользуем его как первую картинку,
+        // чтобы не дублировать её же base64 ещё раз внутри JS.
+        // Картинки теперь лежат отдельными файлами в папке images/ рядом с этим HTML —
+        // так сам файл игры остаётся лёгким, а картинки браузер грузит по одной, как обычные
+        // файлы сайта (с кэшированием), а не одним гигантским текстовым блоком.
+        const PUZZLE_IMAGE_SRCS = [
+            'images/zeno.jpg',
+            'images/hilbert.jpg',
+            'images/montyhall.jpg',
+            'images/birthday.jpg',
+            'images/shipoftheseus.jpg',
+            'images/banachtarski.jpg',
+            'images/gabrielshorn.jpg',
+            'images/barber.jpg',
+            'images/grandfather.jpg',
+            'images/schrodinger.jpg',
+            'images/coastline.jpg',
+            'images/simpson.jpg',
+            'images/sorites.jpg',
+            'images/hanging.jpg',
+            'images/petersburg.jpg',
+            'images/penrose.jpg',
+            'images/mobius.jpg',
+            'images/monkeys.jpg',
+            'images/twins.jpg',
+            'images/liar.jpg'
+        ];
+
+        // ===== КОЛЛЕКЦИЯ СОБРАННЫХ ПАЗЛОВ =====
+        // Хранится в localStorage — переживает перезапуск приложения (важно для PWA,
+        // добавленного на экран телефона). Массив булевых значений по индексу картинки:
+        // true = уже собрана в текущем цикле коллекции.
+        const COLLECTION_STORAGE_KEY = 'mathCitadelPuzzleCollection_v1';
+
+        function loadCollectionArray() {
+            try {
+                const raw = localStorage.getItem(COLLECTION_STORAGE_KEY);
+                const arr = raw ? JSON.parse(raw) : [];
+                if (Array.isArray(arr) && arr.length === PUZZLE_IMAGE_SRCS.length) return arr;
+            } catch (e) { /* игнорируем повреждённые данные */ }
+            return new Array(PUZZLE_IMAGE_SRCS.length).fill(false);
+        }
+        function saveCollectionArray(arr) {
+            try { localStorage.setItem(COLLECTION_STORAGE_KEY, JSON.stringify(arr)); } catch (e) { /* хранилище недоступно — молча пропускаем */ }
+        }
+        function collectionCollectedCount(arr) {
+            return arr.reduce((n, v) => n + (v ? 1 : 0), 0);
+        }
+        function updateCollectionBadge() {
+            const arr = loadCollectionArray();
+            document.getElementById('puzzleCollectionBadge').innerText =
+                `🏆 ${collectionCollectedCount(arr)}/${PUZZLE_IMAGE_SRCS.length}`;
+        }
+
+        function pickRandomPuzzleImageIndex(avoidIndex) {
+            if (PUZZLE_IMAGE_SRCS.length <= 1) return 0;
+
+            let collection = loadCollectionArray();
+            let candidates = [];
+            for (let i = 0; i < PUZZLE_IMAGE_SRCS.length; i++) {
+                if (!collection[i] && i !== avoidIndex) candidates.push(i);
+            }
+
+            if (candidates.length === 0) {
+                // Либо всё уже собрано, либо единственная несобранная картинка — та же,
+                // что мы хотим избежать повтора. В обоих случаях начинаем новый цикл коллекции.
+                collection = new Array(PUZZLE_IMAGE_SRCS.length).fill(false);
+                saveCollectionArray(collection);
+                updateCollectionBadge();
+                for (let i = 0; i < PUZZLE_IMAGE_SRCS.length; i++) {
+                    if (i !== avoidIndex) candidates.push(i);
+                }
+            }
+
+            return candidates[randInt(0, candidates.length - 1)];
+        }
+
+        // Полностью переключает пазл на новую случайную картинку: новая форма кусочков,
+        // сброшенный прогресс. Игра при этом не останавливается — только сам пазл обновляется.
+        function startNewPuzzle() {
+            const idx = pickRandomPuzzleImageIndex(currentPuzzleImageIndex);
+            currentPuzzleImageIndex = idx;
+            const imgEl = document.getElementById('puzzleFullImg');
+            imgEl.setAttribute('href', PUZZLE_IMAGE_SRCS[idx]);
+            imgEl.setAttributeNS('http://www.w3.org/1999/xlink', 'href', PUZZLE_IMAGE_SRCS[idx]);
+
+            regeneratePieceShapes();
+            shufflePuzzleFillOrder();
+
+            document.getElementById('miniPiecesGroup').innerHTML = '';
+            document.getElementById('bigPiecesGroup').innerHTML = '';
+            miniUseRefs.length = 0;
+            bigUseRefs.length = 0;
+            puzzleFilled = 0;
+            puzzleRenderedCount = 0;
+            puzzleCompleteTriggered = false;
+            document.getElementById('puzzleMiniCount').innerText = '0/100';
+            document.getElementById('puzzleModalCount').innerText = '0/100';
+            document.getElementById('puzzleCompletePanel').classList.remove('show');
+        }
+
+        function initPuzzle() {
+            initPuzzleDefs();
+            seamPathElsMini = renderSeamGroup('miniSeamGroup');
+            seamPathElsBig = renderSeamGroup('bigSeamGroup');
+            updateCollectionBadge();
+            startNewPuzzle();
+        }
+
+        function renderPuzzleProgress() {
+            document.getElementById('puzzleMiniCount').innerText = `${puzzleFilled}/100`;
+            document.getElementById('puzzleModalCount').innerText = `${puzzleFilled}/100`;
+
+            if (puzzleFilled > puzzleRenderedCount) {
+                for (let i = puzzleRenderedCount; i < puzzleFilled; i++) {
+                    const [r, c] = PUZZLE_FILL_ORDER[i];
+                    const miniUse = makePieceUse(r, c);
+                    const bigUse = makePieceUse(r, c);
+                    document.getElementById('miniPiecesGroup').appendChild(miniUse);
+                    document.getElementById('bigPiecesGroup').appendChild(bigUse);
+                    miniUseRefs[i] = miniUse;
+                    bigUseRefs[i] = bigUse;
+                    requestAnimationFrame(() => {
+                        miniUse.style.opacity = '1';
+                        bigUse.style.opacity = '1';
+                    });
+                }
+            } else if (puzzleFilled < puzzleRenderedCount) {
+                for (let i = puzzleRenderedCount - 1; i >= puzzleFilled; i--) {
+                    const miniUse = miniUseRefs[i], bigUse = bigUseRefs[i];
+                    if (miniUse) { miniUse.style.opacity = '0'; setTimeout(() => miniUse.remove(), 300); }
+                    if (bigUse) { bigUse.style.opacity = '0'; setTimeout(() => bigUse.remove(), 300); }
+                    miniUseRefs[i] = null; bigUseRefs[i] = null;
+                }
+            }
+            puzzleRenderedCount = puzzleFilled;
+        }
+
+        function addPuzzlePiece() {
+            if (puzzleFilled >= PUZZLE_TOTAL) return;
+            puzzleFilled++;
+            renderPuzzleProgress();
+            if (puzzleFilled === PUZZLE_TOTAL && !puzzleCompleteTriggered) {
+                puzzleCompleteTriggered = true;
+                onPuzzleComplete();
+            }
+        }
+
+        function removePuzzlePiecesOnMistake() {
+            if (puzzleFilled <= 0) return;
+            const remove = Math.ceil(puzzleFilled / 2);
+            puzzleFilled = Math.max(0, puzzleFilled - remove);
+            renderPuzzleProgress();
+        }
+
+        function openPuzzleModal() {
+            document.getElementById('puzzleModal').classList.add('active');
+        }
+        function closePuzzleModal() {
+            document.getElementById('puzzleModal').classList.remove('active');
+        }
+        document.getElementById('puzzleMiniBtn').addEventListener('click', openPuzzleModal);
+        document.getElementById('puzzleCloseBtn').addEventListener('click', closePuzzleModal);
+
+        // Снимок только что собранной картинки — независим от того, какой пазл стартует сейчас.
+        let lastCompletedSrc = null;
+        let lastCompletedPaths = null;
+
+        // Рисует картинку + тонкие линии швов на canvas и отдаёт результат как data URL —
+        // используется и для превью в окне поздравления, и (при желании) для экспорта.
+        function renderSnapshotDataURL(src, paths, callback) {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = PUZZLE_SIZE;
+                canvas.height = PUZZLE_SIZE;
+                const ctx2 = canvas.getContext('2d');
+                ctx2.drawImage(img, 0, 0, PUZZLE_SIZE, PUZZLE_SIZE);
+
+                for (let r = 0; r < PUZZLE_GRID; r++) {
+                    for (let c = 0; c < PUZZLE_GRID; c++) {
+                        const p = new Path2D(paths[r][c]);
+                        // Тёмная тень шва — с лёгким размытием, чтобы линия выглядела как
+                        // настоящий вырезанный край, а не плоская чёрная черта
+                        ctx2.save();
+                        ctx2.shadowColor = 'rgba(0,0,0,0.65)';
+                        ctx2.shadowBlur = 3;
+                        ctx2.lineWidth = 4.5;
+                        ctx2.strokeStyle = 'rgba(0,0,0,0.55)';
+                        ctx2.stroke(p);
+                        ctx2.restore();
+                        // Светлый блик поверх — имитирует освещённую грань кусочка
+                        ctx2.lineWidth = 1.6;
+                        ctx2.strokeStyle = 'rgba(255,255,255,0.55)';
+                        ctx2.stroke(p);
+                    }
+                }
+                callback(canvas.toDataURL('image/jpeg', 0.92));
+            };
+            img.src = src;
+        }
+
+        function onPuzzleComplete() {
+            puzzlesCompletedCount++;
+            const completedIndex = currentPuzzleImageIndex;
+            const completedSrc = PUZZLE_IMAGE_SRCS[completedIndex];
+            const completedPaths = PUZZLE_PIECE_PATHS.map(row => row.slice());
+
+            // Отмечаем картинку собранной в коллекции — если собраны уже все, цикл сам
+            // сбросится при следующем выборе случайного пазла (см. pickRandomPuzzleImageIndex).
+            const collection = loadCollectionArray();
+            collection[completedIndex] = true;
+            saveCollectionArray(collection);
+            updateCollectionBadge();
+
+            // Сразу же запускаем новый случайный пазл — игра не останавливается,
+            // примеры продолжают идти как обычно.
+            startNewPuzzle();
+
+            lastCompletedSrc = completedSrc;
+            lastCompletedPaths = completedPaths;
+
+            const collectedCount = collectionCollectedCount(collection);
+            document.getElementById('puzzleCompleteStats').innerText =
+                `⏱️ Время: ${formatTime(totalSeconds)}  |  ✅ ${correctCount}  |  ❌ ${wrongCount}  |  🪙 ${Math.floor(state.gold).toLocaleString()}  |  🧩 Пазлов собрано: ${puzzlesCompletedCount}`;
+            document.getElementById('collectionAddedLine').innerText =
+                `🏆 Добавлено в коллекцию! (${collectedCount}/${PUZZLE_IMAGE_SRCS.length})`;
+
+            const imgEl = document.getElementById('puzzleCompleteImg');
+            imgEl.removeAttribute('src');
+            renderSnapshotDataURL(completedSrc, completedPaths, (dataUrl) => {
+                imgEl.src = dataUrl;
+            });
+
+            document.getElementById('puzzleCompletePanel').classList.add('show');
+            openPuzzleModal();
+        }
+
+        // ===== ОКНО КОЛЛЕКЦИИ =====
+        function renderCollectionGrid() {
+            const collection = loadCollectionArray();
+            const grid = document.getElementById('collectionGrid');
+            grid.innerHTML = '';
+            for (let i = 0; i < PUZZLE_IMAGE_SRCS.length; i++) {
+                const unlocked = !!collection[i];
+                const item = document.createElement('div');
+                item.className = 'collection-item ' + (unlocked ? 'unlocked' : 'locked');
+                const img = document.createElement('img');
+                img.src = PUZZLE_IMAGE_SRCS[i];
+                item.appendChild(img);
+                grid.appendChild(item);
+            }
+            document.getElementById('collectionCountLabel').innerText =
+                `${collectionCollectedCount(collection)}/${PUZZLE_IMAGE_SRCS.length}`;
+        }
+        function openCollectionModal() {
+            renderCollectionGrid();
+            document.getElementById('collectionModal').classList.add('active');
+        }
+        function closeCollectionModal() {
+            document.getElementById('collectionModal').classList.remove('active');
+        }
+        document.getElementById('btnViewCollection').addEventListener('click', openCollectionModal);
+        document.getElementById('collectionCloseBtn').addEventListener('click', closeCollectionModal);
+
+        // "Продолжить игру" — просто закрывает окно поздравления, без перезагрузки страницы:
+        // новый пазл уже давно собирается в фоне, прогресс и таланты никуда не делись.
+        document.getElementById('btnContinuePlaying').addEventListener('click', closePuzzleModal);
+
+        // ===================== ИГРОВАЯ ЛОГИКА =====================
+        let gameActive = false;
+        let totalSeconds = 0;
+        let correctCount = 0;
+        let wrongCount = 0;
+
+        const speedBonusBaseFactor = 0.5;
+        const comboStepBonus = 0.1;
+
+        const state = {
+            gold: 0,
+            clickBase: 12,
+            combo: 0,
+            critChance: 0.05,
+            critMultiplier: 4.0
+        };
+
+        let correctAnswer = 0;
+        let timeRemaining = 100;
+        let timerInterval = null;
+
+        const canvas = document.getElementById('cityCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        let megaShowActive = false;
+        let megaShowTimer = 0;
+        let bgFlashState = 0;
+        let isUltimateStorm = false;
+
+        function startGame() {
+            gameActive = true;
+            resizeCanvas();
+            generateMath();
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        let lastProblemSignature = null;
+        function generateUniqueProblem() {
+            let problem, sig, guard = 0;
+            do {
+                problem = genAddPositiveLevel1();
+                sig = problem.text;
+                guard++;
+            } while (sig === lastProblemSignature && guard < 8);
+            lastProblemSignature = sig;
+            return problem;
+        }
+
+        function generateMath() {
+            if (!gameActive) return;
+            clearInterval(timerInterval);
+            timeRemaining = 100;
+            document.getElementById('timerBar').style.width = '100%';
+
+            const baseDurationSeconds = 100 / 7.5;
+            const decrementPerTick = 100 / (baseDurationSeconds * 10);
+
+            timerInterval = setInterval(() => {
+                if (!gameActive) return;
+                timeRemaining -= decrementPerTick;
+                if (timeRemaining <= 0) timeRemaining = 0;
+                document.getElementById('timerBar').style.width = `${timeRemaining}%`;
+
+                let currentSpeedBonus = Math.floor(timeRemaining * speedBonusBaseFactor);
+                let sBadge = document.getElementById('speedBadge');
+                if (currentSpeedBonus > 0) {
+                    sBadge.className = "speed-badge active-speed";
+                    sBadge.innerText = `Молния: +${currentSpeedBonus}%`;
+                } else {
+                    sBadge.className = "speed-badge";
+                    sBadge.innerText = `Скорость: +0%`;
+                }
+            }, 100);
+
+            const questionEl = document.getElementById('mathQuestion');
+            const grid = document.getElementById('answersGrid');
+            grid.innerHTML = '';
+
+            const problem = generateUniqueProblem();
+            questionEl.innerText = problem.text;
+            correctAnswer = problem.answer;
+
+            const fakeNums = buildDistractors(problem.a, problem.b, correctAnswer, 3);
+            const options = shuffleArray([correctAnswer, ...fakeNums]);
+            options.forEach(ans => {
+                const b = document.createElement('button');
+                b.className = 'btn-answer';
+                b.innerText = ans;
+                b.onclick = (e) => checkAnswer(ans, e);
+                grid.appendChild(b);
+            });
+        }
+
+        function triggerAnniversaryEffects(count) {
+            if (count % 1000 === 0) {
+                megaShowActive = true;
+                isUltimateStorm = true;
+                megaShowTimer = 4500;
+                document.body.classList.add('mega-storm');
+
+                let mathBox = document.getElementById('mainMathBox');
+                mathBox.style.borderColor = 'var(--gold)';
+                mathBox.style.boxShadow = '0 0 50px rgba(255, 215, 0, 0.9)';
+
+                spawnRewardText(`🌌 ${count} РЕШЕНО! АБСОЛЮТНЫЙ РАЗУМ! 🌌`, window.innerWidth / 2, window.innerHeight / 2 - 50, 'var(--gold)', true);
+                return;
+            }
+
+            if (count % 100 === 0) {
+                megaShowActive = true;
+                isUltimateStorm = false;
+                megaShowTimer = 270;
+
+                let mathBox = document.getElementById('mainMathBox');
+                mathBox.style.borderColor = 'var(--royal)';
+                mathBox.style.boxShadow = '0 0 40px rgba(168, 85, 247, 0.8)';
+
+                spawnRewardText(`👑 ЮБИЛЕЙ: ${count} РЕШЕННЫХ ЗАДАЧ! 👑`, window.innerWidth / 2, window.innerHeight / 2 - 30, 'var(--royal)', true);
+
+                let bursts = 0;
+                let interval = setInterval(() => {
+                    if (!gameActive) { clearInterval(interval); return; }
+                    let rx = Math.random() * window.innerWidth;
+                    let ry = Math.random() * window.innerHeight * 0.7;
+                    let colors = ['#ffd700', '#a855f7', '#06b6d4', '#f472b6', '#10b981'];
+                    let col = colors[Math.floor(Math.random() * colors.length)];
+                    for (let i = 0; i < 30; i++) {
+                        particles.push(new CustomSpark(rx, ry, col, Math.random() * 6 - 3, Math.random() * 6 - 3, Math.random() * 3 + 2, 1.5));
+                    }
+                    bursts++;
+                    if (bursts > 12) clearInterval(interval);
+                }, 250);
+                return;
+            }
+
+            if (count % 10 === 0) {
+                megaShowActive = true;
+                isUltimateStorm = false;
+                megaShowTimer = 75;
+
+                let mathBox = document.getElementById('mainMathBox');
+                mathBox.style.borderColor = 'var(--cyan)';
+                mathBox.style.boxShadow = '0 0 30px rgba(6, 182, 212, 0.7)';
+
+                const mathBoxRect = mathBox.getBoundingClientRect();
+                const mx = mathBoxRect.left + mathBoxRect.width / 2;
+                const my = mathBoxRect.top + mathBoxRect.height / 2;
+                for (let angle = 0; angle < Math.PI * 2; angle += 0.25) {
+                    let speed = 3.5;
+                    let vx = Math.cos(angle) * speed;
+                    let vy = Math.sin(angle) * speed;
+                    particles.push(new CustomSpark(mx, my, 'var(--cyan)', vx, vy, Math.random() * 1.5 + 1.5, 1.0));
+                }
+            }
+        }
+
+        function checkAnswer(chosen, event) {
+            if (!gameActive) return;
+
+            let clickX = window.innerWidth / 2;
+            let clickY = window.innerHeight / 2;
+            if (event && event.currentTarget) {
+                const rect = event.currentTarget.getBoundingClientRect();
+                clickX = rect.left + rect.width / 2;
+                clickY = rect.top + rect.height / 2;
+            }
+
+            const isCorrect = (chosen === correctAnswer);
+
+            if (isCorrect) {
+                correctCount++;
+                document.getElementById('stat-correct').innerText = correctCount;
+
+                state.combo++;
+                let comboMultiplier = 1 + (state.combo * comboStepBonus);
+                let speedBonusPercent = 1 + (timeRemaining * 0.01 * speedBonusBaseFactor);
+                let isCrit = Math.random() < state.critChance;
+
+                let rewardGold = Math.floor(state.clickBase * comboMultiplier * speedBonusPercent * (isCrit ? state.critMultiplier : 1));
+                state.gold += rewardGold;
+
+                const badge = document.getElementById('comboBadge');
+                badge.style.display = 'inline-block';
+                badge.innerText = `Серия: 🔥 x${comboMultiplier.toFixed(1)}`;
+                if (state.combo >= 5) badge.classList.add('frenzy'); else badge.classList.remove('frenzy');
+
+                if (isCrit) {
+                    spawnRewardText(`⚡ КРИТ! +${rewardGold} 🪙`, clickX, clickY, 'var(--gold)', true);
+                    buildSparks(35, 'var(--gold)');
+                } else {
+                    spawnRewardText(`+${rewardGold} 🪙`, clickX, clickY, '#22d3ee', false);
+                    buildSparks(12, 'var(--cyan)');
+                }
+
+                triggerAnniversaryEffects(correctCount);
+                addPuzzlePiece();
+
+            } else {
+                wrongCount++;
+                document.getElementById('stat-wrong').innerText = wrongCount;
+
+                state.combo = Math.floor(state.combo / 2);
+                const badge = document.getElementById('comboBadge');
+                if (state.combo > 0) {
+                    let comboMultiplier = 1 + (state.combo * comboStepBonus);
+                    badge.style.display = 'inline-block';
+                    badge.innerText = `Серия: 🔥 x${comboMultiplier.toFixed(1)}`;
+                    badge.classList.remove('frenzy');
+                } else {
+                    badge.style.display = 'none'; badge.classList.remove('frenzy');
+                }
+
+                spawnRewardText('Ошибка!', clickX, clickY, '#f87171', false);
+                buildSparks(10, '#ef4444');
+                removePuzzlePiecesOnMistake();
+            }
+            if (gameActive) generateMath();
+            updateUI();
+        }
+
+        function spawnRewardText(txt, x, y, color, isCrit) {
+            const marginX = 80;
+            const marginTop = 110;
+            const marginBottom = 30;
+            const clampedX = Math.min(Math.max(x, marginX), window.innerWidth - marginX);
+            const clampedY = Math.min(Math.max(y, marginTop), window.innerHeight - marginBottom);
+
+            const el = document.createElement('div');
+            el.className = isCrit ? 'floating-reward crit' : 'floating-reward';
+            el.innerText = txt;
+            el.style.left = `${clampedX}px`;
+            el.style.top = `${clampedY}px`;
+            el.style.maxWidth = `${window.innerWidth - marginX}px`;
+            el.style.color = color;
+            document.body.appendChild(el);
+
+            setTimeout(() => el.remove(), isCrit ? 620 : 509);
+        }
+
+        class CustomSpark {
+            constructor(x, y, color, vx, vy, radius, lifeMultiplier = 1.0) {
+                this.x = x; this.y = y;
+                this.vx = vx; this.vy = vy;
+                this.radius = radius;
+                this.opacity = 1;
+                this.color = color;
+                this.decay = 0.015 / lifeMultiplier;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.opacity -= this.decay;
+            }
+            draw() {
+                ctx.save(); ctx.beginPath(); ctx.globalAlpha = Math.max(0, this.opacity);
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fillStyle = this.color;
+                ctx.fill(); ctx.restore();
+            }
+        }
+
+        function buildSparks(num, color) {
+            const spaceRect = document.querySelector('.game-space').getBoundingClientRect();
+            const centerX = spaceRect.left + spaceRect.width / 2;
+            const centerY = spaceRect.top + spaceRect.height / 2;
+            for (let i = 0; i < num; i++) {
+                let vx = Math.random() * 4 - 2;
+                let vy = Math.random() * 4 - 2;
+                particles.push(new CustomSpark(centerX, centerY, color, vx, vy, Math.random() * 2 + 1, 1.0));
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (megaShowActive) {
+                megaShowTimer--;
+                bgFlashState += 0.1;
+
+                let mathBox = document.getElementById('mainMathBox');
+
+                if (isUltimateStorm) {
+                    let r = Math.floor(Math.sin(bgFlashState) * 127 + 128);
+                    let g = Math.floor(Math.sin(bgFlashState + 2) * 127 + 128);
+                    let b = Math.floor(Math.cos(bgFlashState) * 127 + 128);
+                    mathBox.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.35)`;
+                    mathBox.style.borderColor = `rgb(${g}, ${b}, ${r})`;
+
+                    let colors = ['#ff0055', '#00ffcc', '#ffcc00', '#ff00ff', '#00ff00', '#ffffff'];
+                    for (let k = 0; k < 3; k++) {
+                        let angle = Math.random() * Math.PI * 2;
+                        let spd = Math.random() * 8 + 4;
+                        let vx = Math.cos(angle) * spd;
+                        let vy = Math.sin(angle) * spd;
+                        let c = colors[Math.floor(Math.random() * colors.length)];
+                        particles.push(new CustomSpark(canvas.width / 2, canvas.height * 0.4, c, vx, vy, Math.random() * 5 + 2, 4.0));
+                    }
+                } else {
+                    let r = Math.floor(Math.sin(bgFlashState) * 30 + 15);
+                    let g = Math.floor(Math.sin(bgFlashState + 1) * 20 + 10);
+                    let b = Math.floor(Math.cos(bgFlashState) * 40 + 25);
+                    mathBox.style.backgroundColor = `rgba(${r}, ${g}, ${b}, 0.93)`;
+                }
+
+                if (megaShowTimer <= 0) {
+                    megaShowActive = false;
+                    isUltimateStorm = false;
+                    document.body.classList.remove('mega-storm');
+                    mathBox.style.backgroundColor = `rgba(5, 7, 15, 0.9)`;
+                    mathBox.style.borderColor = 'var(--cyan)';
+                    mathBox.style.boxShadow = '0 0 25px rgba(6, 182, 212, 0.25)';
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.update();
+                p.draw();
+                if (p.opacity <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        function formatTime(sec) {
+            let m = Math.floor(sec / 60).toString().padStart(2, '0');
+            let s = (sec % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function updateUI() {
+            document.getElementById('val-gold').innerText = Math.floor(state.gold).toLocaleString();
+        }
+
+        setInterval(() => {
+            if (!gameActive) return;
+            totalSeconds++;
+            document.getElementById('clockTimeText').innerText = formatTime(totalSeconds);
+        }, 1000);
+
+        document.getElementById('btn-exam').addEventListener('click', () => {
+            if (!gameActive) return;
+            const confirmed = confirm('Вы действительно хотите завершить испытание? Игра завершится.');
+            if (!confirmed) return;
+
+            gameActive = false;
+            document.getElementById('winDesc').innerText =
+                `⏱️ Время: ${formatTime(totalSeconds)}\n🪙 Талантов набрано: ${Math.floor(state.gold).toLocaleString()}\n✅ Верно: ${correctCount} | ❌ Ошибок: ${wrongCount}\n🧩 Пазл собран: ${puzzleFilled}/100`;
+            document.getElementById('winScreen').classList.add('active');
+        });
+
+        // Инициализация пазла и старт игры
+        initPuzzle();
+        startGame();
+    </script>
+</body>
+</html>
 
