@@ -573,27 +573,29 @@
         // Картинки теперь лежат отдельными файлами в папке images/ рядом с этим HTML —
         // так сам файл игры остаётся лёгким, а картинки браузер грузит по одной, как обычные
         // файлы сайта (с кэшированием), а не одним гигантским текстовым блоком.
+        // Картинки — файлы с камеры, загруженные напрямую в папку images/ в репозитории
+        // (без переименования в короткие названия).
         const PUZZLE_IMAGE_SRCS = [
-            'images/zeno.jpg',
-            'images/hilbert.jpg',
-            'images/montyhall.jpg',
-            'images/birthday.jpg',
-            'images/shipoftheseus.jpg',
-            'images/banachtarski.jpg',
-            'images/gabrielshorn.jpg',
-            'images/barber.jpg',
-            'images/grandfather.jpg',
-            'images/schrodinger.jpg',
-            'images/coastline.jpg',
-            'images/simpson.jpg',
-            'images/sorites.jpg',
-            'images/hanging.jpg',
-            'images/petersburg.jpg',
-            'images/penrose.jpg',
-            'images/mobius.jpg',
-            'images/monkeys.jpg',
-            'images/twins.jpg',
-            'images/liar.jpg'
+            'images/IMG_2427.png',
+            'images/IMG_2428.png',
+            'images/IMG_2429.png',
+            'images/IMG_2430.png',
+            'images/IMG_2431.png',
+            'images/IMG_2432.png',
+            'images/IMG_2433.png',
+            'images/IMG_2434.png',
+            'images/IMG_2436.png',
+            'images/IMG_2437.png',
+            'images/IMG_2438.png',
+            'images/IMG_2439.png',
+            'images/IMG_2440.png',
+            'images/IMG_2441.png',
+            'images/IMG_2442.png',
+            'images/IMG_2443.png',
+            'images/IMG_2444.png',
+            'images/IMG_2445.png',
+            'images/IMG_2446.png',
+            'images/IMG_2447.png'
         ];
 
         // ===== КОЛЛЕКЦИЯ СОБРАННЫХ ПАЗЛОВ =====
@@ -741,32 +743,42 @@
         function renderSnapshotDataURL(src, paths, callback) {
             const img = new Image();
             img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = PUZZLE_SIZE;
-                canvas.height = PUZZLE_SIZE;
-                const ctx2 = canvas.getContext('2d');
-                ctx2.drawImage(img, 0, 0, PUZZLE_SIZE, PUZZLE_SIZE);
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = PUZZLE_SIZE;
+                    canvas.height = PUZZLE_SIZE;
+                    const ctx2 = canvas.getContext('2d');
+                    ctx2.drawImage(img, 0, 0, PUZZLE_SIZE, PUZZLE_SIZE);
 
-                for (let r = 0; r < PUZZLE_GRID; r++) {
-                    for (let c = 0; c < PUZZLE_GRID; c++) {
-                        const p = new Path2D(paths[r][c]);
-                        // Тёмная тень шва — с лёгким размытием, чтобы линия выглядела как
-                        // настоящий вырезанный край, а не плоская чёрная черта
-                        ctx2.save();
-                        ctx2.shadowColor = 'rgba(0,0,0,0.65)';
-                        ctx2.shadowBlur = 3;
-                        ctx2.lineWidth = 4.5;
-                        ctx2.strokeStyle = 'rgba(0,0,0,0.55)';
-                        ctx2.stroke(p);
-                        ctx2.restore();
-                        // Светлый блик поверх — имитирует освещённую грань кусочка
-                        ctx2.lineWidth = 1.6;
-                        ctx2.strokeStyle = 'rgba(255,255,255,0.55)';
-                        ctx2.stroke(p);
+                    for (let r = 0; r < PUZZLE_GRID; r++) {
+                        for (let c = 0; c < PUZZLE_GRID; c++) {
+                            const p = new Path2D(paths[r][c]);
+                            // Тёмная тень шва — с лёгким размытием, чтобы линия выглядела как
+                            // настоящий вырезанный край, а не плоская чёрная черта
+                            ctx2.save();
+                            ctx2.shadowColor = 'rgba(0,0,0,0.65)';
+                            ctx2.shadowBlur = 3;
+                            ctx2.lineWidth = 4.5;
+                            ctx2.strokeStyle = 'rgba(0,0,0,0.55)';
+                            ctx2.stroke(p);
+                            ctx2.restore();
+                            // Светлый блик поверх — имитирует освещённую грань кусочка
+                            ctx2.lineWidth = 1.6;
+                            ctx2.strokeStyle = 'rgba(255,255,255,0.55)';
+                            ctx2.stroke(p);
+                        }
                     }
+                    callback(canvas.toDataURL('image/jpeg', 0.92));
+                } catch (e) {
+                    // Canvas иногда отказывается отдавать данные (например, если браузер
+                    // посчитал картинку "чужеродной"). В этом случае просто показываем
+                    // саму картинку без эффекта швов — лучше без эффекта, чем совсем пусто.
+                    callback(src);
                 }
-                callback(canvas.toDataURL('image/jpeg', 0.92));
             };
+            // Если картинка вообще не загрузилась — тоже показываем исходный src напрямую,
+            // браузер попробует отобразить его ещё раз через обычный <img>.
+            img.onerror = () => callback(src);
             img.src = src;
         }
 
