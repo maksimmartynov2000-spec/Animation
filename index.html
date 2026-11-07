@@ -320,7 +320,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; text-wrap: bala
 .house .ab { font-size: 13px; line-height: 1.3; }
 .startbox { display: grid; gap: 14px; margin-top: 18px; }
 .startbox .lbl { font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
-.cnt { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.cnt { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .cnt button { min-height: 46px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 700; font-size: 17px; cursor: pointer; }
 .cnt button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .endtable { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -688,6 +688,17 @@ body[data-view="game"] #toasts { bottom: calc(var(--bar-h) + var(--tab-h) + 18px
 .nw { white-space: nowrap; }
 .trash-warn { margin: 0; font-size: 14px; font-weight: 700; color: var(--gules); }
 
+/* правила модулей (modrules.js) */
+.mr { display: grid; gap: 4px; }
+.mr-gist { font-size: 16px; line-height: 1.45; margin: 0 0 4px; }
+.mr-house { margin: 2px 0; padding: 8px 12px; border-radius: 10px; background: var(--or-soft); font-size: 14px; }
+.mr-ex, .rules .mr-ex { margin: 6px 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); border-left: 4px solid var(--or); }
+.mr-ex b { display: block; font-size: 14px; margin-bottom: 4px; }
+.mr-ex p { margin: 0; font-size: 14.5px; line-height: 1.45; }
+.mr-tip { font-size: 14px; line-height: 1.5; margin: 0; }
+.mr-with { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
+.rules .optlist { margin-top: 6px; }
+
 </style>
 </head>
 <body>
@@ -961,7 +972,7 @@ function ASSET_URL(p) {
   // титулы и союзы провинций — те же числа, что в движке (Engine.mods / prod / walls / startOfTurn)
   const TITLE_MODS = { treasurer: { startGold: 1 }, magister: { shift: 1 }, marshal: { siege: 1, defense: 2 }, whisperer: { hand: 1 } };
   const TITLE_WHAT = { treasurer: ['владений', null], magister: ['', 'sci'], marshal: ['', 'war'], whisperer: ['', 'int'] };
-  const UNION = { N: [{ v: '+1', i: 'war' }, { v: '+1', i: 'wall' }], S: [{ dawn: 1, v: '+1', i: 'gold', c: 'в начале хода' }], E: [{ v: '+1', i: 'sci' }], W: [{ v: '+1', i: 'int' }] };
+  const UNION = { N: [{ v: '+1', i: 'war' }], S: [{ dawn: 1, v: '+1', i: 'gold', c: 'в начале хода' }], E: [{ v: '+1', i: 'sci' }], W: [{ v: '+1', i: 'int' }] };
   const title = (k) => mods(TITLE_MODS[k]);
   const union = (p) => UNION[p].map(x => Object.assign({}, x));
 
@@ -1018,8 +1029,8 @@ function ASSET_URL(p) {
     const goal = `${R.ownRegalia} вассалов${on('lords') ? ` + ${R.greatNeeded} лорда` : ''}`;
     const rules = [];
     if (on('sieges')) {
-      rules.push(`<div class="rule">${ico('siege')}<span><b>Осада:</b> ⚔️ на ход + бонусы + 🎲 &gt; ⚔️ на столе + 🧱 + 🎲. Ничья — у защиты; больше 📜 у защиты — лучший из 2🎲. Победа — владение до ${R.siegeLoot}🪙${on('unions') ? ' (не из союза)' : ''}, иначе до 3🪙.</span></div>`);
-      rules.push(`<div class="rule">${ico('wall')}<span><b>Стены:</b> у каждого ${R.baseWalls} + 🧱 с карт${on('unions') ? ', +1 за союз Севера' : ''}.</span></div>`);
+      rules.push(`<div class="rule">${ico('siege')}<span><b>Осада:</b> ⚔️ на ход + бонусы + 🎲 &gt; ⚔️ на столе + 🧱 + 🎲. Ничья — у защиты; больше 📜 у защиты — лучший из 2🎲. Победа — владение до ${R.siegeLoot}🪙, иначе до 3🪙.</span></div>`);
+      rules.push(`<div class="rule">${ico('wall')}<span><b>Стены:</b> у каждого ${R.baseWalls} + 🧱 с карт.</span></div>`);
     }
     if (on('spy')) rules.push(`<div class="rule">${ico('spy')}<span><b>Шпионаж:</b> все ваши 🔗 + бонусы + 🎲 &gt; 🔗 соперника на столе + 🎲. Откуп — 2🪙 за очко разницы.</span></div>`);
     rules.push(`<div class="rule">${ico('banner')}<span><b>Знамя:</b> цена + ${R.rise}🪙 за каждое ваше знамя, +${R.trade}🪙 за каждый недостающий значок. Цель: ${goal}.</span></div>`);
@@ -1043,6 +1054,7 @@ const DATA = (() => {
 
   const RULES = {
     startGold: 3,
+    maxPlayers: 4,        // за престол борются 2–4 Дома
     startTax: 6,          // карт «Подать» в стартовой колоде
     hand: 3,              // карт в руке
     plotSlots: 2,         // замыслов одновременно
@@ -1066,7 +1078,7 @@ const DATA = (() => {
   };
 
   const PROV = {
-    N: { name: 'Север', icon: '🏔', union: '+1 ⚔️ и +1 🧱 к стенам' },
+    N: { name: 'Север', icon: '🏔', union: '+1 ⚔️' },
     S: { name: 'Юг', icon: '🌾', union: '+1 🪙 в начале каждого вашего хода' },
     E: { name: 'Восток', icon: '🔮', union: '+1 📜' },
     W: { name: 'Запад', icon: '🌲', union: '+1 🔗' },
@@ -1189,7 +1201,7 @@ const DATA = (() => {
         reg('observ', 'Магнус Стерн', 'астроном', 9, { sci: 1 }, { reroll: 1 }, null, 'Раз в ход можно перебросить кубики.'),
         reg('academy', 'Аделард из Дома Совы', 'ректор академии', 12, { sci: 2 }, { hand: 1 }, { sci: 1 }, 'Даёт 📜. +1 карта в руку.'),
         reg('alchem', 'Розалинда Вейл', 'аптекарь', 15, { sci: 2, war: 1 }, { symIncome_sci: 1 }, null, 'В начале хода +1🪙 за каждые 2📜 (макс. +4).'),
-        reg('dome', 'Матушка Морвен', 'предсказательница', 18, { sci: 3, int: 1 }, { plotSlots: 1, plotGold: 2 }, null, '+1 замысел. Каждый сработавший замысел +2🪙.'),
+        reg('dome', 'Матушка Морвен', 'предсказательница', 18, { sci: 3, int: 1 }, { shift: 1, startGold: 1 }, null, 'Раз в ход можно сдвинуть бросок на ±1. +1🪙 в начале хода.'),
       ],
     },
     wolf: {
@@ -1217,7 +1229,7 @@ const DATA = (() => {
         reg('paths', 'Корвин Лис', 'контрабандист', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
         reg('network', 'Мадам Сабина', 'хозяйка осведомителей', 6, null, null, { int: 2 }, 'Даёт 🔗🔗.'),
         reg('chancery', 'Квентин из Дома Розы', 'глава тайной канцелярии', 9, { int: 1 }, { hand: 1 }, null, '+1 карта в руку.'),
-        reg('shadows', 'Гаррет Тень', 'телохранитель', 12, { int: 2 }, { plotProtect: 1, plotSlots: 1, guard: 2 }, null, '+1 замысел, ваши замыслы нельзя сорвать, стража +2.'),
+        reg('shadows', 'Гаррет Тень', 'телохранитель', 12, { int: 2 }, { guard: 3, startGold: 1 }, null, 'Стража +3. +1🪙 в начале хода.'),
         reg('garden', 'Леди Белладонна', 'отравительница', 15, { int: 2, sci: 1 }, { symIncome_int: 1 }, null, 'В начале хода +1🪙 за каждые 2🔗 (макс. +4).'),
         reg('masks', 'Вивьен из Дома Розы', 'наставница шпионов', 18, { int: 3, war: 1 }, { spy: 2, stealBonus: 2 }, null, 'Шпионаж +2; при краже забираете на 2🪙 больше.'),
       ],
@@ -1234,7 +1246,7 @@ const DATA = (() => {
         reg('lighthouse', 'Старый Брендан', 'смотритель маяка', 9, { war: 1 }, { harbor: 1 }, null, 'Если на 2 кубиках выпало 10+, можно добавить +2.'),
         reg('shipyard', 'Мэйв из Дома Змея', 'мастер верфи', 12, { war: 1, sci: 1 }, { greenBonus: 1 }, null, '🟩 Ремёсла приносят +1🪙.'),
         reg('cove', 'Кира Чёрная', 'пиратский капитан', 15, { war: 2, int: 1 }, { redIncome: 1 }, null, 'В начале хода +1🪙 за каждый ваш 🟥 Набег (макс. +4).'),
-        reg('admiralty', 'Дуглас из Дома Змея', 'адмирал морской стражи', 18, { war: 3, sci: 1 }, { siege: 2, walls: 2 }, null, 'Осады +2, 🧱 стены +2.'),
+        reg('admiralty', 'Дуглас из Дома Змея', 'адмирал морской стражи', 18, { war: 3, sci: 1 }, { tribute: 1 }, null, 'В начале хода +1🪙 с каждого соперника, у кого ⚔️ меньше, чем у вас.'),
       ],
     },
     moon: {
@@ -1248,7 +1260,7 @@ const DATA = (() => {
         reg('mirror', 'Сорель Аш', 'советник', 6, null, null, { sci: 1, int: 1 }, 'Даёт 📜 и 🔗.'),
         reg('temple', 'Иланна', 'жрица Луны', 9, { sci: 1 }, { hand: 1 }, null, '+1 карта в руку.'),
         reg('seers', 'Слепой Тобиас', 'провидец', 12, { sci: 1, int: 1 }, { shift: 1 }, null, 'Раз в ход можно сдвинуть бросок на ±1.'),
-        reg('spire', 'Сайлас из Дома Луны', 'капитан тайной стражи', 15, { sci: 1, int: 2 }, { spy: 2, guard: 2 }, null, 'Шпионаж +2, стража +2.'),
+        reg('spire', 'Сайлас из Дома Луны', 'хранитель тайн', 15, { sci: 1, int: 2 }, { plotSlots: 1, startGold: 1 }, null, '+1 место для замысла. +1🪙 в начале хода.'),
         reg('eye', 'Селена из Дома Луны', 'астролог Дома', 18, { sci: 2, int: 2 }, { timedPlotBonus: 3, plotGold: 1 }, null, '⏳-замыслы дают ещё +3🪙; сработавший замысел +1🪙.'),
       ],
     },
@@ -1268,7 +1280,7 @@ const DATA = (() => {
     egg: { name: 'Укротитель виверн', cost: 18, req: { war: 2, sci: 1 }, prod: {}, mods: { extraTurn: 1 }, text: 'Дубль на 2 кубиках — дополнительный ход.' },
     heart: { name: 'Хранитель лесов', cost: 13, req: { sci: 1, int: 1 }, prod: {}, mods: { captureImmune: 1, walls: 3 }, text: 'Ваши владения нельзя захватить. 🧱 Стены +3.' },
     key: { name: 'Хранитель казны', cost: 17, req: { int: 2, war: 1 }, prod: {}, mods: { startGold: 2 }, text: '+2🪙 в начале каждого вашего хода.' },
-    seal: { name: 'Вдовствующая королева', cost: 15, req: { sci: 1, war: 1, int: 1 }, prod: {}, mods: { envyImmune: 1, startGold: 1 }, text: 'Зависть на вас не действует. +1🪙 в начале хода.' },
+    seal: { name: 'Вдовствующая королева', cost: 15, req: { sci: 1, war: 1, int: 1 }, prod: {}, mods: { startGold: 2 }, text: '+2🪙 в начале хода.' },
     bell: { name: 'Капитан наёмников', cost: 14, req: { war: 2, int: 1 }, prod: {}, mods: { redBonus: 1, spy: 1 }, text: '🟥 Набеги забирают +1🪙. Шпионаж +1.' },
   };
 
@@ -1354,7 +1366,7 @@ const DATA = (() => {
     seasons: { name: 'Сезоны', short: 'Сезоны', icon: '🌸', desc: 'Каждые 2 круга сезон меняет доход и бой.' },
     titles: { name: 'Титулы', short: 'Титулы', icon: '💰', desc: 'Бонус тому, у кого больше всех владений, свитков, мечей или связей.' },
     balance: { name: 'Зависть и поддержка', short: 'Баланс', icon: '⚖️', desc: 'Лидер по знамёнам платит, отстающие получают золото.' },
-    unions: { name: 'Союзы провинций', short: 'Союзы', icon: '🏔', desc: '3 разных владения одной провинции дают бонус.' },
+    unions: { name: 'Союзы провинций', short: 'Союзы', icon: '🏔', desc: 'Каждые 3 владения одной провинции — союз с бонусом; бонусы копятся.' },
     sieges: { name: 'Осады', short: 'Осады', icon: '⚔️', desc: 'Захват чужих владений. Стены и Каменная стена.' },
     spy: { name: 'Шпионаж', short: 'Шпионаж', icon: '🗝', desc: 'Кража, срыв замыслов, шантаж. Стража.' },
   };
@@ -1380,6 +1392,150 @@ const DATA = (() => {
   return { MODULES, MODULE_KEYS, PRESETS, NEEDS, seasonText, regName, SYMS, SYM, SYM_NAME, RULES, PROV, ETYPE, ESTATES, ROLES, COURT, HOUSES, GREAT, SEASONS, TITLES, fxText, fxLine, estateText, numText, reqText, plural, cards, banners };
 })();
 if (typeof module !== 'undefined') module.exports = DATA;
+
+// Правила модулей — по странице на модуль, с примерами.
+// Один текст для игры (страница «Правила» → модуль) и для печати (лист A4 на модуль).
+//   ModRules.ORDER            — порядок модулей
+//   ModRules.page(D, key, on) — { key, icon, name, short, html }; D — данные игры (data.js), on(k) — включён ли модуль (для пометок в игре)
+// Все числа берутся из данных игры, поэтому правила не расходятся с движком.
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.ModRules = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  const ORDER = ['lords', 'plots', 'seasons', 'titles', 'balance', 'unions', 'sieges', 'spy'];
+  const TWO = [0, 0, 1, 2, 3, 4, 5, 6, 5, 4, 3, 2, 1];
+  const pct2 = (n) => Math.round((TWO[n] / 36) * 100);
+  const lo = (t) => t.charAt(0).toLowerCase() + t.slice(1);
+  const ul = (xs) => `<ul>${xs.filter(Boolean).map(x => `<li>${x}</li>`).join('')}</ul>`;
+  const ex = (title, body) => `<div class="mr-ex"><b>${title}</b><p>${body}</p></div>`;
+
+  function page(D, key, on) {
+    const R = D.RULES, C = D.COURT, M = D.MODULES[key];
+    const has = (k) => (on ? on(k) : true);
+    // Дома, которые играют только с этим модулем
+    const houses = Object.keys(D.HOUSES).filter(h => D.NEEDS.house[h] === key).map(h => D.HOUSES[h]);
+    const greats = Object.keys(D.GREAT).filter(g => D.NEEDS.great[g] === key).map(g => D.GREAT[g]);
+    const houseLine = houses.length ? `<p class="mr-house"><b>Дом модуля:</b> ${houses.map(h => `${h.sigil} ${h.name} — ${lo(h.ability)}`).join('; ')} Без модуля этот Дом не участвует.</p>` : '';
+    const lordLine = greats.length ? `<b>Великие лорды</b> (если включены): ${greats.map(g => `«${g.name}»`).join(', ')} — играют только с этим модулем.` : '';
+    let gist = '', adds = [], rules = [], exs = [], tips = [], with_ = [];
+
+    if (key === 'lords') {
+      const N = Object.keys(D.GREAT).length, g = D.GREAT.crown, k = 3;
+      gist = `Общий ряд великих лордов. Цель становится больше: ${D.banners(R.ownRegalia + R.greatNeeded)} — ${R.ownRegalia} вассалов своего Дома и ${R.greatNeeded} великих лорда.`;
+      adds = [`Колода великих лордов: ${N} карт, каждый лорд в одном экземпляре. В ряду открыто ${R.greatRow}.`];
+      rules = [
+        'Лорда привлекают так же, как вассала: после броска, вместо покупки на рынке. Это действие хода.',
+        `Цена — напечатанная плюс ${R.rise}🪙 за каждое ваше знамя (вассалы и лорды считаются вместе). Значки-требования нужно иметь, недостающий значок докупается за ${R.trade}🪙.`,
+        'Каждый лорд один на всю игру: кто первым привлёк, у того и остаётся. На его место сразу выходит следующий из колоды.',
+        'Лорды дают значки и способности, как вассалы.',
+      ];
+      exs = [ex('Сколько стоит лорд', `У вас ${k} знамени. «${g.name}» стоит ${g.cost}🪙 и требует 📜⚔️🔗. Цена: ${g.cost} + ${k} = ${g.cost + k}🪙. 📜 и ⚔️ у вас есть, 🔗 нет — докупка +${R.trade}🪙. Итого ${g.cost + k + R.trade}🪙.`)];
+      tips = ['Следите за рядом: нужного лорда может забрать соперник.'];
+      with_ = ['Некоторые лорды требуют другие модули (осады, шпионаж, замыслы, союзы) и без них из колоды убираются.'];
+    }
+    if (key === 'plots') {
+      const t = C.collector, d = C.spicer;
+      gist = 'Карту с ⏳ или 🎲 можно не играть сразу, а отложить замыслом — ради эффекта сильнее.';
+      adds = ['Новых карт нет: у многих карт двора уже напечатан второй эффект — «Замысел».'];
+      rules = [
+        'Вместо розыгрыша положите карту на стол рубашкой вверх. Действие хода на это не тратится.',
+        '⏳ — замысел сработает в начале вашего следующего хода.',
+        '🎲N — сработает, когда на любом броске, вашем или чужом, выпадет число N, напечатанное на карте.',
+        `Одновременно — не больше ${R.plotSlots} замыслов. Сработавший замысел уходит в сброс.`,
+      ];
+      exs = [
+        ex('⏳ Замысел на следующий ход', `«${t.name}»: сыграть сразу — ${lo(D.fxText(t.fx))}. Отложить замыслом — ${lo(D.fxText(t.pfx))} в начале вашего следующего хода.`),
+        ex('🎲 Замысел на число', `«${d.name}» отложен замыслом 🎲${d.pn}. Соперник выбросил ${d.pn} — замысел срабатывает: ${lo(D.fxText(d.pfx))}. Число ${d.pn} на двух кубиках выпадает примерно в ${pct2(d.pn)}% бросков.`),
+      ];
+      tips = ['🎲-замысел на частое число (6–8) сработает быстрее, чем на 2 или 12.'];
+      with_ = ['Со «Шпионажем»: «Саботажник» может сорвать ваш замысел.'];
+    }
+    if (key === 'seasons') {
+      const list = D.SEASONS.map(s => `${s.icon} <b>${s.name}</b> — ${s.title}: ${D.seasonText(s, on)}`);
+      gist = `Каждые ${R.seasonLen} круга меняется сезон: ${D.SEASONS.map(s => s.name).join(' → ')}. Сезон действует на всех.`;
+      adds = ['4 карты сезонов. Партия начинается весной.'];
+      rules = list.concat([`Сезон сменяется, когда начинается новый круг, кратный ${R.seasonLen}: после 2-го круга — лето, после 4-го — осень, и так по кругу.`]);
+      exs = [ex('Весна и зима', 'Весной ваша Пашня на 1 приносит 2🪙 вместо 1, а Яблоневый сад на 10 — 4🪙 вместо 3. Зимой Сад принесёт 2🪙, а Рудник на 9 — по-прежнему 5🪙: он на Севере.')];
+      tips = ['Покупайте под сезон: перед осенью — Ремёсла, перед весной — Земли.'];
+      with_ = ['С «Осадами»: летом осады +2. Со «Шпионажем»: зимой шпионаж +2. Без этих модулей эти части сезонов не действуют.'];
+    }
+    if (key === 'titles') {
+      const ts = Object.keys(D.TITLES).map(k => [k, D.TITLES[k]]);
+      gist = 'Кто впереди по владениям или значкам, получает титул с постоянным бонусом.';
+      adds = [`${ts.length} карты титулов.`];
+      rules = ts.map(([k, t]) => `${t.icon} <b>${t.name}</b> — у кого ${t.cond}: ${lo(t.text)}${D.NEEDS.title[k] ? ` <i>(только с модулем «${D.MODULES[D.NEEDS.title[k]].name}»)</i>` : ''}`).concat([
+        'Титул сразу переходит к тому, кто обогнал владельца. При равенстве титул остаётся у прежнего владельца. Если лидеров несколько с самого начала — титула нет ни у кого.',
+      ]);
+      exs = [ex('Казначей', 'У вас 5 владений, у соперников 4 и 3 — вы Казначей: +1🪙 в начале каждого хода. Соперник купил ещё 2 владения — у него 6, титул переходит к нему.')];
+      tips = ['Титул Магистра (сдвиг броска ±1) особенно полезен, когда у вас много владений на соседних числах.'];
+    }
+    if (key === 'balance') {
+      gist = 'Лидеру мешают, отстающим помогают — партия дольше остаётся напряжённой.';
+      adds = ['Новых карт нет.'];
+      rules = [
+        `<b>Зависть.</b> В начале вашего хода, если вы единственный лидер по знамёнам, заплатите в банк 1🪙 за каждое знамя отрыва от второго места, но не больше ${R.envyMax}🪙.`,
+        `<b>Народная поддержка.</b> В начале вашего хода, если вы отстаёте от лидера на ${R.supportGap} знамени и больше, получите +${R.supportGold}🪙 из банка.`,
+      ];
+      exs = [ex('Лидер и отстающий', `У вас 4 знамени, у соперников 2 и 1. Вы лидер с отрывом 2 — в начале хода платите 2🪙. У соперника с 1 знаменем отставание 3 — в начале своего хода он получает +${R.supportGold}🪙.`)];
+    }
+    if (key === 'unions') {
+      const prov = Object.keys(D.PROV).map(k => [k, D.PROV[k]]);
+      gist = 'Почти каждое владение принадлежит одной из четырёх провинций — её значок в углу карты. Каждые 3 владения одной провинции — союз с бонусом этой провинции.';
+      adds = ['Новых карт нет: провинции уже напечатаны на владениях.'];
+      rules = [
+        'Считаются любые владения провинции, одинаковые тоже: три Заставы — союз Юга.',
+        'Каждые следующие 3 владения — ещё один союз: 6 владений Юга — 2 союза, бонус вдвойне.',
+        ...prov.map(([k, p]) => `${p.icon} <b>${p.name}</b> — ${p.union}${k === 'S' ? '' : ' на столе'} за каждый союз.`),
+        'Значки союзов — как обычные значки на столе: идут в требования вассалов, в титулы, в осаду и стражу.',
+        'Пашня, Пекарня и Каменная стена ни к какой провинции не относятся.',
+      ];
+      exs = [ex('Союзы Юга', 'У вас Лавка, Порт и две Заставы — 4 владения Юга: один союз, +1🪙 в начале каждого хода. Купили Притон и Винодельню — 6 владений Юга: два союза, +2🪙.')];
+      tips = [prov.map(([k, p]) => `${p.icon} ${p.name}: ${Object.keys(D.ESTATES).filter(id => D.ESTATES[id].p === k).map(id => D.ESTATES[id].name).join(', ')}`).join('<br>')];
+    }
+    if (key === 'sieges') {
+      const sb = C.siegeband, wp = C.wolfpack, wall = D.ESTATES.wall;
+      gist = 'Захват чужих владений силой.';
+      adds = [`Карты «${sb.name}» и «${wp.name}» (фамильная карта Волков), Каменная стена (🧱 +${wall.walls}, всегда в продаже). Стены на владениях начинают работать.`];
+      rules = [
+        `Осаду начинает карта: «${sb.name}» (+3), «${wp.name}» (+2), а с модулем «Замыслы» — их замыслы (+5).`,
+        'Атака = ⚔️ этого хода (временные, с карт) + бонус карты + способности + 🎲.',
+        `Оборона = ⚔️ на столе + 🧱 стены (у каждого ${R.baseWalls} от замка, плюс стены с карт) + 🎲.`,
+        'Атака больше — победа; ничья — у защиты. Если 📜 у защитника больше, чем у нападающего, защитник бросает 2 кубика и берёт лучший.',
+        `Победа: заберите одно владение соперника ценой до ${R.siegeLoot}🪙 (кроме Каменной стены). Если брать нечего — заберите до 3🪙.`,
+      ];
+      exs = [ex('Осада', `Вы сыграли «Наёмник» (+1⚔️ на ход) и «${sb.name}» (+3). Атака: 1 + 3 + 🎲4 = 8. У соперника ⚔️2 на столе и 🧱${R.baseWalls} стены: оборона 2 + ${R.baseWalls} + 🎲3 = ${2 + R.baseWalls + 3}. 8 > ${2 + R.baseWalls + 3} — вы забираете его Лавку.`)];
+      tips = ['⚔️ на столе защищают, ⚔️ на ход нападают: значки на владениях — оборона, карты двора — атака.'];
+      with_ = ['С «Титулами»: появляется Маршал. С «Сезонами»: летом осады +2.'];
+    }
+    if (key === 'spy') {
+      const cards = ['pickpocket', 'saboteur', 'blackmailer'].map(id => C[id]);
+      gist = 'Кража, срыв замыслов и шантаж.';
+      adds = [`Карты Шпионов: ${cards.map(c => `«${c.name}»`).join(', ')}. Связи 🔗 начинают защищать: это стража.`];
+      rules = [
+        `Шпионаж начинает карта: ${cards.map(c => `«${c.name}» — ${lo(D.fxText(c.fx))}`).join('; ')}.`,
+        'Сила шпиона = ваши 🔗 (на столе и на ход) + бонус карты + способности + 🎲.',
+        'Стража = 🔗 соперника на столе + способности + 🎲. Сила больше — успех; ничья — провал.',
+        'Откуп: жертва может заплатить в банк 2🪙 за каждое очко перевеса — тогда шпион ничего не получает. Платить выгодно, только когда откуп дешевле потери.',
+      ];
+      exs = [
+        ex('Откуп не нужен', 'Шпион: 🔗3 + «Карманник» 1 + 🎲4 = 8. Стража: 🔗1 + 🎲3 = 4. Перевес 4 — откуп стоил бы 8🪙, а кража всего 2🪙. Выгоднее отдать 2🪙.'),
+        ex('Откуп выгоден', 'Шантажист хочет забрать вашу Лавку — она приносит 4🪙 на вашем броске 4. Перевес 1 — откуп 2🪙. Выгоднее заплатить в банк 2🪙 и оставить Лавку.'),
+      ];
+      with_ = ['С «Замыслами»: «Саботажник» срывает замыслы. С «Сезонами»: зимой шпионаж +2.'];
+    }
+    const html = `<div class="mr">
+      <p class="mr-gist">${gist}</p>
+      ${houseLine}
+      <h3>Что добавляется</h3>${ul(adds.concat([lordLine]))}
+      <h3>Правила</h3>${ul(rules)}
+      <h3>${exs.length > 1 ? 'Примеры' : 'Пример'}</h3>${exs.join('')}
+      ${tips.length ? `<h3>${key === 'unions' ? 'Владения провинций' : 'Совет'}</h3><p class="mr-tip">${tips.join(' ')}</p>` : ''}
+      <p class="mr-with"><b>С другими модулями.</b> ${with_.length ? with_.join(' ') + ' В остальном модуль ни от чего не зависит.' : 'Модуль ни от чего не зависит и сочетается с любым набором.'}</p>
+    </div>`;
+    return { key, icon: M.icon, name: M.name, short: M.short, html };
+  }
+  return { ORDER, page };
+});
 
 const ART = {"field": "art/field.svg", "bakery": "art/bakery.svg", "wall": "art/wall.svg", "pasture": "art/pasture.svg", "barracks": "art/barracks.svg", "runestone": "art/runestone.svg", "smithy": "art/smithy.svg", "mine": "art/mine.svg", "shop": "art/shop.svg", "winery": "art/winery.svg", "outpost": "art/outpost.svg", "den": "art/den.svg", "port": "art/port.svg", "caravan": "art/caravan.svg", "library": "art/library.svg", "fortress": "art/fortress.svg", "scriptorium": "art/scriptorium.svg", "alchemy": "art/alchemy.svg", "sawmill": "art/sawmill.svg", "thieves": "art/thieves.svg", "watchtower": "art/watchtower.svg", "orchard": "art/orchard.svg", "blackmarket": "art/blackmarket.svg", "tax": "art/tax.svg", "herald": "art/herald.svg", "chancellor": "art/chancellor.svg", "collector": "art/collector.svg", "spicer": "art/spicer.svg", "usurer": "art/usurer.svg", "guildmaster": "art/guildmaster.svg", "scribe": "art/scribe.svg", "astrologer": "art/astrologer.svg", "archivist": "art/archivist.svg", "alchemist": "art/alchemist.svg", "inventor": "art/inventor.svg", "mercenary": "art/mercenary.svg", "foragers": "art/foragers.svg", "siegeband": "art/siegeband.svg", "commander": "art/commander.svg", "pickpocket": "art/pickpocket.svg", "informer": "art/informer.svg", "saboteur": "art/saboteur.svg", "whisper": "art/whisper.svg", "blackmailer": "art/blackmailer.svg", "goldhorn": "art/goldhorn.svg", "owlsight": "art/owlsight.svg", "wolfpack": "art/wolfpack.svg", "thorn": "art/thorn.svg", "boarding": "art/boarding.svg", "moonlight": "art/moonlight.svg"};
 
@@ -1457,18 +1613,20 @@ const Engine = (() => {
     if (S.titles.treasurer === p.i) add({ startGold: 1 });
     return m;
   }
+  // союз провинции: каждые 3 владения одной провинции (любые, можно одинаковые) — один союз; бонусы копятся
+  // u.S — сколько союзов Юга (0, 1, 2…), u.counts.S — сколько владений Юга
   function unionsOf(p) {
-    const by = { N: new Set(), S: new Set(), E: new Set(), W: new Set() };
-    for (const e of p.estates) { const d = ES(e); if (d.p) by[d.p].add(e.id); }
-    return { N: by.N.size >= 3, S: by.S.size >= 3, E: by.E.size >= 3, W: by.W.size >= 3, counts: { N: by.N.size, S: by.S.size, E: by.E.size, W: by.W.size } };
+    const c = { N: 0, S: 0, E: 0, W: 0 };
+    for (const e of p.estates) { const d = ES(e); if (d.p) c[d.p]++; }
+    return { N: Math.floor(c.N / 3), S: Math.floor(c.S / 3), E: Math.floor(c.E / 3), W: Math.floor(c.W / 3), counts: c };
   }
-  const unionCount = (p) => { const u = unionsOf(p); return ['N', 'S', 'E', 'W'].filter(k => u[k]).length; };
+  const unionCount = (p) => { const u = unionsOf(p); return u.N + u.S + u.E + u.W; };
   function prod(S, p) {
     const r = { sci: 0, war: 0, int: 0 };
     for (const e of p.estates) { const d = ES(e); if (d.sym) r[d.sym]++; }
     for (const id of p.regalia) { const pr = regDef(p, id).prod; for (const k in pr) r[k] += pr[k]; }
     for (const id of p.great) { const pr = D.GREAT[id].prod; for (const k in pr) r[k] += pr[k]; }
-    if (on(S, 'unions')) { const u = unionsOf(p); if (u.N) r.war++; if (u.E) r.sci++; if (u.W) r.int++; }
+    if (on(S, 'unions')) { const u = unionsOf(p); r.war += u.N; r.sci += u.E; r.int += u.W; }
     return r;
   }
   const sym = (S, p, s) => prod(S, p)[s] + (p.temp[s] || 0);
@@ -1476,7 +1634,6 @@ const Engine = (() => {
     let w = R.baseWalls || 0;
     for (const e of p.estates) w += ES(e).walls || 0;
     w += mods(S, p).walls || 0;
-    if (on(S, 'unions') && unionsOf(p).N) w += 1;
     return w;
   }
   const handSize = (S, p) => R.hand + (mods(S, p).hand || 0);
@@ -1577,7 +1734,7 @@ const Engine = (() => {
     if (m.redIncome) { const v = Math.min(4, p.estates.filter(e => ES(e).t === 'raid').length); if (v) { g += v; src.push(`за набеги +${v}`); } }
     const uc = unionCount(p);
     if (m.unionGold && uc && on(S, 'unions')) { g += m.unionGold * uc; src.push(`за союзы +${m.unionGold * uc}`); }
-    if (on(S, 'unions') && unionsOf(p).S) { g += 1; src.push('союз Юга +1'); }
+    if (on(S, 'unions')) { const us = unionsOf(p).S; if (us) { g += us; src.push(`союз${us > 1 ? 'ы' : ''} Юга +${us}`); } }
     if (g > 0) { p.gold += g; p.stats.startInc += g; log(S, `${nm(p)} получили в начале хода +${g}🪙 (${src.join(', ')})`, p.i, 'gold'); }
     if (m.tribute) {
       for (const o of opps(S, p)) if (prod(S, o).war < pr.war && o.gold > 0) { o.gold -= 1; p.gold += 1; tribute.push(o.i); log(S, `Дань: ${nm(o)} отдали 1🪙 ${nmD(p)} — у них ⚔️ меньше`, p.i, 'steal'); }
@@ -1671,12 +1828,10 @@ const Engine = (() => {
   }
   function capturable(S, t, a, maxCost = 99) {
     if (mods(S, t).captureImmune) return [];
-    const u = on(S, 'unions') ? unionsOf(t) : {};
     return t.estates.filter(e => {
       const d = ES(e);
       if (d.fixed) return false;
       if (d.cost > maxCost) return false;
-      if (d.p && u[d.p]) return false;
       if (d.limit && a.estates.some(x => x.id === e.id)) return false;
       return true;
     });
@@ -2330,8 +2485,9 @@ const Engine = (() => {
       let val = (ev + syn) * T;
       if (d.sym) val += 1.2 + this.symNeed(S, p, d.sym) * 1.8;
       if (d.p && on(S, 'unions')) {
-        const distinct = new Set(p.estates.filter(e => ES(e).p === d.p).map(e => e.id));
-        if (!distinct.has(id)) val += distinct.size === 2 ? 5 : distinct.size === 1 ? 1.5 : 0.5;
+        // шаг к следующему союзу этой провинции: третье владение — союз
+        const k = p.estates.filter(e => ES(e).p === d.p).length % 3;
+        val += k === 2 ? 5 : k === 1 ? 1.5 : 0.5;
       }
       if (d.walls && on(S, 'sieges')) {
         // угроза осады: насколько соперники сильнее нашей обороны
@@ -2673,13 +2829,13 @@ if (typeof module !== 'undefined') module.exports = Engine;
   function fixSetup() {
     const av = availHouses();
     if (!av.includes(setup.house)) setup.house = av[0];
-    setup.opps = Math.max(1, Math.min(setup.opps, av.length - 1, 5));
+    setup.opps = Math.max(1, Math.min(setup.opps, av.length - 1, R.maxPlayers - 1));
   }
   const shuffleArr = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
   // ---------- настройки ----------
   function loadPrefs() {
-    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (x.opps >= 1 && x.opps <= 5) setup.opps = x.opps; if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) setup.mods = x.mods.filter(k => MODK.includes(k)); if (x.pause === false) pauseBots = false; if (['system', 'light', 'dark'].includes(x.theme)) theme = x.theme; } } catch (e) { /* хранилище недоступно */ }
+    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (x.opps >= 1) setup.opps = Math.min(x.opps, R.maxPlayers - 1); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) setup.mods = x.mods.filter(k => MODK.includes(k)); if (x.pause === false) pauseBots = false; if (['system', 'light', 'dark'].includes(x.theme)) theme = x.theme; } } catch (e) { /* хранилище недоступно */ }
     fixSetup();
     try { const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (g && g.S) savedGame = g; } catch (e) { /* нет сохранения */ }
   }
@@ -2844,7 +3000,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
     const x = [];
     if (d.sym) x.push(`${D.SYM[d.sym]} +1`);
     if (d.walls && d.t !== 'wall' && modOn('sieges')) x.push(`🧱 +${d.walls}`);
-    if (d.p && modOn('unions')) { const u = E.unionsOf(p), k = u.counts[d.p] + (p.estates.some(e => e.id === d.id) ? 0 : 1); x.push(`${D.PROV[d.p].icon} ${D.PROV[d.p].name} ${Math.min(k, 3)}/3${k >= 3 && !u[d.p] ? ' — союз!' : ''}`); }
+    if (d.p && modOn('unions')) { const k = E.unionsOf(p).counts[d.p] + 1; x.push(`${D.PROV[d.p].icon} ${D.PROV[d.p].name}: станет ${k}${k % 3 === 0 ? ' — союз!' : ''}`); }
     const own = p.estates.filter(e => e.id === d.id).length;
     if (own) x.push(`у вас уже ${own}`);
     return t + (x.length ? ` · ${x.join(' · ')}` : '');
@@ -3445,9 +3601,9 @@ if (typeof module !== 'undefined') module.exports = Engine;
   function landsPanel(p) {
     const u = E.unionsOf(p);
     let out = '';
-    if (modOn('unions')) out += `<div class="sec-h"><h3>Союзы провинций</h3><span>3 разных владения одной провинции</span></div><div class="unions">${['N', 'S', 'E', 'W'].map(k => {
-      const pv = D.PROV[k];
-      return `<div class="union ${u[k] ? 'done' : ''}"><b>${pv.icon} ${pv.name} ${u.counts[k]}/3</b><br><span class="muted">${pv.union}${modOn('sieges') || modOn('spy') ? '; владения союза нельзя захватить' : ''}</span></div>`;
+    if (modOn('unions')) out += `<div class="sec-h"><h3>Союзы провинций</h3><span>каждые 3 владения провинции</span></div><div class="unions">${['N', 'S', 'E', 'W'].map(k => {
+      const pv = D.PROV[k], c = u.counts[k], left = 3 - (c % 3);
+      return `<div class="union ${u[k] ? 'done' : ''}"><b>${pv.icon} ${pv.name}: ${u[k] ? `союз${u[k] > 1 ? ` ×${u[k]}` : ''}` : `${c}/3`}</b><br><span class="muted">${u[k] ? `сейчас ${pv.union.replace(/\+1/, '+' + u[k])}` : pv.union}; ещё ${left} ${D.plural(left, 'владение', 'владения', 'владений')} до ${u[k] ? 'следующего' : 'союза'}</span></div>`;
     }).join('')}</div>`;
     out += `<div class="sec-h"><h3>Владения по числам</h3><span>${p.estates.length} шт.</span></div><div class="byn">`;
     const hit = hitsOf(rollView);
@@ -3536,7 +3692,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
         <span class="kicker">Карточная игра</span>
         <h1>Претенденты</h1>
         <div class="orn" aria-hidden="true"><i></i><b>◆</b><i></i></div>
-        <p>Король умер без наследника. Шесть Домов спорят за трон: побеждает тот, кто первым соберёт под свои знамёна вассалов.</p>
+        <p>Король умер без наследника. ${({6:'Шесть',7:'Семь',8:'Восемь',9:'Девять',10:'Десять'}[hs.length] || hs.length)} Домов спорят за трон: побеждает тот, кто первым соберёт под свои знамёна вассалов.</p>
         <div class="crests">${hs.map(h => `<img src="${IMG(`icons/h_${h}.svg`)}" alt="${esc(D.HOUSES[h].name)}" title="${esc(D.HOUSES[h].name)}">`).join('')}</div>
       </div>
       <div class="home-acts">
@@ -3567,14 +3723,14 @@ if (typeof module !== 'undefined') module.exports = Engine;
       <div class="startbox">
         <h2 class="lbl">Набор правил</h2>
         <div class="seg presets">${Object.entries(D.PRESETS).map(([k, x]) => `<button class="${pk === k ? 'on' : ''}" data-act="preset" data-k="${k}">${x.name}</button>`).join('')}</div>
-        <p class="pdesc">${pk ? D.PRESETS[pk].desc : 'Свой набор модулей.'} ${av.length} ${D.plural(av.length, 'Дом', 'Дома', 'Домов')}, до ${av.length} игроков.</p>
+        <p class="pdesc">${pk ? D.PRESETS[pk].desc : 'Свой набор модулей.'} ${av.length} ${D.plural(av.length, 'Дом', 'Дома', 'Домов')}, до ${Math.min(av.length, R.maxPlayers)} игроков.</p>
         <details class="mods"${modsOpen || !pk ? ' open' : ''}><summary>Модули · включено ${nOn} из ${MODK.length}</summary>
           <div class="modlist">${MODK.map(k => { const x = D.MODULES[k]; return `<button class="mod ${setupOn(k) ? 'on' : ''}" data-act="mod" data-k="${k}" role="switch" aria-checked="${setupOn(k)}"><span class="sw" aria-hidden="true"></span><span class="mi">${x.icon}</span><span><b>${x.name}</b><span class="muted">${x.desc}</span></span></button>`; }).join('')}</div>
         </details>
         <h2 class="lbl">Ваш Дом</h2>
         <div class="houses">${hs.map(h => { const x = D.HOUSES[h]; const ok = av.includes(h); const need = needOf('house', h); return `<button class="house ${setup.house === h ? 'on' : ''} ${ok ? '' : 'off'}" data-act="pick" data-h="${h}" ${ok ? '' : 'disabled'}><img class="sgi" src="${IMG(`icons/h_${h}.svg`)}" alt=""><b>${x.name}</b><span class="pth">${x.path}</span>${ok ? `<span class="ab muted">${x.about}</span><span class="ab">${x.ability}</span>` : `<span class="ab need">Нужен модуль «${D.MODULES[need].name}»</span>`}</button>`; }).join('')}</div>
         <h2 class="lbl">Соперников-ботов</h2>
-        <div class="cnt">${[1, 2, 3, 4, 5].map(n => `<button class="${setup.opps === n ? 'on' : ''}" data-act="opps" data-n="${n}" ${n > av.length - 1 ? 'disabled' : ''}>${n}</button>`).join('')}</div>
+        <div class="cnt">${Array.from({ length: R.maxPlayers - 1 }, (_, k) => k + 1).map(n => `<button class="${setup.opps === n ? 'on' : ''}" data-act="opps" data-n="${n}" ${n > av.length - 1 ? 'disabled' : ''}>${n}</button>`).join('')}</div>
         <p class="goalnote">Цель — первым собрать ${goalLine()}.</p>
         <button class="link" data-act="watch">Смотреть партию ботов</button>
       </div>`;
@@ -3734,7 +3890,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
     }
     if (d.sym) rows.push(['Значок', `${D.SYM[d.sym]} ${D.SYM_NAME[d.sym]} +1, пока владение ваше. Значки не тратятся — их нужно иметь: для требований вассалов${modOn('lords') ? ' и лордов' : ''}, для карт «за каждый значок»${modOn('titles') ? ', для титулов' : ''}.`]);
     if (d.walls && d.t !== 'wall' && modOn('sieges')) rows.push(['Стены', `🧱 +${d.walls} к обороне от осад.`]);
-    if (d.p) { const pv = D.PROV[d.p]; rows.push(['Провинция', `${pv.icon} ${pv.name}.${modOn('unions') ? ` Союз — 3 разных владения этой провинции — даёт ${pv.union}${modOn('sieges') || modOn('spy') ? ', и их нельзя захватить' : ''}.` : ''}`]); }
+    if (d.p) { const pv = D.PROV[d.p]; rows.push(['Провинция', `${pv.icon} ${pv.name}.${modOn('unions') ? ` Каждые 3 владения этой провинции, можно одинаковые, — союз: ${pv.union}. Союзы копятся.` : ''}`]); }
     rows.push(['Где взять', `${d.cost}🪙. ${d.basic ? 'Всегда в продаже, без ограничений.' : `${d.copies || 3} шт. в колоде владений${d.limit ? '; у одного игрока — не больше одной' : ''}.`}`]);
     if (q) { const k = q.estates.filter(e => e.id === id).length; if (k) rows.push(['Есть', `${up1(atWho(q))}: ${k} шт.`]); }
     return rows;
@@ -3852,7 +4008,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
     const hit = hitsOf(rollView);
     const u = E.unionsOf(q);
     const body = `<p class="muted" style="margin:0">${H(q).about}</p><p class="note">${H(q).ability}</p>
-      <dl class="kv"><dt>Золото</dt><dd>${q.gold}🪙</dd><dt>Значки</dt><dd>📜 ${pr.sci} · ⚔️ ${pr.war} · 🔗 ${pr.int}${modOn('sieges') ? ` · 🧱 ${E.walls(S, q)}` : ''}</dd><dt>Карты</dt><dd>в руке ${q.hand.length}, всего ${q.deck.length + q.discard.length + q.hand.length + q.inPlay.length}</dd>${modOn('plots') ? `<dt>Замыслы</dt><dd>${q.plots.length ? q.plots.map(pl => pl.kind === 'dice' ? `🎲 на ${pl.nums.join(', ')}` : '⏳').join(', ') : 'нет'}</dd>` : ''}${modOn('unions') ? `<dt>Союзы</dt><dd>${['N', 'S', 'E', 'W'].filter(k => u[k]).map(k => D.PROV[k].icon + ' ' + D.PROV[k].name).join(', ') || 'нет'}</dd>` : ''}</dl>
+      <dl class="kv"><dt>Золото</dt><dd>${q.gold}🪙</dd><dt>Значки</dt><dd>📜 ${pr.sci} · ⚔️ ${pr.war} · 🔗 ${pr.int}${modOn('sieges') ? ` · 🧱 ${E.walls(S, q)}` : ''}</dd><dt>Карты</dt><dd>в руке ${q.hand.length}, всего ${q.deck.length + q.discard.length + q.hand.length + q.inPlay.length}</dd>${modOn('plots') ? `<dt>Замыслы</dt><dd>${q.plots.length ? q.plots.map(pl => pl.kind === 'dice' ? `🎲 на ${pl.nums.join(', ')}` : '⏳').join(', ') : 'нет'}</dd>` : ''}${modOn('unions') ? `<dt>Союзы</dt><dd>${['N', 'S', 'E', 'W'].filter(k => u[k]).map(k => `${D.PROV[k].icon} ${D.PROV[k].name}${u[k] > 1 ? ' ×' + u[k] : ''}`).join(', ') || 'нет'}</dd>` : ''}</dl>
       <div class="sec-h"><h3>Знамёна ${E.regCount(q)}/${E.goal(S)}</h3></div><div class="regs">${own.map(r => regRow(null, r, 'own', q.regalia.includes(r.id) ? 'built' : '', q.i)).join('')}${q.great.map(id => regRow(null, D.GREAT[id], 'great', 'built', q.i)).join('')}</div>
       <div class="sec-h"><h3>Владения</h3><span>${q.estates.length}</span></div><div class="byn">${Object.keys(byN).map(k => `<div class="nrow"><div class="n">${k}</div><div class="chips">${byN[k].map(e => estChip(e, hit, q.i)).join('')}</div></div>`).join('')}</div>${rollView ? `<p class="muted" style="font-size:13px;margin:6px 0 0">Подсвечено сработавшее на последнем броске (${rollView.r}).</p>` : ''}`;
     openSheet({ title: `${H(q).sigil} ${esc(H(q).name)}`, body: `<div class="oppbody">${body}</div>` });
@@ -3923,51 +4079,40 @@ if (typeof module !== 'undefined') module.exports = Engine;
   }
   function cycleSpeed() { speed = speed === 'normal' ? 'fast' : speed === 'fast' ? 'slow' : 'normal'; savePrefs(); toast(`Скорость ботов: ${{ slow: 'медленно', normal: 'обычно', fast: 'быстро' }[speed]}`, 1400); schedule(); }
 
+  // ---------- правила: базовая игра + страница на каждый модуль (modrules.js) ----------
   function showRules() {
-    const on = modOn, sg = on('sieges'), sp = on('spy');
-    const cur = MODK.filter(on), off = MODK.filter(k => !on(k)), pk = presetOf(cur);
-    const dawn = ['доходы «в начале хода»'];
-    if (on('balance')) dawn.unshift('Зависть и Народная поддержка');
-    if (on('plots')) dawn.push('срабатывают ваши ⏳-замыслы');
-    const order = ['сначала 🟥 Набеги соперников', 'потом 🟦 Земли у всех и 🟩 Ремёсла у вас', 'потом ваши 🟪 Твердыни'];
-    if (on('plots')) order.push('потом 🎲-замыслы');
+    const on = modOn;
+    const cur = MODK.filter(on);
+    const where = S ? 'В этой партии' : 'В выбранном наборе';
     let b = `<div class="rules">`;
-    b += `<p class="note">${off.length ? `Набор правил: <b>${pk ? D.PRESETS[pk].name : 'свой'}</b>. Выключено: ${modList(off)} — эти правила в партии не действуют, их карты убраны.` : 'Полная игра: включены все модули.'}</p>`;
-    b += `<p><b>Цель.</b> Первым собрать ${goalLine()}${on('lords') ? ' (лорды — из общего ряда)' : ''}. ${R.finishRound ? 'Когда кто-то выполнил цель, круг доигрывается до конца — у всех поровну ходов. Если цель выполнили несколько игроков, побеждает тот, у кого больше золота.' : 'Победа наступает сразу.'}</p>`;
+    b += `<p class="note">Сначала — базовая игра. Модули добавляют по одной механике, у каждого своя страница с примерами. ${where} ${cur.length ? `включены: ${modList(cur)}` : 'модули выключены'}.</p>`;
+    b += `<h3>Цель</h3><p>Первым собрать всех ${R.ownRegalia} вассалов своего Дома${on('lords') ? ` и ${R.greatNeeded} великих лорда (модуль «Великие лорды»)` : ''}. Когда кто-то выполнил цель, круг доигрывается до конца — у всех поровну ходов. Если цель выполнили несколько игроков, побеждает тот, у кого больше золота.</p>`;
     b += `<h3>Подготовка</h3><ul>
-      <li>У каждого: Пашня, Пекарня и стартовые владения своего Дома; ${R.startGold}🪙 и золото Дома; колода — ${R.startTax}× Подать и 3 карты Дома, в руке ${R.hand}.</li>
+      <li>За престол борются 2–${R.maxPlayers} Дома. У каждого: Пашня, Пекарня и стартовые владения своего Дома; ${R.startGold}🪙 и золото Дома; колода — ${R.startTax}× Подать и 3 карты Дома, в руке ${R.hand}.</li>
       <li>Все, кроме первого игрока, получают ещё +${R.seatGold}🪙.</li>
-      <li>Рынок: открыты ${R.estateRow} владения и ${R.courtRow} карты двора${on('lords') ? `, в ряду ${R.greatRow} великих лорда` : ''}.</li></ul>`;
+      <li>Рынок: открыты ${R.estateRow} владения и ${R.courtRow} карты двора.</li></ul>`;
     b += `<h3>Ход</h3><ul>
-      <li><b>Начало хода:</b> ${dawn.join(', ')}.</li>
       <li><b>Карты двора</b> из руки можно играть до броска и после, сколько угодно.</li>
       <li><b>Бросок:</b> 1 кубик. После первого вассала (у каждого Дома свой) можно выбирать 1 или 2 кубика. Бросок обязателен.</li>
-      <li><b>Доход по кубику:</b> ${order.join(', ')}.</li>
-      <li><b>Действие:</b> одно за ход — купить карту на рынке или привлечь знамя. Некоторые карты и вассалы дают ещё действие.</li>
+      <li><b>Доход по кубику:</b> сначала 🟥 Набеги соперников, потом 🟦 Земли у всех и 🟩 Ремёсла у вас, потом ваши 🟪 Твердыни.</li>
+      <li><b>Действие:</b> одно за ход — купить карту на рынке или привлечь вассала. Некоторые карты и вассалы дают ещё действие.</li>
       <li><b>Конец:</b> сыгранное и остаток руки — в сброс, берёте ${R.hand} новые карты. Колода кончилась — перемешайте сброс.</li></ul>`;
-    b += `<h3>Владения (на столе)</h3><ul>
+    b += `<h3>Владения</h3><ul>
       <li>🟦 <b>Земля</b> — доход на любом броске, в том числе чужом.</li><li>🟩 <b>Ремесло</b> — доход только на вашем броске.</li>
       <li>🟥 <b>Набег</b> — на чужом броске забирает золото у бросившего.</li><li>🟪 <b>Твердыня</b> — на вашем броске забирает золото у каждого соперника. Каждой — не больше одной у игрока.</li>
-      ${sg ? '<li>🧱 <b>Каменная стена</b> — не срабатывает от кубика, даёт стены.</li>' : ''}
-      <li><b>Копии.</b> Пашня, Пекарня${sg ? ', Каменная стена' : ''} — всегда в продаже. Остальные владения — по 3 в колоде (Крепость и Гильдия воров — по 2). Карты двора — по 2.</li></ul>`;
-    b += `<h3>Значки и знамёна</h3><p>📜 Свитки, ⚔️ Мечи и 🔗 Связи — значки на ваших картах. Они не копятся и не тратятся: знамя требует, чтобы они у вас были. Недостающий значок докупается за ${R.trade}🪙. Каждое следующее знамя дороже на ${R.rise}🪙.${on('lords') ? ' Каждый великий лорд один на всю игру: кто первым привлёк, у того и остаётся.' : ''}</p>`;
-    b += `<h3>Карты двора (в руке)</h3><ul><li>Роли: 🪙 Купец, 📜 Учёный, ⚔️ Рыцарь, 🔗 Шпион. <b>Свита</b> — бонус, если в этот ход вы уже сыграли карту той же роли.</li>
-      ${on('plots') ? `<li><b>Замысел:</b> вместо розыгрыша положите карту на стол. ⏳ срабатывает в начале вашего следующего хода. 🎲 срабатывает, когда на любом броске выпадет число, напечатанное на карте. Эффект усиленный. Одновременно ${R.plotSlots} замысла.</li>` : ''}</ul>`;
-    if (sg || sp) {
-      b += `<h3>${sg && sp ? 'Осада и шпионаж' : sg ? 'Осада' : 'Шпионаж'}</h3><ul>`;
-      if (sg) b += `<li><b>Осада:</b> мечи этого хода (временные ⚔️) + бонус карты + способности + кубик против мечей на столе + 🧱 стен (у всех есть ${R.baseWalls} от замка) + кубик. Если у защитника больше свитков 📜, он бросает 2 кубика и берёт лучший. Победа — владение ценой до ${R.siegeLoot}🪙${on('unions') ? ' (не из союза)' : ''} или 3🪙.</li>`;
-      if (sp) b += `<li><b>Шпионаж:</b> ${R.spyDice ? 'ваши связи 🔗 + бонус карты + способности + кубик против стражи (связи соперника 🔗 + способности) + кубик. При равенстве — провал. Если удалось, жертва может откупиться: 2🪙 за каждое очко разницы.' : 'ваши связи 🔗 + бонус карты против стражи (связи соперника). Без кубика. Жертва может откупиться: 2🪙 за каждое очко разницы.'}</li>`;
-      b += '</ul>';
-    }
-    const w = [];
-    if (on('unions')) w.push(`<li><b>Союз провинции:</b> 3 разных владения одной провинции (🏔 Север, 🌾 Юг, 🔮 Восток, 🌲 Запад) — бонус${sg || sp ? ', и эти владения нельзя захватить' : ''}.</li>`);
-    if (on('seasons')) w.push(`<li><b>Сезоны</b> меняются каждые ${R.seasonLen} круга: ${D.SEASONS.map(s => `${s.icon} ${s.name} — ${seasonTxt(s)}`).join(' ')}</li>`);
-    if (on('titles')) w.push(`<li><b>Титулы</b> переходят к тому, у кого больше всех: ${Object.entries(D.TITLES).filter(([k]) => cardOk('title', k)).map(([, t]) => `${t.icon} ${t.name} (${t.cond}): ${t.text}`).join(' ')}</li>`);
-    if (w.length) b += `<h3>${[on('unions') && 'Союзы', on('seasons') && 'сезоны', on('titles') && 'титулы'].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())}</h3><ul>${w.join('')}</ul>`;
-    if (on('balance')) b += `<h3>Зависть и поддержка</h3><ul><li><b>Зависть:</b> единоличный лидер по знамёнам в начале хода платит 1🪙 за каждое знамя отрыва (до ${R.envyMax}).</li>
-        <li><b>Народная поддержка:</b> отстающий от лидера на ${R.supportGap}+ знамени получает +${R.supportGold}🪙 в начале хода.</li></ul>`;
+      <li><b>Копии.</b> Пашня и Пекарня всегда в продаже. Остальные владения — по 3 в колоде (Крепость и Гильдия воров — по 2). Карты двора — по 2.</li></ul>`;
+    b += `<h3>Значки и вассалы</h3><p>📜 Свитки, ⚔️ Мечи и 🔗 Связи — значки на ваших картах. Они не тратятся: вассал требует, чтобы они у вас были. Недостающий значок докупается за ${R.trade}🪙. Каждое следующее знамя дороже на ${R.rise}🪙.</p>`;
+    b += `<h3>Карты двора</h3><p>Роли: 🪙 Купец, 📜 Учёный, ⚔️ Рыцарь, 🔗 Шпион. <b>Свита</b> — бонус, если в этот ход вы уже сыграли карту той же роли.</p>`;
+    b += `<h3>Пример первого хода</h3><div class="mr-ex"><b>Дом Оленя против Дома Змея</b><p>У вас 6🪙: 3 у всех и +3 от Дома. Играете Подать, Подать и Сборщика податей: +4🪙 (10). Выпало 4: сначала Казарма Змей забирает 2🪙 — 1 по карте и +1 от их Дома (8), потом ваша Лавка: +4🪙 (12). Действие: первый вассал, Томас Хейл, за 4🪙 − 2🪙 скидки Дома = 2🪙 (10). Со следующего хода можно бросать 2 кубика.</p></div>`;
+    b += `<h3>Модули</h3><div class="optlist">${ModRules.ORDER.map(k => `<button class="opt" data-mr="${k}"><span class="big">${D.MODULES[k].icon}</span><span><b>${D.MODULES[k].name}</b><br><span class="muted">${D.MODULES[k].desc}</span></span><span class="r">${on(k) ? '<small>вкл.</small>' : ''}›</span></button>`).join('')}</div>`;
     b += `</div>`;
-    openPage({ title: 'Правила', body: b });
+    const pg = openPage({ title: 'Правила', body: b });
+    pg.el.addEventListener('click', (e) => { const x = e.target.closest('[data-mr]'); if (x) showModRules(x.dataset.mr); });
+  }
+  function showModRules(k) {
+    const pg = ModRules.page(D, k, modOn);
+    const st = modOn(k) ? `Модуль включён ${S ? 'в этой партии' : 'в выбранном наборе'}.` : `Модуль выключен ${S ? 'в этой партии' : 'в выбранном наборе'} — эти правила сейчас не действуют.`;
+    openPage({ title: `${pg.icon} ${pg.name}`, body: `<div class="rules"><p class="note">${st}</p>${pg.html}</div>` });
   }
   function showCatalog(which = 'estates') {
     const world = modOn('seasons') || modOn('titles') || modOn('unions');
@@ -3994,7 +4139,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
       let out = '';
       if (modOn('seasons')) out += `<div class="sec-h"><h3>Сезоны</h3><span>каждые ${R.seasonLen} круга</span></div><div class="regs">${D.SEASONS.map(s => { const sm = Object.assign({}, s.mods); if (!modOn('sieges')) delete sm.siege; if (!modOn('spy')) delete sm.spy; return `<div class="reg"><div class="rh"><span class="rn">${s.icon} ${s.name}</span><span class="rc">${s.title}</span></div><div class="rt">${FXc(CardFX.mods(sm))}</div></div>`; }).join('')}</div>`;
       if (modOn('titles')) out += `<div class="sec-h"><h3>Титулы</h3><span>переходят к сильнейшему</span></div><div class="regs">${Object.entries(D.TITLES).filter(([k]) => cardOk('title', k)).map(([k, t]) => `<div class="reg"><div class="rh"><span class="rn">${t.icon} ${t.name}</span></div><div class="rt">${FXc(CardFX.title(k))}</div><div class="muted" style="font-size:13px">Получает тот, у кого ${t.cond}.</div></div>`).join('')}</div>`;
-      if (modOn('unions')) out += `<div class="sec-h"><h3>Провинции</h3><span>союз — 3 разных владения</span></div><div class="regs">${Object.entries(D.PROV).map(([k, p]) => `<div class="reg"><div class="rh"><span class="rn">${p.icon} ${p.name}</span></div><div class="rt">${FXc(CardFX.union(k).concat(modOn('sieges') || modOn('spy') ? [{ c: 'и эти владения нельзя захватить' }] : []))}</div><div class="muted" style="font-size:13px">${Object.values(D.ESTATES).filter(d => d.p === k).map(d => d.name).join(', ')}</div></div>`).join('')}</div>`;
+      if (modOn('unions')) out += `<div class="sec-h"><h3>Провинции</h3><span>союз — каждые 3 владения</span></div><div class="regs">${Object.entries(D.PROV).map(([k, p]) => `<div class="reg"><div class="rh"><span class="rn">${p.icon} ${p.name}</span></div><div class="rt">${FXc(CardFX.union(k))}</div><div class="muted" style="font-size:13px">${Object.values(D.ESTATES).filter(d => d.p === k).map(d => d.name).join(', ')}</div></div>`).join('')}</div>`;
       return out;
     };
     if (!segs.some(x => x[0] === which)) which = 'estates';
