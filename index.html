@@ -665,6 +665,24 @@ body[data-view="game"] #toasts { bottom: calc(var(--bar-h) + var(--tab-h) + 18px
 .bar .in > .btn.small { flex: none; min-width: 52px; min-height: 46px; }
 .podium .st b { font-size: 16px; white-space: nowrap; }
 
+/* окна выбора: шанс, откуп, Канцлер, изменение броска */
+.opt .r small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); text-align: right; }
+.opt .r { text-align: right; white-space: nowrap; }
+.opt .muted { font-size: 13px; line-height: 1.35; }
+.kv.bribe { margin: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; gap: 6px 12px; }
+.bribe-cmp { margin: 0; font-weight: 700; font-size: 14.5px; padding: 8px 12px; border-radius: 10px; background: var(--vert-t); }
+.bribe-cmp.bad { background: var(--gules-t); }
+.trash-sum { margin: 0; font-weight: 700; font-size: 14px; }
+.bar .adj .btn.adjb { flex-direction: column; gap: 1px; line-height: 1.1; padding: 4px 6px; min-height: 50px; }
+.adjb b { font-size: 14px; white-space: nowrap; }
+.adjb small { font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+.adjb small.pos { color: var(--vert); }
+.adjb small.neg { color: var(--gules); }
+.btn.primary.adjb small { color: inherit; opacity: .9; }
+.bar .adj .btn.adjb.best { border-color: var(--or); box-shadow: 0 0 0 2px var(--or) inset; }
+.nw { white-space: nowrap; }
+.trash-warn { margin: 0; font-size: 14px; font-weight: 700; color: var(--gules); }
+
 </style>
 </head>
 <body>
@@ -1667,7 +1685,7 @@ const Engine = (() => {
   async function doSiege(S, a, bonus, ctx) {
     const os = opps(S, a);
     if (!os.length) return;
-    const options = os.map(o => ({ i: o.i, ...siegeOdds(S, a, o, bonus), loot: capturable(S, o, a, R.siegeLoot).length }));
+    const options = os.map(o => { const el = capturable(S, o, a, R.siegeLoot); return { i: o.i, ...siegeOdds(S, a, o, bonus), loot: el.length, lootIds: el.map(e => e.id), gold: o.gold }; });
     const ti = await ask(S, a, { type: 'target', kind: 'siege', bonus, options });
     const t = S.players[ti];
     if (!t || t === a) return;
@@ -1715,14 +1733,15 @@ const Engine = (() => {
   async function doSpy(S, a, bonus, effect, param, ctx) {
     const os = opps(S, a);
     if (!os.length) return;
-    const options = os.map(o => ({ i: o.i, ...spyInfo(S, a, o, bonus), gold: o.gold, plots: o.plots.length }));
+    const options = os.map(o => ({ i: o.i, ...spyInfo(S, a, o, bonus), gold: o.gold, plots: o.plots.length, plotsOk: !!(o.plots.length && !mods(S, o).plotProtect), lootIds: effect === 'estate' ? capturable(S, o, a, param).map(e => e.id) : [] }));
     const ti = await ask(S, a, { type: 'target', kind: 'spy', bonus, effect, param, options });
     const t = S.players[ti];
     if (!t || t === a) return;
     const info = spyInfo(S, a, t, bonus);
     let bribeCost = info.bribe;
+    let ar = null, gr = null;
     if (R.spyDice) {
-      const ar = d6(S), gr = d6(S);
+      ar = d6(S); gr = d6(S);
       const At = info.A + ar, Gt = info.G + gr;
       if (At <= Gt) {
         log(S, `🗝 Шпионаж: ${nm(a)} против ${nmG(t)} — шпион ${info.A}+${ar}🎲 = ${At}, стража ${info.G}+${gr}🎲 = ${Gt}: провал`, a.i, 'fail');
@@ -1742,11 +1761,18 @@ const Engine = (() => {
     else if (effect === 'sabotage') loss = (t.plots.length && !mt.plotProtect) ? 4 : Math.min(param, t.gold);
     else if (effect === 'estate') { const el = capturable(S, t, a, param); loss = el.length ? Math.max(...el.map(e => ES(e).cost)) * 1.5 : 2; }
     if (t.gold >= bribeCost && loss > 0) {
-      const pay = await ask(S, t, { type: 'bribe', cost: bribeCost, from: a.i, effect, param, loss });
+      // что именно потеряет жертва, если не откупится — для окна выбора
+      const steal = (n) => Math.min(n + (ma.stealBonus || 0), t.gold);
+      const plotsOk = !!(t.plots.length && !mt.plotProtect);
+      const el = effect === 'estate' ? capturable(S, t, a, param) : [];
+      const what = effect === 'sabotage' && plotsOk ? { kind: 'plot', plots: t.plots.map(pl => pl.id) }
+        : effect === 'estate' && el.length ? { kind: 'estate', ids: el.map(e => e.id) }
+        : { kind: 'gold', amt: steal(effect === 'estate' ? 2 : param) };
+      const pay = await ask(S, t, { type: 'bribe', cost: bribeCost, from: a.i, effect, param, loss, A: info.A, G: info.G, ar, gr, what });
       if (pay) {
         t.gold -= bribeCost;
         log(S, `   ${nm(t)} откупились от шпиона за ${bribeCost}🪙`, t.i, 'bribe');
-        emit(S, 'spy', { a: a.i, t: t.i, ok: false, bribed: true });
+        emit(S, 'spy', { a: a.i, t: t.i, ok: false, bribed: true, cost: bribeCost });
         return;
       }
     }
@@ -2723,8 +2749,8 @@ if (typeof module !== 'undefined') module.exports = Engine;
       case 'spy':
         if (d.t === ME) tutQueue('spy-me');
         if (d.t === ME && d.ok) toast(`🗝 Шпион ${esc(E.shortG(S.players[d.a]))} у вас преуспел${d.amt ? `: −${d.amt}🪙` : ''}`, 4000);
-        if (d.t === ME && d.bribed) toast(`🗝 Вы откупились от шпиона ${esc(E.shortG(S.players[d.a]))}`, 3200);
-        if (d.a === ME) toast(d.ok ? `🗝 Шпионаж удался${d.amt ? `: +${d.amt}🪙` : ''}` : d.bribed ? '🗝 Соперник откупился — золото ушло в банк' : '🗝 Стража поймала шпиона', 3200);
+        if (d.t === ME && d.bribed) toast(`🗝 Вы откупились от шпиона ${esc(E.shortG(S.players[d.a]))}${d.cost ? ` за ${d.cost}🪙` : ''}`, 3200);
+        if (d.a === ME) toast(d.ok ? `🗝 Шпионаж удался${d.amt ? `: +${d.amt}🪙` : ''}` : d.bribed ? `🗝 ${esc(H(S.players[d.t]).short)} откупились${d.cost ? ` за ${d.cost}🪙` : ''} — золото ушло в банк, вам ничего` : '🗝 Стража поймала шпиона', 3600);
         break;
       case 'regalia':
         if (rec && rec.p === d.p) rec.regs.push(d);
@@ -2762,43 +2788,92 @@ if (typeof module !== 'undefined') module.exports = Engine;
       });
     });
   }
+  // список владений коротко: «Лавка 2🪙, Казарма 2🪙 и ещё 2»
+  function listEst(ds) {
+    const xs = ds.slice().sort((x, y) => y.cost - x.cost);
+    const head = xs.slice(0, 3).map(d => `${esc(d.name)} ${d.cost}🪙`).join(', ');
+    return xs.length > 3 ? `${head} и ещё ${xs.length - 3}` : head;
+  }
+  const chanceR = (pr) => `<small>шанс</small>${Math.round(pr * 100)}%`;
   function askTarget(p, q) {
     if (q.kind === 'siege') {
       const opts = q.options.map(o => {
         const t = S.players[o.i];
-        return { icon: H(t).sigil, value: o.i, bad: o.p < 0.3, right: `${Math.round(o.p * 100)}%`,
-          html: `<b>${esc(H(t).short)}</b><br><span class="muted">атака ${o.A} против обороны ${o.D}${o.adv ? ', у них 2 кубика' : ''}; можно забрать: ${o.loot}</span>` };
+        const loot = (o.lootIds || []).map(id => D.ESTATES[id]);
+        const g = o.gold != null ? o.gold : t.gold;
+        const win = loot.length ? `победа — одно владение на выбор: ${listEst(loot)}` : `владений забрать нельзя — при победе возьмёте ${Math.min(3, g)}🪙`;
+        return { icon: H(t).sigil, value: o.i, bad: o.p < 0.3, right: chanceR(o.p),
+          html: `<b>${esc(H(t).short)}</b><br><span class="muted">атака ${o.A} + 🎲 против обороны ${o.D} + 🎲${o.adv ? ' (у них 📜 больше — бросают 2 кубика, берут лучший)' : ''}<br>${win}</span>` };
       });
       opts.push({ icon: '✋', value: null, html: '<b>Не осаждать</b>', right: '' });
-      return choiceSheet('Осада: кого атакуем?', `<p class="note">Атака = мечи этого хода ⚔️ (временные) + бонус карты + способности. Оборона = мечи на столе ⚔️ + 🧱 стены. Обе стороны добавляют кубик; при равенстве побеждает защитник. Победа — владение ценой до ${R.siegeLoot}🪙 (не из союза).</p>`, opts);
+      return choiceSheet('Осада: кого атакуем?', `<p class="note">Атака = ⚔️ этого хода + бонус карты + способности. Оборона = ⚔️ на столе + 🧱 стены. Обе стороны добавляют кубик; при равенстве побеждает защитник. Можно забрать владение ценой до ${R.siegeLoot}🪙${modOn('unions') ? ', не из союза' : ''}.</p>`, opts);
     }
-    const eff = q.effect === 'steal' ? `украсть ${q.param}🪙` : q.effect === 'sabotage' ? 'сорвать замысел' : `забрать владение до ${q.param}🪙`;
+    const mb = E.mods(S, p).stealBonus || 0;
+    const steal = (n, g) => `украдёте ${Math.min(n + mb, g)}🪙${g < n + mb ? ` (у них всего ${g}🪙)` : ''}`;
+    const eff = q.effect === 'steal' ? `украсть ${q.param + mb}🪙` : q.effect === 'sabotage' ? 'сорвать замысел' : `забрать владение до ${q.param}🪙`;
     const opts = q.options.map(o => {
       const t = S.players[o.i];
+      const g = o.gold != null ? o.gold : t.gold;
       const dice = o.p != null && R.spyDice;
-      return { icon: H(t).sigil, value: o.i, bad: dice ? o.p < 0.3 : !o.ok, right: dice ? `${Math.round(o.p * 100)}%` : (o.ok ? 'успех' : 'провал'),
-        html: `<b>${esc(H(t).short)}</b><br><span class="muted">ваши связи 🔗 ${o.A} против стражи ${o.G}${dice ? ' (+ кубик у обоих)' : ''}; у них ${o.gold}🪙, замыслов ${o.plots}${!dice && o.ok ? `; откуп ${o.bribe}🪙` : ''}</span>` };
+      let gain;
+      if (q.effect === 'steal') gain = steal(q.param, g);
+      else if (q.effect === 'sabotage') gain = o.plotsOk ? `сорвёте один из замыслов (у них ${o.plots})` : `${o.plots ? 'замыслы защищены' : 'замыслов нет'} — ${steal(q.param, g)}`;
+      else { const loot = (o.lootIds || []).map(id => D.ESTATES[id]); gain = loot.length ? `одно владение на выбор: ${listEst(loot)}` : `забрать нечего — ${steal(2, g)}`; }
+      return { icon: H(t).sigil, value: o.i, bad: dice ? o.p < 0.3 : !o.ok, right: dice ? chanceR(o.p) : (o.ok ? 'успех' : 'провал'),
+        html: `<b>${esc(H(t).short)}</b><br><span class="muted">шпион ${o.A}${dice ? ' + 🎲' : ''} против стражи ${o.G}${dice ? ' + 🎲' : ''}<br>успех — ${gain}</span>` };
     });
     opts.push({ icon: '✋', value: null, html: '<b>Отказаться</b>' });
-    const note = R.spyDice
-      ? 'Атака = ваши связи 🔗 + бонус карты + способности. Стража = связи соперника 🔗 + способности. Обе стороны добавляют кубик; при равенстве — провал. Если удалось, жертва может откупиться: 2🪙 за каждое очко разницы.'
-      : 'Удача, если ваши связи 🔗 больше стражи (связи соперника на столе). Жертва может откупиться: 2🪙 за каждое очко разницы.';
+    const note = `${R.spyDice ? 'Шпион = ваши 🔗 + бонус карты + способности. Стража = 🔗 соперника + способности. Обе стороны добавляют кубик; при равенстве — провал.' : 'Удача, если ваши 🔗 больше стражи (🔗 соперника на столе).'} Если шпион победит, соперник может откупиться — 2🪙 за каждое очко перевеса, в банк; тогда вы ничего не получите. Боты платят, только когда откуп дешевле потери.`;
     return choiceSheet(`Шпионаж: ${eff}`, `<p class="note">${note}</p>`, opts);
+  }
+  // что захваченное владение будет давать вам
+  function forMe(d, p) {
+    const m = E.mods(S, p), n = D.numText(d.n);
+    let t;
+    if (d.t === 'wall') t = `🧱 +${d.walls} к обороне от осад`;
+    else if (d.t === 'land') t = `на ${n} — +${E.estateIncome(S, p, d, m)}🪙 вам на любом броске`;
+    else if (d.t === 'craft') t = `на ${n} — +${E.estateIncome(S, p, d, m)}🪙 на вашем броске`;
+    else if (d.t === 'raid') t = `на ${n} — забирать ${d.inc + (m.redBonus || 0)}🪙 у бросившего соперника`;
+    else t = `на ${n} вашего броска — по ${d.inc}🪙 с каждого соперника${d.cap ? `, до ${d.cap}🪙` : ''}`;
+    const x = [];
+    if (d.sym) x.push(`${D.SYM[d.sym]} +1`);
+    if (d.walls && d.t !== 'wall' && modOn('sieges')) x.push(`🧱 +${d.walls}`);
+    if (d.p && modOn('unions')) { const u = E.unionsOf(p), k = u.counts[d.p] + (p.estates.some(e => e.id === d.id) ? 0 : 1); x.push(`${D.PROV[d.p].icon} ${D.PROV[d.p].name} ${Math.min(k, 3)}/3${k >= 3 && !u[d.p] ? ' — союз!' : ''}`); }
+    const own = p.estates.filter(e => e.id === d.id).length;
+    if (own) x.push(`у вас уже ${own}`);
+    return t + (x.length ? ` · ${x.join(' · ')}` : '');
   }
   function askCapture(p, q) {
     const t = S.players[q.from];
     const opts = q.options.map(uid => {
       const e = t.estates.find(x => x.uid === uid); const d = D.ESTATES[e.id];
-      return { icon: D.ETYPE[d.t].mark, value: uid, right: `${d.cost}🪙`, html: `<b>${esc(d.name)}</b><br><span class="muted">${D.numText(d.n)} · ${D.estateText(d)}${d.sym ? ' · ' + D.SYM[d.sym] : ''}</span>` };
+      return { icon: D.ETYPE[d.t].mark, value: uid, right: `${d.cost}🪙`, html: `<b>${esc(d.name)}</b><br><span class="muted">${forMe(d, p)}</span>` };
     });
-    return choiceSheet(`Что забираем у ${esc(H(t).short)}?`, '', opts);
+    return choiceSheet(`Что забираем у ${esc(E.shortG(t))}?`, `<p class="note">Владение перейдёт к вам. Под названием — что оно будет приносить именно вам, с вашими бонусами.</p>`, opts);
   }
   function askBribe(p, q) {
     const a = S.players[q.from];
-    const eff = q.effect === 'steal' ? `украсть ${q.param}🪙` : q.effect === 'sabotage' ? 'сорвать ваш замысел' : `забрать владение до ${q.param}🪙`;
-    return choiceSheet(`${H(a).sigil} ${esc(H(a).short)} шпионит у вас`, `<p>Шпион хочет ${eff}. Можно откупиться — золото уйдёт в казну. У вас ${p.gold}🪙.</p>`, [
-      { icon: '🪙', value: true, html: `<b>Откупиться за ${q.cost}🪙</b>` },
-      { icon: '🤷', value: false, html: '<b>Пусть берут</b>' },
+    const who = esc(H(a).short);
+    const dice = q.ar != null;
+    const margin = dice ? (q.A + q.ar) - (q.G + q.gr) : q.A - q.G;
+    const fight = dice ? `шпион ${q.A} + 🎲${q.ar} = ${q.A + q.ar} против вашей стражи ${q.G} + 🎲${q.gr} = ${q.G + q.gr}` : `шпион ${q.A} против вашей стражи ${q.G}`;
+    const w = q.what || { kind: 'gold', amt: q.param };
+    let lose, keep, worth = null;
+    if (w.kind === 'gold') { lose = `${who} заберут у вас <b>${w.amt}🪙</b>`; keep = `Отдать ${w.amt}🪙`; worth = w.amt; }
+    else if (w.kind === 'plot') { lose = `${who} сорвут один из ваших замыслов, случайный: ${w.plots.map(id => `«${esc(D.COURT[id].name)}»`).join(', ')}`; keep = 'Пусть срывают замысел'; }
+    else { const ds = w.ids.map(id => D.ESTATES[id]); lose = `${who} заберут одно из ваших владений, на выбор: ${listEst(ds)}`; keep = 'Пусть забирают владение'; worth = Math.max(...ds.map(d => d.cost)); }
+    let cmp = '', bad = false;
+    if (worth != null) {
+      if (q.cost > worth) { bad = true; cmp = w.kind === 'gold' ? `Откуп дороже кражи на ${q.cost - worth}🪙 — выгоднее отдать.` : `Откуп дороже самого ценного владения под угрозой (${worth}🪙).`; }
+      else if (q.cost === worth) cmp = `Потеря та же, но золото уйдёт в банк — ${who} не получат ничего.`;
+      else cmp = `Откуп дешевле потери на ${worth - q.cost}🪙.`;
+    }
+    const body = `<p class="note">Шпионаж удался: ${fight}. Перевес — ${margin}.</p>
+      <dl class="kv bribe"><dt>Не платить</dt><dd>${lose}.</dd><dt>Откуп</dt><dd>2🪙 за каждое очко перевеса: <span class="nw">2 × ${margin} = <b>${q.cost}🪙</b></span>, в банк.</dd><dt>У вас</dt><dd>${p.gold}🪙</dd></dl>
+      ${cmp ? `<p class="bribe-cmp${bad ? ' bad' : ''}">${cmp}</p>` : ''}`;
+    return choiceSheet(`${H(a).sigil} ${who} шпионят у вас`, body, [
+      { icon: '🪙', value: true, bad, html: `<b>Откупиться за ${q.cost}🪙</b><br><span class="muted">останется ${p.gold - q.cost}🪙</span>`, right: `−${q.cost}🪙` },
+      { icon: w.kind === 'gold' ? '🤷' : '✋', value: false, html: `<b>${keep}</b>${w.kind === 'gold' ? `<br><span class="muted">останется ${p.gold - w.amt}🪙, ${who} получат ${w.amt}🪙</span>` : ''}`, right: w.kind === 'gold' ? `−${w.amt}🪙` : '' },
     ]);
   }
   function plotChances(n) {
@@ -2824,12 +2899,28 @@ if (typeof module !== 'undefined') module.exports = Engine;
   function askTrash(p, q) {
     return new Promise(res => {
       let sel = [];
-      const list = () => p.hand.map((id, i) => `<button class="opt" data-i="${i}"><span class="big">${sel.includes(i) ? '☑️' : '⬜'}</span><span><b>${esc(D.COURT[id].name)}</b><br><span class="muted">${D.fxText(D.COURT[id].fx)}</span></span><span></span></button>`).join('');
-      const body = `<p class="note">Убранные карты исчезают из вашей колоды навсегда. Обычно убирают «Подать», чтобы сильные карты приходили чаще.</p><div class="optlist">${list()}</div><div class="acts"><button class="btn primary wide" data-ok>Готово</button></div>`;
-      const sh = openSheet({ title: `Канцлер: уберите до ${D.cards(q.max)}`, body, dismiss: false });
+      const cards = [...p.deck, ...p.discard, ...p.hand, ...p.inPlay];
+      const all = cards.length, taxAll = cards.filter(id => id === 'tax').length;
+      const sum = () => {
+        const n = sel.length, tx = sel.filter(i => p.hand[i] === 'tax').length;
+        return `Сейчас в колоде ${all} ${D.plural(all, 'карта', 'карты', 'карт')}, из них «Подать» — ${taxAll}.${n ? ` Станет ${all - n}, «Подать» — ${taxAll - tx}.` : ''}`;
+      };
+      const list = () => p.hand.map((id, i) => { const c = D.COURT[id]; return `<button class="opt" data-i="${i}"><span class="big">${sel.includes(i) ? '☑️' : '⬜'}</span><span><b>${esc(c.name)}</b><br><span class="muted">${D.fxText(c.fx)}</span></span><span class="r">${c.start || c.sig ? '' : c.cost + '🪙'}</span></button>`; }).join('');
+      const warn = () => { const xs = sel.filter(i => p.hand[i] !== 'tax').map(i => `«${esc(D.COURT[p.hand[i]].name)}»`); return xs.length ? `Внимание: ${xs.join(' и ')} — не «Подать», ${xs.length > 1 ? 'исчезнут' : 'исчезнет'} навсегда.` : ''; };
+      const okTxt = () => (sel.length ? `Убрать ${D.cards(sel.length)}` : 'Ничего не убирать');
+      const body = `<p class="note">Убранные карты исчезают из вашей колоды навсегда. Обычно убирают «Подать»: колода становится меньше, и сильные карты приходят чаще.</p><p class="trash-sum">${sum()}</p><p class="trash-warn" hidden></p><div class="optlist">${list()}</div><div class="acts"><button class="btn primary wide" data-ok>${okTxt()}</button></div>`;
+      const sh = openSheet({ title: `Канцлер: уберите до ${q.max} ${D.plural(q.max, 'карты', 'карт', 'карт')}`, body, dismiss: false });
       sh.el.addEventListener('click', (e) => {
         const b = e.target.closest('[data-i]');
-        if (b) { const i = +b.dataset.i; if (sel.includes(i)) sel = sel.filter(x => x !== i); else if (sel.length < q.max) sel.push(i); sh.el.querySelector('.optlist').innerHTML = list(); return; }
+        if (b) {
+          const i = +b.dataset.i;
+          if (sel.includes(i)) sel = sel.filter(x => x !== i); else if (sel.length < q.max) sel.push(i);
+          sh.el.querySelector('.optlist').innerHTML = list();
+          sh.el.querySelector('.trash-sum').textContent = sum();
+          const wn = sh.el.querySelector('.trash-warn'); wn.textContent = warn(); wn.hidden = !warn();
+          sh.el.querySelector('[data-ok]').textContent = okTxt();
+          return;
+        }
         if (e.target.closest('[data-ok]')) { sh.close(); res(sel); }
       });
     });
@@ -3390,13 +3481,25 @@ if (typeof module !== 'undefined') module.exports = Engine;
       const q = adjustReq.q;
       const has1 = q.shifts.some(x => x >= 1), has2 = q.shifts.some(x => x >= 2);
       const vs = q.vals.join('+');
-      return `<div class="adjw"><div class="adj-h">Выпало <b>${vs}${q.adj ? (q.adj > 0 ? ' +' : ' ') + q.adj : ''} = ${q.total}</b>. Можно изменить результат или принять.</div><div class="adj">
-        <button class="btn" data-act="adj" data-d="-1" ${has1 && q.total > 1 ? '' : 'disabled'}>−1</button>
-        <button class="btn" data-act="adj" data-d="1" ${has1 && q.total < 12 ? '' : 'disabled'}>+1</button>
-        ${has2 ? `<button class="btn" data-act="adj" data-d="-2" ${q.total > 2 ? '' : 'disabled'}>−2</button><button class="btn" data-act="adj" data-d="2" ${q.total < 11 ? '' : 'disabled'}>+2</button>` : ''}
-        <button class="btn" data-act="adj-reroll" ${q.rerolls ? '' : 'disabled'}>Переброс${q.rerolls > 1 ? ' ×' + q.rerolls : ''}</button>
-        ${q.canHarbor ? `<button class="btn" data-act="adj-harbor">Маяк +2</button>` : ''}
-        <button class="btn primary" data-act="adj-ok">Принять ${q.total}</button></div></div>`;
+      // что принесёт вам каждое число: ваши владения минус чужие Набеги (+ ваши 🎲-замыслы)
+      const plotsOn = (r) => p.plots.filter(pl => pl.kind === 'dice' && pl.nums && pl.nums.includes(r)).length;
+      const gold = (r) => Math.round(E.Bot.rollValue(S, p, r) - 4 * plotsOn(r));
+      const fmt = (v) => (v > 0 ? `+${v}🪙` : v < 0 ? `−${-v}🪙` : '0🪙');
+      const lab = (r) => `<small class="${gold(r) > 0 ? 'pos' : gold(r) < 0 ? 'neg' : ''}">${fmt(gold(r))}${plotsOn(r) ? ' +замысел' : ''}</small>`;
+      const score = (r) => gold(r) + 4 * plotsOn(r);
+      const opts = [];
+      const sh = (d, ok) => { const r = Math.max(1, Math.min(12, q.total + d)); opts.push({ ok, v: score(r), html: `<button class="btn adjb" data-act="adj" data-d="${d}" ${ok ? '' : 'disabled'}><b>${d > 0 ? '+' : '−'}${Math.abs(d)} → ${r}</b>${ok ? lab(r) : '<small>—</small>'}</button>` }); };
+      sh(-1, has1 && q.total > 1); sh(1, has1 && q.total < 12);
+      if (has2) { sh(-2, q.total > 2); sh(2, q.total < 11); }
+      const ev = E.Bot.rollEV(S, p, q.n);
+      if (q.rerolls) opts.push({ ok: true, v: ev, html: `<button class="btn adjb" data-act="adj-reroll"><b>Переброс${q.rerolls > 1 ? ' ×' + q.rerolls : ''}</b><small>в среднем ${fmt(Math.round(ev * 10) / 10).replace('.', ',')}</small></button>` });
+      if (q.canHarbor) { const r = Math.min(12, q.total + 2); opts.push({ ok: true, v: score(r), html: `<button class="btn adjb" data-act="adj-harbor"><b>Маяк → ${r}</b>${lab(r)}</button>` }); }
+      const cur = score(q.total);
+      const best = Math.max(cur, ...opts.filter(o => o.ok).map(o => o.v));
+      const btns = opts.map(o => (o.ok && o.v === best && o.v > cur ? o.html.replace('class="btn adjb"', 'class="btn adjb best"') : o.html)).join('');
+      return `<div class="adjw"><div class="adj-h">Выпало <b>${vs}${q.adj ? (q.adj > 0 ? ' +' : ' ') + q.adj : ''} = ${q.total}</b>: вам <b>${fmt(gold(q.total))}</b>${plotsOn(q.total) ? ' и замысел' : ''}. Под кнопками — что даст другое число.</div><div class="adj">
+        ${btns}
+        <button class="btn primary adjb" data-act="adj-ok"><b>Оставить ${q.total}</b>${lab(q.total)}</button></div></div>`;
     }
     if (isMyTurn()) {
       if (!p.turn.rolled) {
@@ -3982,7 +4085,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
   try { window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(() => ({ save: S && S.winner === null ? lastSafe : null, ME, WATCH })); } catch (e) { /* нет хука */ }
   const hot = window.claude && window.claude.hot;
   if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
-  window.__VD = { get S() { return S; }, get ME() { return ME; }, startGame, isMyTurn, get adjust() { return adjustReq; }, get waitNext() { return !!nextReq; }, get view() { return S ? 'game' : view; } };
+  window.__VD = { get S() { return S; }, get ME() { return ME; }, startGame, isMyTurn, get adjust() { return adjustReq; }, get waitNext() { return !!nextReq; }, get view() { return S ? 'game' : view; }, ask: (q) => askHuman(S.players[ME], q) };
 })();
 
 SymIcons.observe(document.body, (k) => (typeof ASSET_URL === 'function' ? ASSET_URL(`icons/i_${k}.svg`) : `icons/i_${k}.svg`));
