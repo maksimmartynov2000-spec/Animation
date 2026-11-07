@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Претенденты</title>
+<meta name="theme-color" content="#ece4d2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15120e" media="(prefers-color-scheme: dark)">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M10 6h44v26c0 14-10 22-22 28C20 54 10 46 10 32z' fill='%238a6309' stroke='%232a241c' stroke-width='3'/%3E%3Cpath d='M22 18h20l-4 8 4 8H22z' fill='%23f1e5c3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,56 +17,75 @@ img { max-width: 100%; }
 [hidden] { display: none !important; }
 /* Геральдический стол: тинктуры гербов кодируют типы карт.
    Лазурь — Земли, Зелень — Ремёсла, Червлень — Набеги, Пурпур — Твердыни, Золото — монеты и главное действие. */
+/* Геральдический стол: тинктуры гербов кодируют типы карт.
+   Лазурь — Земли, Зелень — Ремёсла, Червлень — Набеги, Пурпур — Твердыни, Золото — монеты и главное действие.
+   Фон — пергамент (шум SVG), акценты — золото. */
 :root {
-  --bg: #e7e9ed;
-  --surface: #f6f7f9;
-  --surface-2: #ffffff;
-  --line: #cfd4dc;
-  --fg: #1a1c22;
-  --muted: #59606d;
-  --or: #8a6309;
+  --bg: #ece4d2;
+  --surface: #f7f1e3;
+  --surface-2: #fffcf4;
+  --line: #d6c8aa;
+  --fg: #231d14;
+  --muted: #665b49;
+  --or: #7d5806;
   --or-ink: #ffffff;
-  --or-soft: #f1e5c3;
+  --or-soft: #efe0b6;
+  --or-line: #c9a24a;
   --azure: #2b5ca3;
-  --vert: #2a7547;
+  --vert: #24663e;
   --gules: #ab3434;
   --purpure: #683c88;
-  --neutral: #5b6270;
-  --azure-t: #e1e9f6;
-  --vert-t: #e0f0e6;
-  --gules-t: #f6e2e2;
-  --purpure-t: #ede4f4;
-  --neutral-t: #eceef2;
-  --shadow: 0 1px 2px rgba(20, 24, 32, .08), 0 4px 14px rgba(20, 24, 32, .06);
-  --scrim: rgba(12, 14, 18, .45);
+  --neutral: #5f584b;
+  --azure-t: #e1e8f2;
+  --vert-t: #e0eedf;
+  --gules-t: #f5e1dc;
+  --purpure-t: #ece2ef;
+  --neutral-t: #e9e1cf;
+  --gold-grad: linear-gradient(180deg, #94690f, #765205);
+  --btn-ts: 0 1px 0 rgba(0, 0, 0, .18);
+  --shadow: 0 1px 2px rgba(60, 40, 10, .10), 0 6px 18px rgba(60, 40, 10, .07);
+  --scrim: rgba(25, 18, 8, .45);
+  --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .36 0 0 0 0 .27 0 0 0 0 .13 0 0 0 .11 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  --glow: radial-gradient(120% 55% at 50% 0%, rgba(255, 252, 240, .7), rgba(255, 252, 240, 0) 70%);
+  --bar-bg: rgba(247, 241, 227, .92);
   --font-display: 'Forum', 'Iowan Old Style', Georgia, serif;
   --font-body: 'PT Sans', -apple-system, 'Segoe UI', Roboto, system-ui, sans-serif;
   --r: 12px;
   --bar-h: 76px;
+  --tab-h: 58px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #111318; --surface: #1a1d24; --surface-2: #222630; --line: #343947; --fg: #eceef3; --muted: #9ba2b0;
-    --or: #e0b04a; --or-ink: #1b1406; --or-soft: #3a3020;
-    --azure: #7ea9ea; --vert: #6cc793; --gules: #ec8080; --purpure: #bd98df; --neutral: #a3aab7;
-    --azure-t: #1b2840; --vert-t: #19301f; --gules-t: #3a1e21; --purpure-t: #2b2137; --neutral-t: #252932;
-    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .3);
+    --bg: #15120e; --surface: #1e1a15; --surface-2: #27221b; --line: #3d3528; --fg: #f0e9db; --muted: #ab9f8a;
+    --or: #e2b552; --or-ink: #1b1406; --or-soft: #3c3121; --or-line: #8a6a2a;
+    --azure: #7ea9ea; --vert: #6cc793; --gules: #ec8080; --purpure: #bd98df; --neutral: #a3a08f;
+    --azure-t: #1b2638; --vert-t: #1a2c1e; --gules-t: #3a1f1d; --purpure-t: #2c2133; --neutral-t: #29241d;
+    --gold-grad: linear-gradient(180deg, #f0c665, #d6a33d); --btn-ts: none;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 6px 18px rgba(0, 0, 0, .3);
     --scrim: rgba(0, 0, 0, .6);
+    --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .85 0 0 0 0 .62 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+    --glow: radial-gradient(120% 55% at 50% 0%, rgba(226, 181, 82, .10), rgba(226, 181, 82, 0) 70%);
+    --bar-bg: rgba(30, 26, 21, .9);
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #111318; --surface: #1a1d24; --surface-2: #222630; --line: #343947; --fg: #eceef3; --muted: #9ba2b0;
-  --or: #e0b04a; --or-ink: #1b1406; --or-soft: #3a3020;
-  --azure: #7ea9ea; --vert: #6cc793; --gules: #ec8080; --purpure: #bd98df; --neutral: #a3aab7;
-  --azure-t: #1b2840; --vert-t: #19301f; --gules-t: #3a1e21; --purpure-t: #2b2137; --neutral-t: #252932;
-  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 6px 18px rgba(0, 0, 0, .3);
+  --bg: #15120e; --surface: #1e1a15; --surface-2: #27221b; --line: #3d3528; --fg: #f0e9db; --muted: #ab9f8a;
+  --or: #e2b552; --or-ink: #1b1406; --or-soft: #3c3121; --or-line: #8a6a2a;
+  --azure: #7ea9ea; --vert: #6cc793; --gules: #ec8080; --purpure: #bd98df; --neutral: #a3a08f;
+  --azure-t: #1b2638; --vert-t: #1a2c1e; --gules-t: #3a1f1d; --purpure-t: #2c2133; --neutral-t: #29241d;
+  --gold-grad: linear-gradient(180deg, #f0c665, #d6a33d); --btn-ts: none;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 6px 18px rgba(0, 0, 0, .3);
   --scrim: rgba(0, 0, 0, .6);
+  --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .95 0 0 0 0 .85 0 0 0 0 .62 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  --glow: radial-gradient(120% 55% at 50% 0%, rgba(226, 181, 82, .10), rgba(226, 181, 82, 0) 70%);
+  --bar-bg: rgba(30, 26, 21, .9);
   color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
-html, body { background: var(--bg); color: var(--fg); }
+html { background-color: var(--bg); overflow-x: hidden; }
+body { margin: 0; color: var(--fg); background-color: var(--bg); background-image: var(--glow), var(--paper); background-attachment: fixed; min-height: 100vh; min-height: 100dvh; }
 body { font-family: var(--font-body); font-size: 15px; line-height: 1.4; -webkit-text-size-adjust: 100%; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); }
 button { font: inherit; color: inherit; }
@@ -111,7 +132,8 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; text-wrap: bala
 .die.blank { border-style: dashed; border-color: var(--line); }
 .die.rolling { animation: tumble .5s ease-in-out; }
 @keyframes tumble { 0% { transform: rotate(0) scale(1); } 40% { transform: rotate(160deg) scale(.82); } 100% { transform: rotate(360deg) scale(1); } }
-@media (prefers-reduced-motion: reduce) { .die.rolling { animation: none; } .gold-pop { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .die.rolling { animation: none; } .gold-pop, .gpop { animation-name: fadeonly !important; } }
+@keyframes fadeonly { 0%, 78% { opacity: 1; } 100% { opacity: 0; } }
 .table .who { min-width: 0; }
 .table .who b { display: block; font-size: 15px; }
 .table .who .tot { font-family: var(--font-display); font-size: 28px; line-height: 1; }
@@ -123,9 +145,9 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; text-wrap: bala
 .mine { margin-top: 10px; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; align-items: center; }
 .mine .gold { font-family: var(--font-display); font-size: 34px; line-height: 1; display: flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; position: relative; }
 .mine .gold small { font-family: var(--font-body); font-size: 13px; color: var(--muted); }
-.gold-pop { position: absolute; left: 100%; top: -6px; font-size: 15px; font-family: var(--font-body); font-weight: 700; color: var(--vert); animation: pop 1.2s ease-out forwards; white-space: nowrap; }
+.gold-pop { position: absolute; left: 100%; top: -6px; font-size: 15px; font-family: var(--font-body); font-weight: 700; color: var(--vert); animation: pop 2.6s ease-out forwards; white-space: nowrap; }
 .gold-pop.neg { color: var(--gules); }
-@keyframes pop { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+@keyframes pop { 0% { opacity: 0; transform: translateY(6px); } 8% { opacity: 1; transform: none; } 78% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-10px); } }
 .res { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 15px; font-variant-numeric: tabular-nums; }
 .res span { white-space: nowrap; }
 .res sup { color: var(--vert); font-weight: 700; font-size: 11px; }
@@ -274,7 +296,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; text-wrap: bala
 .kv dd { margin: 0; }
 
 /* ---------- тосты ---------- */
-#toasts { position: fixed; left: 0; right: 0; bottom: calc(var(--bar-h) + 22px + env(safe-area-inset-bottom, 0px)); z-index: 35; display: grid; justify-items: center; gap: 6px; pointer-events: none; padding: 0 16px; }
+#toasts { position: fixed; left: 0; right: 0; bottom: calc(var(--bar-h) + 22px + env(safe-area-inset-bottom, 0px)); z-index: 31; display: grid; justify-items: center; gap: 6px; pointer-events: none; padding: 0 16px; }
 .toast { max-width: 520px; width: fit-content; background: var(--fg); color: var(--bg); border-radius: 12px; padding: 9px 14px; font-size: 14px; box-shadow: var(--shadow); animation: tin .2s ease-out; pointer-events: auto; }
 @keyframes tin { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 
@@ -407,6 +429,241 @@ details.mods[open] > summary::after { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) { .mod .sw, .mod .sw::after, details.mods > summary::after { transition: none; } }
 .reg .rn .rtl { display: block; font-family: var(--font-body); font-size: 12.5px; color: var(--muted); letter-spacing: .02em; line-height: 1.2; margin-top: 1px; }
 .reg .ricon.v { border-radius: 8px; width: 40px; height: 40px; }
+
+/* ---------- итог броска: кто что получил ---------- */
+.table .who .how { margin-left: 8px; font-size: 13px; white-space: nowrap; }
+.rollsum { margin-top: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px 6px; display: grid; overflow: hidden; }
+.rollsum .rh2 { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding-bottom: 6px; }
+.rr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.rr.me { background: var(--or-soft); margin: 0 -12px; padding: 8px 12px; border-top-color: transparent; }
+.rr .rp { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rr .rnet { font-family: var(--font-display); font-size: 21px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rnet.pos { color: var(--vert); }
+.rnet.neg { color: var(--gules); }
+.rr .rd { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
+.rr.none { display: block; color: var(--muted); font-size: 13.5px; }
+.rd .c { font-size: 13px; line-height: 1.3; border-radius: 6px; padding: 2px 7px; }
+.rd .c.g { background: var(--vert-t); }
+.rd .c.l { background: var(--gules-t); }
+.rd .c.z { background: var(--neutral-t); color: var(--muted); }
+.rr.me .rd .c.z { background: var(--surface); }
+.rd .c i { font-style: normal; color: var(--muted); }
+.rmiss { margin-top: 2px; padding: 6px 0 2px; border-top: 1px dashed var(--line); font-size: 12.5px; color: var(--muted); line-height: 1.35; }
+
+/* изменение золота у соперников */
+.opp .og { position: relative; }
+.gpop { position: absolute; left: -3px; top: calc(100% + 2px); z-index: 1; background: var(--vert); color: var(--surface); border-radius: 999px; padding: 0 6px; font-size: 12px; font-weight: 700; line-height: 17px; white-space: nowrap; pointer-events: none; animation: gpop 2.6s ease-out forwards; }
+.gpop.neg { background: var(--gules); }
+@keyframes gpop { 0% { opacity: 0; transform: translateY(-4px); } 8% { opacity: 1; transform: none; } 78% { opacity: 1; } 100% { opacity: 0; } }
+
+/* сводка хода соперника */
+.tsum { margin-top: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px 12px; display: grid; gap: 8px; }
+.tsum.wait { border-color: var(--or); box-shadow: 0 0 0 1px var(--or) inset; }
+.ts-h { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ts-h .sgi { width: 28px; height: 28px; border-radius: 50%; flex: none; }
+.ts-h b { font-family: var(--font-display); font-size: 20px; font-weight: 400; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ts-g { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ts-g i { font-style: normal; margin-left: 4px; }
+.ts-g i.pos { color: var(--vert); }
+.ts-g i.neg { color: var(--gules); }
+.ts-l { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 12px; font-size: 14px; line-height: 1.35; }
+.ts-l dt { color: var(--muted); font-size: 13px; white-space: nowrap; padding-top: 1px; }
+.ts-l dd { margin: 0; min-width: 0; }
+.ts-l .ef { color: var(--muted); font-size: 13px; }
+b.me { font-weight: 700; background: var(--or-soft); border-radius: 4px; padding: 0 3px; }
+.bar .status .muted { font-size: 13px; }
+
+/* сработавшее на последнем броске */
+.nrow.rolled { background: var(--or-soft); border-radius: 10px; box-shadow: 0 0 0 4px var(--or-soft); }
+.nrow.rolled .n { color: var(--or); }
+.chip.hit { border-color: var(--or); box-shadow: 0 0 0 1px var(--or) inset; font-weight: 700; }
+.chip .hv { margin-left: 2px; background: var(--vert); color: var(--surface); border-radius: 999px; padding: 0 6px; font-size: 12px; line-height: 17px; }
+.chip .hv.z { background: var(--neutral); }
+
+/* ================= оформление приложения ================= */
+::selection { background: var(--or-soft); }
+button, a, .chip, .card, .reg[data-act], .opp { -webkit-tap-highlight-color: transparent; }
+h2.lbl { font-family: var(--font-body); font-weight: 700; margin: 0; }
+
+/* кнопки: золото, нажатие */
+.btn { transition: transform .12s ease, box-shadow .12s ease; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 1px 2px rgba(60, 40, 10, .08); }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn.primary { background: var(--gold-grad); border-color: transparent; color: var(--or-ink); text-shadow: var(--btn-ts); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .28), 0 1px 2px rgba(60, 40, 10, .25), 0 4px 12px rgba(125, 88, 6, .2); }
+.btn.big { min-height: 60px; flex-direction: column; gap: 1px; border-radius: 14px; font-size: 17px; width: 100%; }
+.btn.big small { font-size: 12.5px; font-weight: 400; opacity: .85; }
+
+/* шапки: стол и страницы */
+.top { background: var(--bar-bg); -webkit-backdrop-filter: saturate(1.2) blur(14px); backdrop-filter: saturate(1.2) blur(14px); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--or-line) 40%, transparent); }
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; min-height: 52px; padding: 4px 12px; background: var(--bar-bg); -webkit-backdrop-filter: saturate(1.2) blur(14px); backdrop-filter: saturate(1.2) blur(14px); border-bottom: 1px solid var(--line); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--or-line) 40%, transparent); }
+#app > .nav { margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px))); padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+.nav h1 { font-size: 21px; line-height: 1.1; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-back { justify-self: start; border: 0; background: none; color: var(--or); font-weight: 700; font-size: 16px; padding: 8px 4px; min-height: 44px; cursor: pointer; white-space: nowrap; }
+.nav-r { justify-self: end; }
+
+/* переходы между экранами */
+#app.enter-fwd { animation: viewFwd .32s cubic-bezier(.2, .8, .2, 1); }
+#app.enter-back { animation: viewBack .32s cubic-bezier(.2, .8, .2, 1); }
+@keyframes viewFwd { from { opacity: 0; transform: translateX(28px); } }
+@keyframes viewBack { from { opacity: 0; transform: translateX(-28px); } }
+.panel.swap { animation: fadeUp .22s ease-out; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } }
+
+/* страницы поверх игры */
+#page-root { position: relative; z-index: 32; }
+.page { position: fixed; inset: 0; z-index: 32; display: flex; flex-direction: column; background-color: var(--bg); background-image: var(--glow), var(--paper); animation: pageIn .3s cubic-bezier(.2, .8, .2, 1); box-shadow: -10px 0 30px rgba(0, 0, 0, .14); }
+.page.out { animation: pageOut .24s ease-in forwards; pointer-events: none; }
+.page > .nav { position: relative; top: 0; padding-top: calc(env(safe-area-inset-top, 0px) + 4px); padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+.page-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 14px max(16px, env(safe-area-inset-right, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.page-body > * { max-width: 560px; margin-left: auto; margin-right: auto; }
+.page-body > * + * { margin-top: 12px; }
+@keyframes pageIn { from { transform: translateX(100%); } }
+@keyframes pageOut { to { transform: translateX(100%); } }
+body.paged { overflow: hidden; }
+.catalog .catseg { position: sticky; top: -14px; z-index: 2; margin-top: -14px; padding: 10px 0 8px; background: var(--bg); }
+
+/* листы снизу: выезжают и уезжают */
+.scrim { animation: fadeIn .2s ease; }
+.scrim .sheet { animation: sheetUp .3s cubic-bezier(.2, .8, .2, 1); border-top: 1px solid var(--line); box-shadow: 0 -10px 30px rgba(0, 0, 0, .18); }
+.scrim.out { animation: fadeOut .2s ease forwards; pointer-events: none; }
+.scrim.out .sheet { animation: sheetDown .2s ease-in forwards; }
+@keyframes fadeIn { from { opacity: 0; } }
+@keyframes fadeOut { to { opacity: 0; } }
+@keyframes sheetUp { from { transform: translateY(100%); } }
+@keyframes sheetDown { to { transform: translateY(100%); } }
+
+/* заставка */
+#splash { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background-color: var(--bg); background-image: var(--glow), var(--paper); pointer-events: none; transition: opacity .4s ease; }
+#splash.out { opacity: 0; }
+#splash .sp-in { display: grid; justify-items: center; gap: 8px; animation: spIn .8s cubic-bezier(.2, .8, .2, 1) both; }
+#splash img { width: 96px; height: 96px; filter: drop-shadow(0 6px 14px rgba(125, 88, 6, .35)); }
+#splash b { font-family: var(--font-display); font-weight: 400; font-size: 44px; line-height: 1; }
+#splash span { font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--or); font-weight: 700; }
+@keyframes spIn { from { opacity: 0; transform: scale(.9) translateY(8px); } }
+
+/* главное меню */
+.home { display: grid; gap: 18px; padding: calc(24px + env(safe-area-inset-top, 0px)) 0 8px; }
+.home-hero { display: grid; justify-items: center; text-align: center; gap: 6px; }
+.emblem { width: 100px; height: 100px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 50% 35%, var(--surface-2), var(--or-soft)); box-shadow: 0 0 0 1px var(--or-line), 0 0 0 7px color-mix(in srgb, var(--or-soft) 55%, transparent), var(--shadow); }
+.emblem img { width: 64px; height: 64px; }
+.kicker { margin-top: 10px; font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--or); font-weight: 700; }
+.home h1 { font-size: 52px; line-height: 1; }
+.orn { display: flex; align-items: center; gap: 10px; width: 190px; color: var(--or); }
+.orn i { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--or-line)); }
+.orn i:last-child { background: linear-gradient(270deg, transparent, var(--or-line)); }
+.orn b { font-size: 10px; font-weight: 400; }
+.home-hero p { margin: 4px 0 0; color: var(--muted); max-width: 34ch; font-size: 15.5px; line-height: 1.45; }
+.crests { display: flex; justify-content: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.crests img { width: 44px; height: 44px; border-radius: 10px; box-shadow: 0 0 0 1px var(--line), var(--shadow); }
+.home-acts { display: grid; gap: 10px; }
+.list { display: grid; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; font-size: 16px; font-weight: 700; color: var(--fg); cursor: pointer; text-decoration: none; }
+.li:first-child { border-top: 0; }
+.li:active { background: var(--surface-2); }
+.li img.ic { width: 26px; height: 26px; margin: 0; vertical-align: middle; }
+.gear { font-size: 22px; line-height: 1; text-align: center; color: var(--or); }
+.li i { font-style: normal; color: var(--muted); font-size: 20px; font-weight: 400; }
+.home .foot { text-align: center; font-size: 12.5px; color: var(--muted); margin: 0; }
+
+/* новая партия */
+body[data-view="setup"] #app { padding-bottom: calc(var(--bar-h) + 24px + env(safe-area-inset-bottom, 0px)); }
+.startbox { margin-top: 14px; }
+.startbox .lbl { margin-top: 6px; }
+.goalnote { margin: 0; font-size: 14px; color: var(--muted); text-align: center; }
+.startbox > .link { justify-self: center; }
+.house { box-shadow: var(--shadow); }
+.house .sgi { width: 56px; height: 56px; border-radius: 12px; }
+
+/* экран партии: нижние вкладки, над ними — кнопка действия */
+body[data-view="game"] #app { padding-bottom: calc(var(--bar-h) + var(--tab-h) + 28px + env(safe-area-inset-bottom, 0px)); }
+.bar { background: var(--bar-bg); -webkit-backdrop-filter: saturate(1.2) blur(14px); backdrop-filter: saturate(1.2) blur(14px); }
+body[data-view="game"] .bar { bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px)); padding-bottom: 10px; }
+body[data-view="game"] #toasts { bottom: calc(var(--bar-h) + var(--tab-h) + 18px + env(safe-area-inset-bottom, 0px)); }
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 26; background: var(--bar-bg); -webkit-backdrop-filter: saturate(1.2) blur(14px); backdrop-filter: saturate(1.2) blur(14px); border-top: 1px solid var(--line); padding: 0 max(8px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(8px, env(safe-area-inset-left, 0px)); }
+.tabbar .in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); height: var(--tab-h); }
+.tb { position: relative; border: 0; background: none; display: grid; justify-items: center; align-content: center; gap: 3px; cursor: pointer; color: var(--muted); font-size: 11.5px; font-weight: 700; padding: 4px 0; }
+.tb-i { position: relative; display: grid; place-items: center; width: 48px; height: 28px; border-radius: 999px; transition: background-color .15s; }
+.tb-i img.ic { width: 24px; height: 24px; margin: 0; vertical-align: middle; opacity: .7; filter: grayscale(.5); transition: opacity .15s, filter .15s, transform .15s; }
+.tb.on { color: var(--or); }
+.tb.on .tb-i { background: var(--or-soft); }
+.tb.on .tb-i img.ic { opacity: 1; filter: none; transform: scale(1.06); }
+.tb-b { position: absolute; top: -6px; left: calc(50% + 9px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--fg); color: var(--bg); font-size: 11px; line-height: 18px; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tb.on .tb-b { background: var(--or); color: var(--or-ink); }
+#tabbar[data-focus="tab-regalia"] .tb[data-tab="regalia"] .tb-i, #tabbar[data-focus="tab-market"] .tb[data-tab="market"] .tb-i { animation: tutpulse 1.4s ease-in-out infinite; }
+
+/* стол богаче: гербы, тени, лоток для кубиков */
+.opp { box-shadow: var(--shadow); }
+.opp .on { align-items: center; }
+.opp .ocr { width: 22px; height: 22px; border-radius: 6px; flex: none; }
+.opp .onm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opp.active { background: linear-gradient(180deg, var(--or-soft), var(--surface) 75%); box-shadow: 0 0 0 1px var(--or) inset, var(--shadow); }
+.table, .rollsum, .tsum, .reg, .union, .plotrow { box-shadow: var(--shadow); }
+.dice { padding: 6px; border-radius: 14px; background: var(--neutral-t); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .1); }
+.die { box-shadow: 0 2px 0 var(--line), 0 3px 8px rgba(0, 0, 0, .1); }
+.mine .gold .mcr { width: 40px; height: 40px; border-radius: 10px; align-self: center; margin-right: 8px; box-shadow: 0 0 0 1px var(--line), var(--shadow); }
+.card { box-shadow: var(--shadow); }
+.card.est::after, .card.court::after { content: ''; position: absolute; inset: 3px; border-radius: calc(var(--r) - 3px); border: 1px solid color-mix(in srgb, var(--or-line) 28%, transparent); pointer-events: none; }
+.sec-h h3::before { content: '◆'; color: var(--or); font-size: .5em; vertical-align: .32em; margin-right: 7px; }
+.reg[data-act] { cursor: pointer; }
+.reg[data-act]:active { background: var(--surface-2); }
+.reg.built[data-act]:active { background: var(--or-soft); }
+
+/* подробно по нажатию */
+.ex-card { display: grid; grid-template-columns: minmax(0, 250px); justify-content: center; }
+.ex { display: grid; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); overflow: hidden; }
+.ex-r { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; padding: 9px 12px; border-top: 1px solid var(--line); font-size: 14px; line-height: 1.42; }
+.ex-r:first-child { border-top: 0; }
+.ex-r.hl { background: var(--or-soft); }
+.ex-k { color: var(--muted); font-size: 12.5px; font-weight: 700; padding-top: 1px; }
+.ex-head { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 12px; align-items: center; }
+.ex-head .ex-ic { width: 56px; height: 56px; border-radius: 50%; }
+.ex-head .ex-ic.v { border-radius: 12px; }
+.ex-head .ex-t { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+
+/* итоги партии */
+.res-hero { display: grid; justify-items: center; text-align: center; gap: 6px; padding: 8px 0 6px; }
+.res-crest { width: 112px; height: 112px; border-radius: 24px; padding: 5px; background: var(--gold-grad); box-shadow: var(--shadow), 0 0 0 6px color-mix(in srgb, var(--or-soft) 70%, transparent); animation: crestIn .7s cubic-bezier(.2, .8, .2, 1) both; }
+.res-crest img { width: 100%; height: 100%; border-radius: 19px; display: block; }
+@keyframes crestIn { from { opacity: 0; transform: scale(.8) rotate(-4deg); } }
+.res-hero h2 { font-size: 40px; line-height: 1.05; margin-top: 10px; }
+.res-hero.won h2 { color: var(--or); }
+.res-hero p { margin: 0; color: var(--muted); max-width: 36ch; }
+.podium { list-style: none; padding: 0; display: grid; gap: 8px; }
+.podium li { display: grid; grid-template-columns: 20px 40px minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+.podium li.win { border-color: var(--or); background: linear-gradient(180deg, var(--or-soft), var(--surface)); }
+.podium .rk { font-family: var(--font-display); font-size: 22px; color: var(--muted); text-align: center; }
+.podium li.win .rk { color: var(--or); }
+.podium li > img { width: 40px; height: 40px; border-radius: 10px; }
+.podium .nm, .podium .st { display: grid; min-width: 0; }
+.podium .nm b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.podium small { font-size: 12.5px; color: var(--muted); }
+.podium .st { text-align: right; }
+.res-acts { display: grid; gap: 10px; }
+
+/* настройки */
+.settings .lbl { font-size: 12.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 14px 0 0; }
+.settings > :first-child { margin-top: 0; }
+.page-body > .settings { display: grid; gap: 8px; }
+.seg.wide { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; background: var(--neutral-t); padding: 4px; border-radius: 12px; overflow: visible; }
+.seg.wide button { border: 0; background: transparent; border-radius: 9px; padding: 9px 4px; min-height: 40px; font-size: 14px; color: var(--muted); }
+.seg.wide button.on { background: var(--surface-2); color: var(--fg); box-shadow: var(--shadow); }
+.set-row { display: grid; gap: 6px; }
+.set-row > span { font-size: 14px; font-weight: 700; }
+.group { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 4px; }
+.mod.set { grid-template-columns: auto minmax(0, 1fr); width: 100%; }
+.about { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; align-items: center; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 12px; }
+.about img { width: 44px; height: 44px; }
+.about > span { display: grid; gap: 2px; }
+.about .muted { font-size: 13px; }
+.opt .big img.ic { width: 26px; height: 26px; margin: 0; }
+.opt .big.gear { font-size: 22px; }
+
+@media (prefers-reduced-motion: reduce) {
+  #app.enter-fwd, #app.enter-back, .panel.swap, .page, .page.out, .scrim, .scrim .sheet, .scrim.out, .scrim.out .sheet, #splash .sp-in, .res-crest { animation: none !important; }
+  .btn:active:not(:disabled) { transform: none; }
+}
+
+.bar .in > .btn.small { flex: none; min-width: 52px; min-height: 46px; }
+.podium .st b { font-size: 16px; white-space: nowrap; }
 
 </style>
 </head>
@@ -567,8 +824,8 @@ function ASSET_URL(p) {
     const trig = d.t === 'wall' ? { who: 'none', label: 'от кубика не срабатывает', nums: [] } : { who: WHO[d.t][0], label: WHO[d.t][1], nums: d.n };
     let main;
     if (d.t === 'wall') main = [{ v: `+${d.walls}`, i: 'wall', c: 'стены против осад', big: true }];
-    else if (d.t === 'raid') main = [{ v: `+${d.inc}`, i: 'gold', c: 'у бросившего', big: true }];
-    else if (d.t === 'hold') main = [{ v: `+${d.inc}`, i: 'gold', c: `у каждого соперника${d.cap ? `, всего не больше ${d.cap}🪙` : ''}`, big: true }];
+    else if (d.t === 'raid') main = [{ v: `+${d.inc}`, i: 'gold', c: 'забрать у бросившего', big: true }];
+    else if (d.t === 'hold') main = [{ v: `+${d.inc}`, i: 'gold', c: `забрать у каждого соперника${d.cap ? `, всего не больше ${d.cap}🪙` : ''}`, big: true }];
     else if (d.per) {
       const x = d.per === 'land' ? 'land' : d.per === 'provS' ? 'provS' : d.per;
       const c = d.per === 'land' ? 'за каждую вашу Землю' : d.per === 'provS' ? 'за каждое ваше владение Юга' : 'за каждый ваш значок';
@@ -593,7 +850,7 @@ function ASSET_URL(p) {
       switch (k) {
         case 'gold': return { v: `+${a}`, i: 'gold' };
         case 'draw': return { v: `+${a}`, i: 'card', c: plural(a, 'карта', 'карты', 'карт') };
-        case 'temp': return { v: `+${b}`, i: a, c: 'на ход' };
+        case 'temp': return { v: `+${b}`, i: a, c: 'до конца хода' };
         case 'goldPerCraft': return { v: `+${a}`, i: 'gold', x: 'craft', c: `за каждое Ремесло, до ${b}🪙` };
         case 'goldPerSym': return { v: `+${b}`, i: 'gold', x: a, c: `за каждый ваш значок, до ${c}🪙` };
         case 'buys': return { v: `+${a}`, i: 'action', c: plural(a, 'действие', 'действия', 'действий') };
@@ -601,12 +858,12 @@ function ASSET_URL(p) {
         case 'regDiscount': return { v: `−${a}🪙`, i: 'banner', c: 'знамя в этот ход' };
         case 'reroll': return { i: 'reroll', c: 'переброс; играть до броска' };
         case 'shift': return { v: `±${a}`, i: 'shift', c: 'сдвиг броска; играть до броска' };
-        case 'forage': return { v: `+${b}`, i: 'gold', c: `у каждого, у кого ${SYM[a]} меньше` };
+        case 'forage': return { v: `+${b}`, i: 'gold', c: `забрать у каждого, у кого ${SYM[a]} меньше` };
         case 'siege': return { v: `+${a}`, i: 'siege', c: 'осада' };
         case 'spy': return { v: `+${a}`, i: 'spy', c: `шпионаж: ${spyCap(b, c)}` };
-        case 'trash': return { v: `до ${a}`, i: 'trash', c: `${plural(a, 'карта', 'карты', 'карт')} из руки — из игры` };
+        case 'trash': return { v: `до ${a}`, i: 'trash', c: `${plural(a, 'карты', 'карт', 'карт')} из руки — из игры навсегда` };
         case 'board': return { v: `+${a}`, i: 'gold', c: 'у самого богатого, если ⚔️ не меньше (иначе 1🪙)' };
-        case 'ambush': return { v: `+${a}`, i: 'gold', c: 'засада: у бросившего' };
+        case 'ambush': return { v: `+${a}`, i: 'gold', c: 'засада: забрать у бросившего' };
         default: return { c: k };
       }
     });
@@ -1142,6 +1399,17 @@ const Engine = (() => {
   const regCount = (p) => p.regalia.length + p.great.length;
   const opps = (S, p) => S.players.filter(q => q !== p);
   const nm = (p) => `${D.HOUSES[p.house].sigil} ${p.name}`;
+  // «Корриганы» → «Корриганов», «Хартвуды (вы)» → «Хартвудов (вы)»: для «у кого», «чья карта»
+  const nmG = (p) => `${D.HOUSES[p.house].sigil} ${p.name.replace(/ы( |$)/, 'ов$1')}`;
+  const nmD = (p) => `${D.HOUSES[p.house].sigil} ${p.name.replace(/ы( |$)/, 'ам$1')}`; // «Корриганам»
+  const short = (p) => D.HOUSES[p.house].short;
+  const shortG = (p) => D.HOUSES[p.house].short.replace(/ы$/, 'ов');
+  // дописать итог к строке журнала, если после неё ничего не добавилось; иначе — отдельной строкой
+  function logAppend(S, entry, tail, pi, kind) {
+    const last = S.log[S.log.length - 1];
+    if (last === entry) { entry.t += tail; emit(S, 'log', { text: entry.t, pi, kind, edit: true }); }
+    else log(S, `   итог: ${tail.replace(/^[:,]\s*/, '')}`, pi, kind);
+  }
 
   // ---------- модули (части правил, которые можно выключить) ----------
   // S.mod нет (старые сохранения) — значит включено всё
@@ -1265,29 +1533,32 @@ const Engine = (() => {
     const max = Math.max(...counts);
     const leaders = counts.filter(c => c === max).length;
     const bal = on(S, 'balance');
+    let envyPaid = 0, supportGot = 0;
+    const tribute = [];
     if (bal && max > 0 && counts[p.i] === max && leaders === 1 && !m.envyImmune) {
       const second = Math.max(...counts.filter((c, i) => i !== p.i));
       const tax = Math.min(R.envyMax, max - second);
       const paid = Math.min(tax, p.gold);
-      if (paid > 0) { p.gold -= paid; log(S, `${nm(p)}: Зависть, −${paid}🪙`, p.i, 'envy'); }
+      if (paid > 0) { p.gold -= paid; envyPaid = paid; log(S, `${nm(p)} заплатили Зависть: −${paid}🪙 (единственный лидер по знамёнам)`, p.i, 'envy'); }
     }
     if (bal && max - counts[p.i] >= R.supportGap) {
-      p.gold += R.supportGold;
-      log(S, `${nm(p)}: Народная поддержка, +${R.supportGold}🪙`, p.i, 'support');
+      p.gold += R.supportGold; supportGot = R.supportGold;
+      log(S, `${nm(p)} получили Народную поддержку: +${R.supportGold}🪙 (отстают от лидера на ${D.banners(max - counts[p.i])})`, p.i, 'support');
     }
     let g = 0; const src = [];
-    if (m.startGold) { g += m.startGold; src.push(`+${m.startGold}`); }
+    if (m.startGold) { g += m.startGold; src.push(`постоянный доход +${m.startGold}`); }
     if (m.interest) { const v = Math.min(m.interest, Math.floor(p.gold / 5)); if (v) { g += v; src.push(`проценты +${v}`); } }
     const pr = prod(S, p);
-    for (const s of SYMS) if (m['symIncome_' + s]) { const v = Math.min(4, Math.floor(pr[s] / 2)); if (v) { g += v; src.push(`${D.SYM[s]} +${v}`); } }
-    if (m.redIncome) { const v = Math.min(4, p.estates.filter(e => ES(e).t === 'raid').length); if (v) { g += v; src.push(`набеги +${v}`); } }
+    for (const s of SYMS) if (m['symIncome_' + s]) { const v = Math.min(4, Math.floor(pr[s] / 2)); if (v) { g += v; src.push(`за ${D.SYM[s]} +${v}`); } }
+    if (m.redIncome) { const v = Math.min(4, p.estates.filter(e => ES(e).t === 'raid').length); if (v) { g += v; src.push(`за набеги +${v}`); } }
     const uc = unionCount(p);
-    if (m.unionGold && uc && on(S, 'unions')) { g += m.unionGold * uc; src.push(`союзы +${m.unionGold * uc}`); }
-    if (on(S, 'unions') && unionsOf(p).S) { g += 1; src.push('Юг +1'); }
-    if (g > 0) { p.gold += g; p.stats.startInc += g; log(S, `${nm(p)}: доход начала хода +${g}🪙 (${src.join(', ')})`, p.i, 'gold'); }
+    if (m.unionGold && uc && on(S, 'unions')) { g += m.unionGold * uc; src.push(`за союзы +${m.unionGold * uc}`); }
+    if (on(S, 'unions') && unionsOf(p).S) { g += 1; src.push('союз Юга +1'); }
+    if (g > 0) { p.gold += g; p.stats.startInc += g; log(S, `${nm(p)} получили в начале хода +${g}🪙 (${src.join(', ')})`, p.i, 'gold'); }
     if (m.tribute) {
-      for (const o of opps(S, p)) if (prod(S, o).war < pr.war && o.gold > 0) { o.gold -= 1; p.gold += 1; log(S, `${nm(p)}: дань 1🪙 от ${nm(o)}`, p.i, 'steal'); }
+      for (const o of opps(S, p)) if (prod(S, o).war < pr.war && o.gold > 0) { o.gold -= 1; p.gold += 1; tribute.push(o.i); log(S, `Дань: ${nm(o)} отдали 1🪙 ${nmD(p)} — у них ⚔️ меньше`, p.i, 'steal'); }
     }
+    emit(S, 'dawn', { p: p.i, gain: g, src, envy: envyPaid, support: supportGot, tribute });
     if (m.warCry) p.temp.war += m.warCry;
     const timed = p.plots.filter(x => x.kind === 'timed');
     for (const pl of timed) {
@@ -1302,14 +1573,15 @@ const Engine = (() => {
     const c = D.COURT[pl.id];
     const m = mods(S, p);
     const g0 = p.gold;
-    log(S, `${nm(p)}: срабатывает замысел ${pl.kind === 'dice' ? '🎲' : '⏳'} «${c.name}»`, p.i, 'plot');
+    log(S, `${pl.kind === 'dice' ? '🎲' : '⏳'} ${nm(p)}: сработал замысел «${c.name}»`, p.i, 'plot');
+    const entry = S.log[S.log.length - 1];
     await applyFx(S, p, c.pfx, { active, plot: true });
     const bonus = (m.plotGold || 0) + (pl.kind === 'timed' ? (m.timedPlotBonus || 0) : 0);
     if (bonus) p.gold += bonus;
     const dg = p.gold - g0;
-    if (dg > 0) log(S, `   ${nm(p)}: +${dg}🪙`, p.i, 'gold');
+    if (dg > 0) logAppend(S, entry, `: +${dg}🪙`, p.i, 'plot');
     p.discard.push(pl.id);
-    emit(S, 'plot', { p: p.i, id: pl.id });
+    emit(S, 'plot', { p: p.i, id: pl.id, kind: pl.kind, gold: dg, active: active ? active.i : null });
   }
 
   // ---------- эффекты карт ----------
@@ -1332,7 +1604,7 @@ const Engine = (() => {
           for (const o of opps(S, p)) {
             if (sym(S, o, a) < mine && o.gold > 0) {
               const amt = Math.min(b, o.gold); o.gold -= amt; p.gold += amt;
-              log(S, `   ${nm(p)}: +${amt}🪙 от ${nm(o)}`, p.i, 'steal');
+              log(S, `   ${nm(p)} забрали ${amt}🪙 у ${nmG(o)} — у ${shortG(o)} ${D.SYM[a]} меньше`, p.i, 'steal');
             }
           }
           break;
@@ -1346,14 +1618,14 @@ const Engine = (() => {
           const o = os.reduce((x, y) => (y.gold > x.gold ? y : x));
           const amt = Math.min(sym(S, p, 'war') >= prod(S, o).war ? a : 1, o.gold);
           o.gold -= amt; p.gold += amt;
-          log(S, `   Абордаж: ${nm(p)} +${amt}🪙 от ${nm(o)}`, p.i, 'steal');
+          log(S, `   Абордаж: ${nm(p)} забрали ${amt}🪙 у ${nmG(o)} (у них больше всего золота)`, p.i, 'steal');
           break;
         }
         case 'ambush': {
           const act = ctx.active;
           if (act && act !== p) {
             const amt = Math.min(a, act.gold); act.gold -= amt; p.gold += amt;
-            if (amt) log(S, `   Засада: ${nm(p)} +${amt}🪙 от ${nm(act)}`, p.i, 'steal');
+            if (amt) log(S, `   Засада: ${nm(p)} забрали ${amt}🪙 у ${nmG(act)} — они выбросили это число`, p.i, 'steal');
           } else { p.gold += a; }
           break;
         }
@@ -1405,7 +1677,7 @@ const Engine = (() => {
     if (o.adv) { dr2 = d6(S); dr = Math.max(dr, dr2); }
     const A = o.A + ar, Dv = o.D + dr;
     a.stats.sieges++;
-    log(S, `⚔️ Осада: ${nm(a)} → ${nm(t)}: ${o.A}+🎲${ar} = ${A} против ${o.D}+🎲${dr}${o.adv ? ' (лучший из 2)' : ''} = ${Dv}`, a.i, 'siege');
+    log(S, `⚔️ Осада: ${nm(a)} нападают на ${nmG(t)} — атака ${o.A}+${ar}🎲 = ${A}, оборона ${o.D}+${dr}🎲${o.adv ? ' (лучший из 2)' : ''} = ${Dv}`, a.i, 'siege');
     const win = A > Dv;
     if (win) a.stats.siegeWins++;
     let got = null, gold = 0;
@@ -1414,16 +1686,16 @@ const Engine = (() => {
       if (el.length) {
         const uid = await ask(S, a, { type: 'capture', from: t.i, options: el.map(e => e.uid) });
         const e = moveEstate(S, t, a, uid != null ? uid : el[0].uid);
-        if (e) { got = e.id; a.stats.captured++; t.stats.lost++; log(S, `   Победа: захвачено «${ES(e).name}»`, a.i, 'win'); }
+        if (e) { got = e.id; a.stats.captured++; t.stats.lost++; log(S, `   ${nm(a)} победили и забрали владение «${ES(e).name}»`, a.i, 'win'); }
       } else {
         gold = Math.min(3, t.gold); t.gold -= gold; a.gold += gold;
-        log(S, `   Победа: захватить нечего, +${gold}🪙`, a.i, 'win');
+        log(S, `   ${nm(a)} победили; забрать владение нельзя — взяли ${gold}🪙`, a.i, 'win');
       }
       const m = mods(S, a);
       if (m.siegeWinGold) { a.gold += m.siegeWinGold; }
       updateTitles(S);
     } else {
-      log(S, `   Осада отбита`, t.i, 'fail');
+      log(S, `   ${nm(t)} отбились`, t.i, 'fail');
     }
     emit(S, 'siege', { a: a.i, t: t.i, A, D: Dv, ar, dr, dr2, win, got, gold });
     await pause(S, 'siege');
@@ -1453,14 +1725,14 @@ const Engine = (() => {
       const ar = d6(S), gr = d6(S);
       const At = info.A + ar, Gt = info.G + gr;
       if (At <= Gt) {
-        log(S, `🗝 Шпионаж: ${nm(a)} → ${nm(t)}: ${info.A}+🎲${ar} = ${At} против стражи ${info.G}+🎲${gr} = ${Gt} — провал`, a.i, 'fail');
+        log(S, `🗝 Шпионаж: ${nm(a)} против ${nmG(t)} — шпион ${info.A}+${ar}🎲 = ${At}, стража ${info.G}+${gr}🎲 = ${Gt}: провал`, a.i, 'fail');
         emit(S, 'spy', { a: a.i, t: t.i, ok: false, ar, gr });
         return;
       }
-      log(S, `🗝 Шпионаж: ${nm(a)} → ${nm(t)}: ${info.A}+🎲${ar} = ${At} против стражи ${info.G}+🎲${gr} = ${Gt}`, a.i, 'siege');
+      log(S, `🗝 Шпионаж: ${nm(a)} против ${nmG(t)} — шпион ${info.A}+${ar}🎲 = ${At}, стража ${info.G}+${gr}🎲 = ${Gt}: удача`, a.i, 'siege');
       bribeCost = 2 * (At - Gt);
     } else if (!info.ok) {
-      log(S, `🗝 Шпионаж: ${nm(a)} → ${nm(t)}: ${info.A} против стражи ${info.G} — провал`, a.i, 'fail');
+      log(S, `🗝 Шпионаж: ${nm(a)} против ${nmG(t)} — шпион ${info.A}, стража ${info.G}: провал`, a.i, 'fail');
       emit(S, 'spy', { a: a.i, t: t.i, ok: false });
       return;
     }
@@ -1473,7 +1745,7 @@ const Engine = (() => {
       const pay = await ask(S, t, { type: 'bribe', cost: bribeCost, from: a.i, effect, param, loss });
       if (pay) {
         t.gold -= bribeCost;
-        log(S, `🗝 Шпионаж: ${nm(a)} → ${nm(t)}: откуп ${bribeCost}🪙`, t.i, 'bribe');
+        log(S, `   ${nm(t)} откупились от шпиона за ${bribeCost}🪙`, t.i, 'bribe');
         emit(S, 'spy', { a: a.i, t: t.i, ok: false, bribed: true });
         return;
       }
@@ -1483,7 +1755,7 @@ const Engine = (() => {
         const k = Math.floor(rnd(S) * t.plots.length);
         const [pl] = t.plots.splice(k, 1);
         t.discard.push(pl.id);
-        log(S, `🗝 Шпионаж: ${nm(a)} → ${nm(t)}: сорван замысел «${D.COURT[pl.id].name}»`, a.i, 'steal');
+        log(S, `   ${nm(a)} сорвали замысел ${nmG(t)}: «${D.COURT[pl.id].name}» ушёл в сброс`, a.i, 'steal');
         emit(S, 'spy', { a: a.i, t: t.i, ok: true });
         return;
       }
@@ -1494,7 +1766,7 @@ const Engine = (() => {
       if (el.length) {
         const uid = await ask(S, a, { type: 'capture', from: t.i, options: el.map(e => e.uid) });
         const e = moveEstate(S, t, a, uid != null ? uid : el[0].uid);
-        if (e) { a.stats.captured++; t.stats.lost++; log(S, `🗝 Шантаж: «${ES(e).name}» переходит от ${nm(t)} к ${nm(a)}`, a.i, 'steal'); }
+        if (e) { a.stats.captured++; t.stats.lost++; log(S, `   Шантаж: владение «${ES(e).name}» переходит от ${nmG(t)} к ${nm(a)}`, a.i, 'steal'); }
         updateTitles(S);
         emit(S, 'spy', { a: a.i, t: t.i, ok: true });
         return;
@@ -1503,7 +1775,7 @@ const Engine = (() => {
     }
     const amt = Math.min(param + (ma.stealBonus || 0), t.gold);
     t.gold -= amt; a.gold += amt; a.stats.stolen += amt;
-    log(S, `🗝 Кража: ${nm(a)} +${amt}🪙 от ${nm(t)}`, a.i, 'steal');
+    log(S, `   Кража: ${nm(a)} забрали ${amt}🪙 у ${nmG(t)}`, a.i, 'steal');
     emit(S, 'spy', { a: a.i, t: t.i, ok: true, amt });
   }
 
@@ -1514,7 +1786,7 @@ const Engine = (() => {
     const sorted = [...new Set(idxs)].filter(i => i >= 0 && i < p.hand.length).sort((x, y) => y - x).slice(0, n);
     const names = [];
     for (const i of sorted) { const [id] = p.hand.splice(i, 1); names.push(D.COURT[id].name); }
-    if (names.length) log(S, `${nm(p)}: убраны из колоды — ${names.join(', ')}`, p.i, 'trash');
+    if (names.length) log(S, `   ${nm(p)} убрали из колоды навсегда: ${names.join(', ')}`, p.i, 'trash');
   }
 
   // ---------- розыгрыш карты ----------
@@ -1534,7 +1806,8 @@ const Engine = (() => {
         for (let k = c.pn - sp; k <= c.pn + sp; k++) if (k >= 1 && k <= 12) nums.push(k);
       }
       p.plots.push({ id, kind: c.plot, nums, uid: S.uid++ });
-      log(S, `${nm(p)} · замысел ${c.plot === 'dice' ? '🎲' : '⏳'}`, p.i, 'plotset');
+      log(S, `${nm(p)} отложили карту замыслом ${c.plot === 'dice' ? '🎲 (сработает, когда выпадет её число)' : '⏳ (сработает в начале их следующего хода)'}`, p.i, 'plotset');
+      emit(S, 'play', { p: p.i, id, plot: true, kind: c.plot });
       emit(S, 'change');
       return true;
     }
@@ -1542,15 +1815,19 @@ const Engine = (() => {
     p.inPlay.push(id);
     const ally = !!(c.role && p.turn.roles[c.role]);
     if (c.role) p.turn.roles[c.role] = (p.turn.roles[c.role] || 0) + 1;
-    const g0 = p.gold, h0 = p.hand.length;
-    log(S, `${nm(p)} · «${c.name}»${ally && c.ally ? ' + свита' : ''}`, p.i, 'play');
+    const g0 = p.gold, h0 = p.hand.length, t0 = { ...p.temp };
+    log(S, `${nm(p)} сыграли «${c.name}»${ally && c.ally ? ' со свитой' : ''}`, p.i, 'play');
+    const entry = S.log[S.log.length - 1];
     await applyFx(S, p, c.fx, {});
     if (ally && c.ally && S.winner === null) await applyFx(S, p, c.ally, {});
     const dg = p.gold - g0, dh = p.hand.length - h0;
+    const temp = {}; for (const k of SYMS) if ((p.temp[k] || 0) > (t0[k] || 0)) temp[k] = p.temp[k] - (t0[k] || 0);
     const bits = [];
     if (dg > 0) { bits.push(`+${dg}🪙`); p.stats.cardGold += dg; }
-    if (dh > 0) bits.push(`+${D.cards(dh)}`);
-    if (bits.length) log(S, `   → ${bits.join(', ')}`, p.i, 'gold');
+    for (const k in temp) bits.push(`+${temp[k]}${D.SYM[k]} до конца хода`);
+    if (dh > 0) bits.push(`взяли ${D.cards(dh)}`);
+    if (bits.length) logAppend(S, entry, `: ${bits.join(', ')}`, p.i, 'play');
+    emit(S, 'play', { p: p.i, id, ally: !!(ally && c.ally), gold: dg, cards: dh, temp });
     emit(S, 'change');
     return true;
   }
@@ -1574,7 +1851,7 @@ const Engine = (() => {
       if (!ch || ch.a === 'accept') break;
       if (ch.a === 'reroll' && rerolls > 0) {
         rerolls--; vals = rollVals(S, n); adj = 0; harborUsed = false; shifts.push(...used); used = [];
-        log(S, `${nm(p)}: переброс`, p.i, 'dice');
+        log(S, `${nm(p)} перебросили кубики`, p.i, 'dice');
       } else if (ch.a === 'shift') {
         const k = ch.k != null ? ch.k : shifts.findIndex(x => x >= Math.abs(ch.d));
         if (k < 0 || shifts[k] === undefined) break;
@@ -1590,8 +1867,9 @@ const Engine = (() => {
     p.turn.rolled = true;
     S.lastRoll = { p: p.i, vals, n, adj, total };
     if (m.extraTurn && n === 2 && vals[0] === vals[1] && !S.extraTaken) p.turn.extraTurn = true;
-    const vs = n === 2 ? `${vals[0]}+${vals[1]}` : `${vals[0]}`;
-    log(S, `🎲 ${nm(p)}: ${vs}${adj ? (adj > 0 ? ` +${adj}` : ` ${adj}`) : ''} → ${total}`, p.i, 'roll');
+    const raw = sum(vals);
+    const vs = n === 2 ? `${vals[0]}+${vals[1]}${adj ? '' : ` = ${raw}`}` : `${vals[0]}`;
+    log(S, `🎲 ${nm(p)} выбросили ${vs}${adj ? `, сдвиг ${adj > 0 ? '+' : '−'}${Math.abs(adj)} → ${total}` : ''}`, p.i, 'roll');
     emit(S, 'dice', { p: p.i, vals, n, adj, total, final: true });
     await resolveRoll(S, p, total);
     emit(S, 'change');
@@ -1619,7 +1897,8 @@ const Engine = (() => {
         const d = ES(e);
         if (d.t !== 'raid' || !d.n.includes(r)) continue;
         const amt = Math.min(Math.max(0, d.inc + (m.redBonus || 0) - (mods(S, a).raidShield || 0)), a.gold);
-        if (amt > 0) { a.gold -= amt; o.gold += amt; o.stats.raidInc += amt; ev.push({ to: o.i, from: a.i, amt, src: d.name }); }
+        if (amt > 0) { a.gold -= amt; o.gold += amt; o.stats.raidInc += amt; ev.push({ to: o.i, from: a.i, amt, src: d.name, id: e.id, uid: e.uid, t: 'raid' }); }
+        else ev.push({ to: o.i, from: a.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: 'raid', zero: true });
       }
     }
     for (const q of S.players) {
@@ -1629,7 +1908,7 @@ const Engine = (() => {
         if (!d.n.includes(r)) continue;
         if (d.t === 'land' || (d.t === 'craft' && q === a)) {
           const v = estateIncome(S, q, d, m);
-          if (v > 0) { q.gold += v; q.stats.rollInc += v; ev.push({ to: q.i, amt: v, src: d.name }); }
+          if (v > 0) { q.gold += v; q.stats.rollInc += v; ev.push({ to: q.i, amt: v, src: d.name, id: e.id, uid: e.uid, t: d.t }); }
         }
       }
     }
@@ -1639,7 +1918,7 @@ const Engine = (() => {
         const d = ES(e);
         if (d.t !== 'raid' || !d.n.includes(r)) continue;
         const v = d.inc + (m.redBonus || 0);
-        a.gold += v; a.stats.raidInc += v; ev.push({ to: a.i, amt: v, src: d.name });
+        a.gold += v; a.stats.raidInc += v; ev.push({ to: a.i, amt: v, src: d.name, id: e.id, uid: e.uid, t: 'raid', own: true });
       }
       for (const e of a.estates) {
         const d = ES(e);
@@ -1647,23 +1926,24 @@ const Engine = (() => {
         let left = d.cap || Infinity; // потолок за одно срабатывание (если задан)
         for (const o of opps(S, a)) {
           const amt = Math.min(Math.max(0, d.inc + (m.holdBonus || 0) - (mods(S, o).raidShield || 0)), o.gold, left);
-          if (amt > 0) { o.gold -= amt; a.gold += amt; a.stats.raidInc += amt; left -= amt; ev.push({ to: a.i, from: o.i, amt, src: d.name }); }
+          if (amt > 0) { o.gold -= amt; a.gold += amt; a.stats.raidInc += amt; left -= amt; ev.push({ to: a.i, from: o.i, amt, src: d.name, id: e.id, uid: e.uid, t: 'hold' }); }
+          else ev.push({ to: a.i, from: o.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: 'hold', zero: true });
         }
       }
     }
-    // сводка в журнал
-    const byP = new Map();
-    for (const x of ev) {
-      if (!byP.has(x.to)) byP.set(x.to, []);
-      byP.get(x.to).push(x);
+    // сводка в журнал: по строке на игрока — что получил и что отдал
+    const paid = ev.filter(x => x.amt > 0);
+    if (!paid.length) log(S, `   Ни одно владение не принесло золота`, null, 'quiet');
+    for (let k = 0; k < N; k++) {
+      const q = S.players[(a.i + k) % N];
+      const gain = paid.filter(x => x.to === q.i), loss = paid.filter(x => x.from === q.i);
+      if (!gain.length && !loss.length) continue;
+      const parts = gain.map(x => `+${x.amt}🪙 ${x.src}${x.from != null ? ` (у ${shortG(S.players[x.from])})` : ''}`)
+        .concat(loss.map(x => `−${x.amt}🪙 ${x.src} ${shortG(S.players[x.to])}`));
+      const net = sum(gain.map(x => x.amt)) - sum(loss.map(x => x.amt));
+      log(S, `   ${nm(q)}: ${parts.join(', ')}${parts.length > 1 ? ` → итого ${net > 0 ? '+' : net < 0 ? '−' : ''}${Math.abs(net)}🪙` : ''}`, q.i, 'income');
     }
-    if (!ev.length) log(S, `   Никто ничего не получил`, null, 'quiet');
-    for (const [pi, list] of byP) {
-      const tot = sum(list.map(x => x.amt));
-      const parts = list.map(x => x.from != null ? `${x.src}: ${x.amt} у ${D.HOUSES[S.players[x.from].house].sigil}` : `${x.src} ${x.amt}`);
-      log(S, `   ${nm(S.players[pi])} +${tot}🪙 (${parts.join(', ')})`, pi, 'income');
-    }
-    emit(S, 'income', { r, ev, a: a.i });
+    emit(S, 'income', { r, ev: paid.concat(ev.filter(x => x.zero)), a: a.i });
     for (let k = 0; k < N; k++) {
       const q = S.players[(a.i + k) % N];
       const trig = q.plots.filter(pl => pl.kind === 'dice' && pl.nums && pl.nums.includes(r));
@@ -1710,7 +1990,8 @@ const Engine = (() => {
     if (src === 'estate') S.estateRow.splice(key, 1);
     if (src === 'court') S.courtRow.splice(key, 1);
     refill(S);
-    log(S, `${nm(p)}: куплено «${def.name}» за ${price}🪙`, p.i, 'buy');
+    log(S, `${nm(p)} купили ${isEstate ? 'владение' : 'карту двора'} «${def.name}» за ${price}🪙`, p.i, 'buy');
+    emit(S, 'buy', { p: p.i, id, estate: isEstate, price });
     updateTitles(S);
     emit(S, 'change');
     return { ok: true };
@@ -1753,14 +2034,14 @@ const Engine = (() => {
       S.greatRow.splice(S.greatRow.indexOf(id), 1);
       if (S.greatDeck.length) S.greatRow.push(S.greatDeck.pop());
     }
-    log(S, `🚩 ${nm(p)}: знамя «${D.regName(def)}» за ${c.total}🪙 (${regCount(p)}/${goal(S)})`, p.i, 'regalia');
+    log(S, `🚩 ${nm(p)} привлекли ${kind === 'own' ? 'вассала' : 'великого лорда'} «${D.regName(def)}» за ${c.total}🪙${c.trade ? ` (из них ${c.trade}🪙 — докупка значков)` : ''}. Знамён: ${regCount(p)} из ${goal(S)}`, p.i, 'regalia');
     updateTitles(S);
     if (p.regalia.length >= R.ownRegalia && p.great.length >= needGreat(S)) {
       if (R.finishRound) {
         if (!S.finishers) S.finishers = [];
         if (!S.finishers.includes(p.i)) {
           S.finishers.push(p.i);
-          log(S, `🏁 ${nm(p)}: ${D.banners(goal(S))}! Круг доигрывается до конца`, p.i, 'victory');
+          log(S, `🏁 У ${nmG(p)} ${D.banners(goal(S))} — цель выполнена! Круг доигрывается до конца`, p.i, 'victory');
         }
       } else {
         S.winner = p.i;
@@ -1768,7 +2049,7 @@ const Engine = (() => {
       }
     }
     emit(S, 'change');
-    emit(S, 'regalia', { p: p.i, id, kind });
+    emit(S, 'regalia', { p: p.i, id, kind, cost: c.total, trade: c.trade });
     return { ok: true };
   }
 
@@ -1796,7 +2077,7 @@ const Engine = (() => {
       if (nh !== h) {
         S.titles[t] = nh;
         const T = D.TITLES[t];
-        if (nh !== null) log(S, `${T.icon} Титул «${T.name}» → ${nm(S.players[nh])}`, nh, 'title');
+        if (nh !== null) log(S, `${T.icon} Титул «${T.name}» получили ${nm(S.players[nh])}`, nh, 'title');
         else log(S, `${T.icon} Титул «${T.name}» сейчас ни у кого`, null, 'title');
       }
     }
@@ -1812,7 +2093,7 @@ const Engine = (() => {
     const extra = p.turn.extraTurn && !S.extraTaken;
     if (extra) {
       S.extraTaken = true;
-      log(S, `${nm(p)}: дубль, Яйцо виверны даёт дополнительный ход`, p.i, 'extra');
+      log(S, `${nm(p)} выбросили дубль: Укротитель виверн даёт ещё один ход`, p.i, 'extra');
     } else {
       S.extraTaken = false;
       S.cur = (S.cur + 1) % S.players.length;
@@ -2274,7 +2555,7 @@ const Engine = (() => {
   return {
     D, R, on, needGreat, goal, goalText, cardOn, houseOn, seasonText, setHooks, newGame, runTurn, startOfTurn, play, roll, buy, build, endTurn,
     mods, prod, sym, walls, unionsOf, unionCount, regCount, regCost, regDef, marketPrice, buysLeft,
-    canOwnEstate, plotSlots, handSize, siegeOdds, spyInfo, capturable, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
+    nmG, shortG, canOwnEstate, plotSlots, handSize, siegeOdds, spyInfo, capturable, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
   };
 })();
 if (typeof module !== 'undefined') module.exports = Engine;
@@ -2298,11 +2579,20 @@ if (typeof module !== 'undefined') module.exports = Engine;
   let diceView = null;
   let rolling = false;
   const goldSeen = {};
-  let goldPop = null;
+  const pops = {};      // всплывающие +N/−N у золота: игрок → { d, t }
+  let rollView = null;  // итог последнего броска: кто бросил, что выпало, кто что получил
+  let turnRec = null;   // что соперник делает в этот ход — для сводки
+  let lastRec = null;   // сводка последнего хода соперника, показана до «Дальше»
+  let nextReq = null;   // ждём «Дальше» после хода соперника
+  let pauseBots = true; // пауза после хода соперника (меню)
   let setup = { house: 'deer', opps: 2, mods: D.PRESETS.basic.modules.slice() };
   let rq = false;
   let savedGame = null;
-  let modsOpen = false; // раскрыт ли список модулей на стартовом экране
+  let modsOpen = false; // раскрыт ли список модулей на экране новой партии
+  let view = 'home';    // экран без партии: 'home' — главное меню, 'setup' — новая партия
+  let lastView = null;  // для перехода между экранами
+  let prevTab = null;   // смена вкладки — показать её содержимое
+  let theme = 'system'; // оформление: как в системе / светлое / тёмное
   // ссылки на учебник и каталог; отдельная сборка (index.html для GitHub) задаёт свои через window.PRETENDENTY_LINKS (пустые — кнопок нет)
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
@@ -2313,6 +2603,19 @@ if (typeof module !== 'undefined') module.exports = Engine;
   const barEl = document.getElementById('bar');
   const sheetRoot = document.getElementById('sheet-root');
   const toastRoot = document.getElementById('toasts');
+  const mk = (tag, id, cls) => { const el = document.createElement(tag); el.id = id; if (cls) el.className = cls; document.body.appendChild(el); return el; };
+  const pageRoot = document.getElementById('page-root') || mk('div', 'page-root');
+  const tabEl = document.getElementById('tabbar') || mk('nav', 'tabbar', 'tabbar');
+  tabEl.hidden = true;
+  tabEl.setAttribute('aria-label', 'Разделы');
+  const reduceMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const hostTheme = document.documentElement.getAttribute('data-theme');
+  function applyTheme() {
+    const r = document.documentElement;
+    if (theme === 'light' || theme === 'dark') r.setAttribute('data-theme', theme);
+    else if (hostTheme) r.setAttribute('data-theme', hostTheme);
+    else r.removeAttribute('data-theme');
+  }
 
   const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const wait = (ms) => new Promise(r => setTimeout(r, ms));
@@ -2344,11 +2647,11 @@ if (typeof module !== 'undefined') module.exports = Engine;
 
   // ---------- настройки ----------
   function loadPrefs() {
-    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (x.opps >= 1 && x.opps <= 5) setup.opps = x.opps; if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) setup.mods = x.mods.filter(k => MODK.includes(k)); } } catch (e) { /* хранилище недоступно */ }
+    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (x.opps >= 1 && x.opps <= 5) setup.opps = x.opps; if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) setup.mods = x.mods.filter(k => MODK.includes(k)); if (x.pause === false) pauseBots = false; if (['system', 'light', 'dark'].includes(x.theme)) theme = x.theme; } } catch (e) { /* хранилище недоступно */ }
     fixSetup();
     try { const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (g && g.S) savedGame = g; } catch (e) { /* нет сохранения */ }
   }
-  function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ house: setup.house, opps: setup.opps, speed, mods: setup.mods })); } catch (e) { /* ignore */ } }
+  function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ house: setup.house, opps: setup.opps, speed, mods: setup.mods, pause: pauseBots, theme })); } catch (e) { /* ignore */ } }
   function saveSafe() {
     if (!S) return;
     lastSafe = JSON.stringify(S);
@@ -2377,45 +2680,62 @@ if (typeof module !== 'undefined') module.exports = Engine;
     },
   });
 
+  const REC_NOTES = ['siege', 'win', 'fail', 'bribe', 'steal', 'trash', 'title', 'extra'];
   function onEvent(type, d) {
+    const rec = turnRec && S.players[turnRec.p] && S.cur === turnRec.p ? turnRec : null;
     switch (type) {
+      case 'turn':
+        turnRec = { p: d.p, gold0: S.players[d.p].gold, dawn: null, plays: [], plotsSet: 0, roll: null, plots: [], buys: [], regs: [], notes: [] };
+        if (S.players[d.p].isBot) lastRec = null;
+        break;
+      case 'dawn': if (rec) rec.dawn = d; break;
+      case 'play': if (rec && d.p === rec.p) { if (d.plot) rec.plotsSet++; else rec.plays.push(d); } break;
+      case 'buy': if (rec && d.p === rec.p) rec.buys.push(d); break;
       case 'dice':
         diceView = d;
+        if (d.final) rollView = { a: d.p, r: d.total, vals: d.vals, n: d.n, adj: d.adj || 0, ev: [], plots: [] };
         if (!d.final && !rolling) { rolling = true; setTimeout(() => { rolling = false; schedule(); }, 520); }
         break;
       case 'income': {
+        if (!rollView || rollView.a !== d.a) rollView = { a: d.a, r: d.r, vals: [d.r], n: 1, adj: 0, ev: [], plots: [] };
+        rollView.ev = d.ev;
+        if (rec && rec.p === d.a) rec.roll = rollView;
         if (ME === null) break;
+        const paidEv = d.ev.filter(x => x.amt > 0);
         if (S.tut) {
-          if (d.a === ME) S.tut.lastInc = { r: d.r, gain: d.ev.filter(x => x.to === ME).map(x => [x.amt, x.src]), loss: d.ev.filter(x => x.from === ME).map(x => [x.amt, x.src]) };
-          else { const lost = d.ev.filter(x => x.from === ME); if (lost.length) tutQueue('hold-hit', { amt: lost.reduce((a, x) => a + x.amt, 0), src: lost.map(x => x.src).join(', ') }); }
+          if (d.a === ME) S.tut.lastInc = { r: d.r, gain: paidEv.filter(x => x.to === ME).map(x => [x.amt, x.src]), loss: paidEv.filter(x => x.from === ME).map(x => [x.amt, x.src]) };
+          else { const lost = paidEv.filter(x => x.from === ME); if (lost.length) tutQueue('hold-hit', { amt: lost.reduce((a, x) => a + x.amt, 0), src: lost.map(x => x.src).join(', ') }); }
         }
-        const mine = d.ev.filter(x => x.to === ME);
-        const lost = d.ev.filter(x => x.from === ME);
-        const parts = [];
-        if (mine.length) parts.push(`вы +${mine.reduce((a, x) => a + x.amt, 0)}🪙 (${mine.map(x => x.src).join(', ')})`);
-        for (const x of lost) parts.push(`${pname(S.players[x.to])} забирает ${x.amt}🪙 (${x.src})`);
-        if (parts.length) toast(`🎲 ${d.r}: ${parts.join('; ')}`);
         break;
       }
+      case 'plot':
+        if (d.active != null && rollView) rollView.plots.push(d);
+        else if (rec && rec.p === d.p) rec.plots.push(d);
+        if (d.p === ME) toast(`${d.kind === 'dice' ? '🎲' : '⏳'} Ваш замысел «${esc(D.COURT[d.id].name)}» сработал${d.gold > 0 ? `: +${d.gold}🪙` : ''}`, 3000);
+        break;
       case 'siege': {
         const a = S.players[d.a], t = S.players[d.t];
         if (d.t === ME) tutQueue('siege-me');
-        if (d.t === ME) toast(`⚔️ ${pname(a)} осаждает вас: ${d.A} против ${d.D}. ${d.win ? (d.got ? `Потеряно «${D.ESTATES[d.got].name}»` : `Потеряно ${d.gold}🪙`) : 'Осада отбита'}`, 4200);
-        else if (d.a === ME) toast(`⚔️ Осада ${pname(t)}: ${d.A} против ${d.D}. ${d.win ? (d.got ? `Захвачено «${D.ESTATES[d.got].name}»` : `+${d.gold}🪙`) : 'Не вышло'}`, 3600);
+        if (d.t === ME) toast(`⚔️ ${pname(a)} осаждают вас: атака ${d.A} против обороны ${d.D}. ${d.win ? (d.got ? `Вы потеряли владение «${esc(D.ESTATES[d.got].name)}»` : `Вы потеряли ${d.gold}🪙`) : 'Вы отбились'}`, 4600);
+        else if (d.a === ME) toast(`⚔️ Осада ${esc(E.shortG(t))}: атака ${d.A} против обороны ${d.D}. ${d.win ? (d.got ? `Вы забрали «${esc(D.ESTATES[d.got].name)}»` : `Забрать нечего, +${d.gold}🪙`) : 'Не вышло'}`, 4000);
         break;
       }
       case 'spy':
         if (d.t === ME) tutQueue('spy-me');
-        if (d.t === ME && d.ok) toast(`🔗 ${pname(S.players[d.a])}: шпионаж у вас удался`, 3600);
-        if (d.a === ME) toast(d.ok ? '🔗 Шпионаж удался' : d.bribed ? '🔗 Жертва откупилась' : '🔗 Стража не пустила', 2600);
+        if (d.t === ME && d.ok) toast(`🗝 Шпион ${esc(E.shortG(S.players[d.a]))} у вас преуспел${d.amt ? `: −${d.amt}🪙` : ''}`, 4000);
+        if (d.t === ME && d.bribed) toast(`🗝 Вы откупились от шпиона ${esc(E.shortG(S.players[d.a]))}`, 3200);
+        if (d.a === ME) toast(d.ok ? `🗝 Шпионаж удался${d.amt ? `: +${d.amt}🪙` : ''}` : d.bribed ? '🗝 Соперник откупился — золото ушло в банк' : '🗝 Стража поймала шпиона', 3200);
         break;
       case 'regalia':
-        if (R.finishRound && E.regCount(S.players[d.p]) >= E.goal(S) && S.winner === null) { tutQueue('finish', { p: d.p }); toast(`🏁 ${pname(S.players[d.p])}: ${D.banners(E.goal(S))}! Круг доигрывается`, 4200); break; }
-        if (d.p !== ME) { const p = S.players[d.p]; const def = d.kind === 'own' ? E.regDef(p, d.id) : D.GREAT[d.id]; toast(`🚩 ${pname(p)}: «${esc(D.regName(def))}» (${E.regCount(p)}/${E.goal(S)})`, 3000); }
+        if (rec && rec.p === d.p) rec.regs.push(d);
+        if (R.finishRound && E.regCount(S.players[d.p]) >= E.goal(S) && S.winner === null) { tutQueue('finish', { p: d.p }); toast(`🏁 ${d.p === ME ? 'Вы выполнили цель' : `${pname(S.players[d.p])} выполнили цель`}: ${D.banners(E.goal(S))}! Круг доигрывается до конца`, 4600); break; }
+        if (d.p !== ME) { const p = S.players[d.p]; const def = d.kind === 'own' ? E.regDef(p, d.id) : D.GREAT[d.id]; toast(`🚩 ${pname(p)} привлекли «${esc(D.regName(def))}» — знамён ${E.regCount(p)} из ${E.goal(S)}`, 3400); }
         break;
-      case 'log': if (d.pi === ME && (d.kind === 'envy' || d.kind === 'support')) tutQueue(d.kind); break;
+      case 'log':
+        if (d.pi === ME && (d.kind === 'envy' || d.kind === 'support')) tutQueue(d.kind);
+        if (rec && !d.edit && REC_NOTES.includes(d.kind)) rec.notes.push(d.text.trim());
+        break;
       case 'season': { const se = D.SEASONS[d.idx]; tutQueue('season', { idx: d.idx }); toast(`${se.icon} ${se.name} — ${se.title}. ${seasonTxt(se)}`, 4200); break; }
-      case 'plot': if (d.p === ME) toast(`Сработал замысел «${D.COURT[d.id].name}»`, 2600); break;
     }
     schedule();
   }
@@ -2521,17 +2841,47 @@ if (typeof module !== 'undefined') module.exports = Engine;
     scrim.className = 'scrim';
     scrim.innerHTML = `<div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div><h2>${title}</h2><div class="sbody">${body}</div>${dismiss ? '<div class="acts"><button class="btn wide" data-close>Закрыть</button></div>' : ''}</div>`;
     sheetRoot.appendChild(scrim);
-    const close = () => scrim.remove();
+    const close = () => {
+      if (scrim.classList.contains('out')) return;
+      scrim.classList.add('out');
+      if (reduceMotion()) scrim.remove(); else setTimeout(() => scrim.remove(), 200);
+    };
     if (dismiss) {
       scrim.addEventListener('click', (e) => { if (e.target === scrim || e.target.closest('[data-close]')) close(); });
     }
     scrim.dismissible = dismiss;
+    scrim.close = close;
     return { el: scrim, close };
   }
+  // полноэкранная страница поверх игры: правила, памятка, карты, журнал, настройки, итоги
+  function openPage({ title, body, cls = '', back = 'Назад' }) {
+    const el = document.createElement('section');
+    el.className = `page ${cls}`;
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-label', String(title).replace(/<[^>]+>/g, ''));
+    el.innerHTML = `<header class="nav"><button class="nav-back" data-close>‹ ${back}</button><h1>${title}</h1><span class="nav-r"></span></header><div class="page-body">${body}</div>`;
+    pageRoot.appendChild(el);
+    document.body.classList.add('paged');
+    const close = () => {
+      if (el.classList.contains('out')) return;
+      el.classList.add('out');
+      const done = () => { el.remove(); if (!pageRoot.querySelector('.page:not(.out)')) document.body.classList.remove('paged'); };
+      if (reduceMotion()) done(); else setTimeout(done, 240);
+    };
+    el.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) close(); });
+    el.close = close;
+    return { el, body: el.querySelector('.page-body'), close };
+  }
+  function closeAllPages() { pageRoot.innerHTML = ''; document.body.classList.remove('paged'); }
   function closeAllSheets() { sheetRoot.innerHTML = ''; }
   document.addEventListener('toggle', (e) => { if (e.target.matches && e.target.matches('details.mods')) modsOpen = e.target.open; }, true);
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { const last = sheetRoot.lastElementChild; if (last && last.dismissible) last.remove(); }
+    if (e.key !== 'Escape') return;
+    const sh = [...sheetRoot.children].filter(x => !x.classList.contains('out')).pop();
+    if (sh) { if (sh.dismissible) sh.close(); return; }
+    const pg = [...pageRoot.children].filter(x => !x.classList.contains('out')).pop();
+    if (pg) pg.close();
   });
   function toast(text, ms = 2600) {
     const el = document.createElement('div');
@@ -2548,11 +2898,11 @@ if (typeof module !== 'undefined') module.exports = Engine;
     if (!v) return `<div class="die blank ${cls}" aria-hidden="true"></div>`;
     return `<div class="die ${cls}" role="img" aria-label="${v}">${Array.from({ length: 9 }, (_, k) => `<i class="${PIPS[v].includes(k) ? 'on' : ''}"></i>`).join('')}</div>`;
   }
-  function estateCard(id, extra = '', price = null) {
+  function estateCard(id, extra = '', price = null, opts = {}) {
     const d = D.ESTATES[id], pv = d.p ? D.PROV[d.p] : null;
     const f = CardFX.estate(d);
     if (!modOn('sieges')) f.perm = f.perm.filter(x => x.i !== 'wall'); // без осад стены ничего не дают
-    const art = (typeof ART !== 'undefined' && ART[id]) ? `<div class="cart"><img src="${IMG(ART[id])}" alt="" loading="lazy"></div>` : '';
+    const art = (typeof ART !== 'undefined' && ART[id]) ? `<div class="cart${opts.strip ? ' strip' : ''}"><img src="${IMG(ART[id])}" alt="" loading="lazy"></div>` : '';
     return `<div class="card est t-${d.t}" data-act="info-estate" data-id="${id}" tabindex="0">${art}
       <div class="est-top"><span class="shield">${d.n.length ? D.numText(d.n) : '🧱'}</span><span>${D.ETYPE[d.t].mark} ${D.ETYPE[d.t].name}</span>${pv ? `<span class="prov" title="${pv.name}">${pv.icon}</span>` : ''}</div>
       <div class="cname">${esc(d.name)}</div>
@@ -2589,7 +2939,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
     if (req.unions) parts.push(`${req.unions} союза`);
     return parts.join(' ');
   }
-  function regRow(p, def, kind, state) {
+  function regRow(p, def, kind, state, owner) {
     const built = state === 'built', taken = state === 'taken';
     const c = !built && !taken && p ? E.regCost(S, p, def) : null;
     const my = p && S && ME !== null && p.i === ME && isMyTurn();
@@ -2600,7 +2950,9 @@ if (typeof module !== 'undefined') module.exports = Engine;
       foot = `<div class="rf"><span class="muted">${tradeTxt}</span>${my ? `<button class="btn small ${why ? '' : 'primary'}" data-act="build" data-kind="${kind}" data-id="${def.id || ''}" data-gid="${kind === 'great' ? greatId(def) : ''}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : `Привлечь · ${c.total}🪙`}</button>` : `<span class="rc">${c.total}🪙</span>`}</div>`;
     }
     const costLine = c ? `${c.gold}🪙 ${reqHtml(def.req, c.miss)}` : `${def.cost}🪙 ${reqHtml(def.req)}`;
-    return `<div class="reg ${built ? 'built' : ''} ${taken ? 'taken' : ''}">
+    const key = kind === 'great' ? greatId(def) : def.id;
+    const o = owner != null ? owner : p ? p.i : '';
+    return `<div class="reg ${built ? 'built' : ''} ${taken ? 'taken' : ''}" data-act="info-reg" data-kind="${kind}" data-key="${key}" data-o="${o}" data-st="${built ? 'built' : taken ? 'taken' : ''}" tabindex="0">
       <div class="rh"><img class="ricon${kind === 'great' ? '' : ' v'}" src="${IMG(`icons/${kind === 'great' ? 'g_' + greatId(def) : 'v_' + def.id}.svg`)}" alt=""><span class="rn">${built ? '🚩 ' : ''}${esc(def.name)}${def.title ? `<small class="rtl">${esc(def.title)}</small>` : ''}</span><span class="rc">${built ? 'с вами' : taken ? 'у другого' : costLine}</span></div>
       ${modsHtml(def)}${foot}</div>`;
   }
@@ -2714,19 +3066,65 @@ if (typeof module !== 'undefined') module.exports = Engine;
   function isMyTurn() { return S && ME !== null && S.cur === ME && S.winner === null && !!endTurnResolve; }
   function viewIdx() { return ME !== null ? ME : S.cur; }
 
+  const ORD = { home: 0, setup: 1, game: 2 };
   function render() {
-    if (!S) { renderStart(); return; }
+    const v = S ? 'game' : view;
+    if (v !== lastView) {
+      app.classList.remove('enter-fwd', 'enter-back');
+      if (lastView !== null && !reduceMotion()) { void app.offsetWidth; app.classList.add(ORD[v] >= ORD[lastView] ? 'enter-fwd' : 'enter-back'); }
+      lastView = v;
+      prevTab = null;
+      window.scrollTo(0, 0);
+    }
+    document.body.dataset.view = v;
+    if (!S) { tabEl.hidden = true; if (view === 'setup') renderSetup(); else renderHome(); return; }
     app.classList.remove('start-mode');
     const p = S.players[viewIdx()];
-    // всплывающее изменение золота
-    if (goldSeen[p.i] != null && goldSeen[p.i] !== p.gold) goldPop = { d: p.gold - goldSeen[p.i], t: performance.now(), i: p.i };
-    goldSeen[p.i] = p.gold;
+    // всплывающие изменения золота у всех игроков; близкие по времени складываются
+    const now = performance.now();
+    for (const q of S.players) {
+      if (goldSeen[q.i] != null && goldSeen[q.i] !== q.gold) {
+        const dd = q.gold - goldSeen[q.i], pp = pops[q.i];
+        pops[q.i] = pp && now - pp.t < 1400 ? { d: pp.d + dd, t: now } : { d: dd, t: now };
+      }
+      goldSeen[q.i] = q.gold;
+    }
     const hint = coachHint(p);
-    app.innerHTML = header() + oppsHtml() + tableHtml() + mineHtml(p) + coachHtml(hint) + tabsHtml(p) + `<div class="panel">${panelHtml(p)}</div>`;
-    app.dataset.focus = hint && hint.focus ? hint.focus : '';
-    barEl.dataset.focus = hint && hint.focus ? hint.focus : '';
+    const swapped = prevTab !== null && prevTab !== tab;
+    app.innerHTML = header() + oppsHtml() + tableHtml() + recHtml() + mineHtml(p) + coachHtml(hint) + `<div class="panel${swapped ? ' swap' : ''}" role="tabpanel">${panelHtml(p)}</div>`;
+    const fc = hint && hint.focus ? hint.focus : '';
+    app.dataset.focus = fc;
+    barEl.dataset.focus = fc;
+    tabEl.dataset.focus = fc;
     barEl.innerHTML = `<div class="in">${barHtml(p)}</div>`;
     barEl.hidden = false;
+    tabEl.innerHTML = tabbarHtml(p);
+    tabEl.hidden = false;
+    if (prevTab !== tab) { const first = prevTab === null; prevTab = tab; if (!first) bringPanel(); }
+  }
+  // нижние вкладки, как в приложении
+  const TABS = [['hand', 'Рука', 'card'], ['market', 'Рынок', 'tag'], ['regalia', 'Знамёна', 'banner'], ['lands', 'Земли', 'land']];
+  function tabbarHtml(p) {
+    const badge = { hand: p.hand.length || null, market: null, regalia: `${E.regCount(p)}/${E.goal(S)}`, lands: p.estates.length };
+    return `<div class="in" role="tablist">${TABS.map(([k, l, ic]) => `<button class="tb ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-act="tab" data-tab="${k}"><span class="tb-i">${gico(ic)}${badge[k] != null ? `<b class="tb-b">${badge[k]}</b>` : ''}</span><span class="tb-l">${l}</span></button>`).join('')}</div>`;
+  }
+  // показать элемент целиком: под шапкой и над нижней панелью
+  function revealEl(el) {
+    if (!el) return;
+    const top = app.querySelector('.top');
+    const hh = top ? top.getBoundingClientRect().bottom : 0;
+    const bottom = barEl.hidden ? window.innerHeight : barEl.getBoundingClientRect().top;
+    const r = el.getBoundingClientRect();
+    if (r.top >= hh + 4 && r.bottom <= bottom - 4) return;
+    window.scrollBy({ top: r.top - hh - 8, behavior: reduceMotion() ? 'auto' : 'smooth' });
+  }
+  // после смены вкладки — прокрутить к её содержимому (сводка игрока остаётся видна)
+  function bringPanel() {
+    const mine = app.querySelector('.mine');
+    if (!mine) return;
+    const top = app.querySelector('.top');
+    const y = mine.getBoundingClientRect().top - (top ? top.getBoundingClientRect().height : 0) - 8;
+    if (Math.abs(y) > 24) window.scrollBy({ top: y, behavior: reduceMotion() ? 'auto' : 'smooth' });
   }
 
   function header() {
@@ -2741,12 +3139,13 @@ if (typeof module !== 'undefined') module.exports = Engine;
   }
   function oppsHtml() {
     const list = S.players.filter(q => WATCH || q.i !== ME);
+    const act = nextReq && lastRec ? lastRec.p : S.cur; // на паузе подсвечен тот, чей ход в сводке
     return `<div class="opps">${list.map(q => {
       const pr = E.prod(S, q);
       const ts = Object.keys(S.titles).filter(t => S.titles[t] === q.i).map(t => D.TITLES[t].icon).join('');
-      return `<button class="opp ${S.cur === q.i ? 'active' : ''}" data-act="opp" data-i="${q.i}">
-        <span class="on"><span>${H(q).sigil}</span><span>${esc(H(q).short)}</span><span class="crown">🚩${E.regCount(q)}/${E.goal(S)}</span></span>
-        <span class="st"><span>🪙${q.gold}</span><span>📜${pr.sci}</span><span>⚔️${pr.war}</span><span>🔗${pr.int}</span></span>
+      return `<button class="opp ${act === q.i ? 'active' : ''}" data-act="opp" data-i="${q.i}">
+        <span class="on"><img class="ocr" src="${IMG(`icons/h_${q.house}.svg`)}" alt=""><span class="onm">${esc(H(q).short)}</span><span class="crown">🚩${E.regCount(q)}/${E.goal(S)}</span></span>
+        <span class="st"><span class="og">🪙${q.gold}${popHtml(q.i)}</span><span>📜${pr.sci}</span><span>⚔️${pr.war}</span><span>🔗${pr.int}</span></span>
         <span class="tt">${ts || '&nbsp;'}${q.plots.length ? ` 🎭${q.plots.length}` : ''}</span></button>`;
     }).join('')}</div>`;
   }
@@ -2757,30 +3156,127 @@ if (typeof module !== 'undefined') module.exports = Engine;
     else {
       const cls = rolling ? 'rolling' : '';
       dice = dv.vals.map(v => die(v, cls)).join('');
-      const tot = Math.max(1, Math.min(12, dv.vals.reduce((a, b) => a + b, 0) + (dv.adj || 0)));
-      who = `<b>${pname(S.players[dv.p])}${dv.final ? '' : ' · бросок…'}</b><span class="tot">${rolling ? '…' : tot}</span>${dv.adj ? ` <span class="muted">(${dv.adj > 0 ? '+' : ''}${dv.adj})</span>` : ''}`;
+      const raw = dv.vals.reduce((a, b) => a + b, 0);
+      const tot = Math.max(1, Math.min(12, raw + (dv.adj || 0)));
+      const how = dv.vals.length > 1 || dv.adj ? `<span class="muted how">${dv.vals.join(' + ')}${dv.adj ? ` ${dv.adj > 0 ? '+' : '−'} ${Math.abs(dv.adj)} (сдвиг)` : ''}</span>` : '';
+      who = `<b>${pname(S.players[dv.p])} ${dv.final ? 'выбросили' : 'бросают…'}</b><span class="tot">${rolling ? '…' : tot}</span>${rolling ? '' : how}`;
     }
-    const feed = S.log.slice(-4).map(l => `<li class="${l.p === ME ? 'me' : ''}">${esc(l.t)}</li>`).join('');
-    return `<div class="table"><div class="dice">${dice}</div><div class="who">${who}</div></div><ul class="feed" data-act="log">${feed}</ul>`;
+    const feed = nextReq ? '' : `<ul class="feed" data-act="log">${S.log.slice(-3).map(l => `<li class="${l.p === ME ? 'me' : ''}">${esc(l.t.trim())}</li>`).join('')}</ul>`;
+    return `<div class="table"><div class="dice">${dice}</div><div class="who">${who}</div></div>${rolling ? '' : rollHtml(rollView)}${feed}`;
+  }
+  // ---------- итог броска: кто что получил ----------
+  const NOFIRE = { craft: 'Ремесло платит только на броске владельца', raid: 'Набег не срабатывает на броске владельца', hold: 'Твердыня платит только на броске владельца' };
+  function rollParts(rv, q) {
+    const gain = rv.ev.filter(x => x.to === q.i && x.amt > 0);
+    const loss = rv.ev.filter(x => x.from === q.i && x.amt > 0);
+    const zero = rv.ev.filter(x => x.to === q.i && x.zero);
+    const plots = rv.plots.filter(x => x.p === q.i && x.gold > 0);
+    const chips = [];
+    // одинаковые срабатывания (два Караван-сарая одного соперника) — одной плашкой «×2»
+    const grp = (list, key) => { const m = new Map(); for (const x of list) { const k = key(x); const g = m.get(k); if (g) { g.amt += x.amt; g.n++; } else m.set(k, { ...x, n: 1 }); } return [...m.values()]; };
+    const xn = (x) => (x.n > 1 ? ` ×${x.n}` : '');
+    for (const x of grp(gain, x => `${x.src}|${x.from}`)) chips.push(`<span class="c g">+${x.amt} ${esc(x.src)}${xn(x)}${x.from != null ? ` <i>у ${esc(x.from === ME ? 'вас' : E.shortG(S.players[x.from]))}</i>` : ''}</span>`);
+    for (const x of plots) chips.push(`<span class="c g">+${x.gold} замысел «${esc(D.COURT[x.id].name)}»</span>`);
+    for (const x of grp(loss, x => `${x.src}|${x.to}`)) chips.push(`<span class="c l">−${x.amt} ${esc(x.src)}${xn(x)} <i>${esc(x.to === ME ? '→ вам' : E.shortG(S.players[x.to]))}</i></span>`);
+    for (const x of zero) chips.push(`<span class="c z">${esc(x.src)}: у ${esc(x.from === ME ? 'вас' : E.shortG(S.players[x.from]))} нет золота</span>`);
+    const net = gain.reduce((a, x) => a + x.amt, 0) + plots.reduce((a, x) => a + x.gold, 0) - loss.reduce((a, x) => a + x.amt, 0);
+    return { chips, net, any: chips.length > 0 };
+  }
+  function missedOf(rv, q) {
+    // ваши владения с этим числом, которые промолчали, — и почему
+    const fired = new Set(rv.ev.map(x => x.uid));
+    const own = rv.a === q.i, m = E.mods(S, q);
+    return q.estates.filter(e => { const d = D.ESTATES[e.id]; return d.n.includes(rv.r) && !fired.has(e.uid) && ((d.t === 'craft' && !own) || (d.t === 'raid' && own && !m.redOwn) || (d.t === 'hold' && !own)); })
+      .map(e => { const d = D.ESTATES[e.id]; return `${esc(d.name)} — ${NOFIRE[d.t].toLowerCase()}`; });
+  }
+  function rollHtml(rv) {
+    if (!rv || !S.players[rv.a]) return '';
+    const N = S.players.length;
+    let order = Array.from({ length: N }, (_, k) => S.players[(rv.a + k) % N]);
+    if (ME !== null) order = order.filter(q => q.i === ME).concat(order.filter(q => q.i !== ME));
+    const rows = [];
+    for (const q of order) {
+      const r = rollParts(rv, q);
+      if (!r.any && q.i !== ME) continue;
+      const cls = r.net > 0 ? 'pos' : r.net < 0 ? 'neg' : '';
+      rows.push(`<div class="rr ${q.i === ME ? 'me' : ''}"><span class="rp">${pname(q)}</span><span class="rnet ${cls}">${r.net > 0 ? '+' : r.net < 0 ? '−' : '±'}${Math.abs(r.net)}🪙</span><span class="rd">${r.chips.join('')}</span></div>`);
+    }
+    const miss = ME !== null ? missedOf(rv, S.players[ME]) : [];
+    const head = `<div class="rh2">Итог броска ${rv.r}</div>`;
+    const any = order.some(q => rollParts(rv, q).any);
+    const body = any ? rows.join('') : `<div class="rr none">Ни одно владение не принесло золота</div>`;
+    return `<div class="rollsum">${head}${body}${miss.length ? `<div class="rmiss">Промолчали ваши: ${miss.join('; ')}</div>` : ''}</div>`;
+  }
+  function effBits(x) {
+    const b = [];
+    if (x.gold > 0) b.push(`+${x.gold}🪙`);
+    for (const k in x.temp || {}) b.push(`+${x.temp[k]}${D.SYM[k]} на ход`);
+    if (x.cards > 0) b.push(`+${x.cards} ${D.plural(x.cards, 'карта', 'карты', 'карт')}`);
+    return b.join(', ');
+  }
+  function recHtml() {
+    if (!lastRec || !S.players[lastRec.p] || ME === null || WATCH) return '';
+    if (!nextReq && S.cur !== lastRec.p && S.players[S.cur] && !S.players[S.cur].isBot && isMyTurn() && S.players[S.cur].turn.rolled) return '';
+    const rec = lastRec, q = S.players[rec.p];
+    const items = [];
+    if (rec.dawn) {
+      const d = rec.dawn, b = [];
+      if (d.gain) b.push(`+${d.gain}🪙 (${esc(d.src.join(', '))})`);
+      if (d.support) b.push(`+${d.support}🪙 Народная поддержка`);
+      if (d.envy) b.push(`−${d.envy}🪙 Зависть`);
+      if (d.tribute && d.tribute.length) b.push(`дань: +${d.tribute.length}🪙${d.tribute.includes(ME) ? ', в том числе <b class="me">1🪙 от вас</b>' : ''}`);
+      if (b.length) items.push(['Начало хода', b.join(' · ')]);
+    }
+    for (const x of rec.plots) items.push(['Замысел', `«${esc(D.COURT[x.id].name)}» сработал${x.gold > 0 ? `: +${x.gold}🪙` : ''}`]);
+    if (rec.plays.length) {
+      // одинаковые розыгрыши подряд — одной строкой: «Подать» ×3 +3🪙
+      const g = [];
+      for (const x of rec.plays) {
+        const e = effBits(x), last = g[g.length - 1];
+        if (last && last.id === x.id && last.ally === !!x.ally && last.e1 === e) { last.n++; continue; }
+        g.push({ id: x.id, ally: !!x.ally, e1: e, n: 1, x });
+      }
+      items.push(['Сыграли', g.map(y => { const e = y.n > 1 ? effBits({ gold: (y.x.gold || 0) * y.n, cards: (y.x.cards || 0) * y.n, temp: Object.fromEntries(Object.entries(y.x.temp || {}).map(([k, v]) => [k, v * y.n])) }) : y.e1; return `«${esc(D.COURT[y.id].name)}»${y.n > 1 ? ` ×${y.n}` : ''}${y.ally ? ' со свитой' : ''}${e ? ` <span class="ef">${e}</span>` : ''}`; }).join('<br>')]);
+    }
+    if (rec.plotsSet) items.push(['Замыслы', `отложили ${D.cards(rec.plotsSet)} рубашкой вверх`]);
+    if (rec.roll) {
+      const parts = [];
+      const N = S.players.length;
+      for (let k = 0; k < N; k++) {
+        const pl = S.players[(rec.roll.a + k) % N];
+        const r = rollParts(rec.roll, pl);
+        if (!r.any) continue;
+        const who = pl.i === ME ? '<b class="me">вы</b>' : esc(H(pl).short);
+        parts.push(`${who} ${r.net > 0 ? '+' : r.net < 0 ? '−' : '±'}${Math.abs(r.net)}🪙`);
+      }
+      items.push([`Бросок ${rec.roll.r}`, parts.length ? parts.join(', ') : 'ни одно владение не сработало']);
+    }
+    for (const x of rec.buys) items.push(['Купили', `${x.estate ? 'владение' : 'карту двора'} «${esc((x.estate ? D.ESTATES : D.COURT)[x.id].name)}» за ${x.price}🪙`]);
+    for (const x of rec.regs) { const def = x.kind === 'own' ? E.regDef(q, x.id) : D.GREAT[x.id]; items.push(['Знамя', `${x.kind === 'own' ? 'вассал' : 'великий лорд'} «${esc(D.regName(def))}» за ${x.cost}🪙`]); }
+    if (rec.notes.length) items.push(['События', rec.notes.map(t => esc(t).replace(/(\S+ \S+ \(вы\)|Хартвудов \(вы\)|\(вы\))/g, '<b class="me">$1</b>')).join('<br>')]);
+    if (!rec.plays.length && !rec.buys.length && !rec.regs.length && !rec.roll) items.push(['', 'Ничего не сделали']);
+    const dg = q.gold - rec.gold0;
+    return `<div class="tsum${nextReq ? ' wait' : ''}"><div class="ts-h"><img class="sgi" src="${IMG(`icons/h_${q.house}.svg`)}" alt=""><b>Ход ${esc(E.shortG(q))}</b><span class="ts-g">🪙 ${rec.gold0} → ${q.gold}${dg ? ` <i class="${dg > 0 ? 'pos' : 'neg'}">${dg > 0 ? '+' : '−'}${Math.abs(dg)}</i>` : ''}</span></div>
+      <dl class="ts-l">${items.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('')}</dl></div>`;
+  }
+  function popHtml(i, cls = 'gpop') {
+    const pp = pops[i];
+    if (!pp || !pp.d) return '';
+    const el = performance.now() - pp.t;
+    if (el > 2600) return '';
+    return `<span class="${cls} ${pp.d < 0 ? 'neg' : ''}" style="animation-delay:-${Math.round(el)}ms">${pp.d > 0 ? '+' : '−'}${Math.abs(pp.d)}</span>`;
   }
   function mineHtml(p) {
     const pr = E.prod(S, p);
     const t = (s) => p.temp[s] ? `<sup>+${p.temp[s]}</sup>` : '';
     const ts = Object.keys(S.titles).filter(k => S.titles[k] === p.i).map(k => `<span class="pill or">${D.TITLES[k].icon} ${D.TITLES[k].name}</span>`).join('');
-    let pop = '';
-    if (goldPop && goldPop.i === p.i) {
-      const el = performance.now() - goldPop.t;
-      if (el < 1200) pop = `<span class="gold-pop ${goldPop.d < 0 ? 'neg' : ''}" style="animation-delay:-${Math.round(el)}ms">${goldPop.d > 0 ? '+' : ''}${goldPop.d}</span>`;
-    }
+    const pop = popHtml(p.i, 'gold-pop');
     const who = WATCH ? `<span class="pill">Смотрим: ${pname(p)}</span>` : '';
-    return `<div class="mine"><div class="gold"><span>${p.gold}</span><small>🪙</small>${pop}</div>
+    return `<div class="mine"><div class="gold"><img class="mcr" src="${IMG(`icons/h_${p.house}.svg`)}" alt="${esc(H(p).name)}"><span>${p.gold}</span><small>🪙</small>${pop}</div>
       <div class="res"><span>📜 ${pr.sci}${t('sci')}</span><span>⚔️ ${pr.war}${t('war')}</span><span>🔗 ${pr.int}${t('int')}</span>${modOn('sieges') ? `<span>🧱 ${E.walls(S, p)}</span>` : ''}</div>
       <div class="meta">${who}<span class="pill or">🚩 ${p.regalia.length}/${R.ownRegalia} вассалов${modOn('lords') ? ` · ${p.great.length}/${R.greatNeeded} лордов` : ''}</span>${ts}${p.plots.length ? `<span class="pill">🎭 замыслов ${p.plots.length}/${E.plotSlots(S, p)}</span>` : ''}</div></div>`;
   }
-  function tabsHtml(p) {
-    const T = [['hand', `Рука ${p.hand.length}`], ['market', 'Рынок'], ['regalia', `Знамёна`], ['lands', `Земли ${p.estates.length}`]];
-    return `<nav class="tabs" role="tablist">${T.map(([k, l]) => `<button class="tab ${tab === k ? 'on' : ''}" role="tab" aria-selected="${tab === k}" data-act="tab" data-tab="${k}">${l}</button>`).join('')}</nav>`;
-  }
+
   function panelHtml(p) {
     if (tab === 'market') return marketPanel(p);
     if (tab === 'regalia') return regaliaPanel(p);
@@ -2792,7 +3288,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
     const slots = E.plotSlots(S, p);
     let out = '';
     if (WATCH) out += `<p class="note">Режим наблюдения: показаны карты того, кто сейчас ходит.</p>`;
-    else if (!my) out += `<p class="note">Сейчас ходит ${pname(S.players[S.cur])}. Ваши карты станут доступны в ваш ход.</p>`;
+    else if (!my) out += `<p class="note">${nextReq && lastRec ? `Ход ${esc(E.shortG(S.players[lastRec.p]))} окончен — нажмите «Дальше».` : S.cur === ME ? 'Ваш ход начинается…' : `Сейчас ходят ${pname(S.players[S.cur])}.`} Ваши карты станут доступны в ваш ход.</p>`;
     else if (!p.turn.rolled && p.hand.some(id => D.COURT[id].fx.some(op => op[0] === 'reroll' || op[0] === 'shift'))) out += `<p class="note">Карты с переброской или сдвигом кубика работают, только если сыграть их до броска.</p>`;
     const dis = !my || busy || adjustReq;
     if (my && p.hand.length > 1) out += `<div class="sec-h"><h3>Рука</h3><button class="btn small" data-act="play-all" ${dis ? 'disabled' : ''}>Сыграть все</button></div>`;
@@ -2857,10 +3353,12 @@ if (typeof module !== 'undefined') module.exports = Engine;
       return `<div class="union ${u[k] ? 'done' : ''}"><b>${pv.icon} ${pv.name} ${u.counts[k]}/3</b><br><span class="muted">${pv.union}${modOn('sieges') || modOn('spy') ? '; владения союза нельзя захватить' : ''}</span></div>`;
     }).join('')}</div>`;
     out += `<div class="sec-h"><h3>Владения по числам</h3><span>${p.estates.length} шт.</span></div><div class="byn">`;
+    const hit = hitsOf(rollView);
+    if (rollView) out += `<p class="note">Подсвечено то, что сработало на последнем броске (${rollView.r}).</p>`;
     for (let n = 1; n <= 12; n++) {
       const list = p.estates.filter(e => D.ESTATES[e.id].n.includes(n));
       if (!list.length) continue;
-      out += `<div class="nrow"><div class="n">${n}</div><div class="chips">${list.map(e => { const d = D.ESTATES[e.id]; return `<span class="chip t-${d.t}" data-act="info-estate" data-id="${e.id}">${D.ETYPE[d.t].mark} ${esc(d.name)}${d.sym ? ' ' + D.SYM[d.sym] : ''}</span>`; }).join('')}</div></div>`;
+      out += `<div class="nrow ${rollView && rollView.r === n ? 'rolled' : ''}"><div class="n">${n}</div><div class="chips">${list.map(e => estChip(e, hit)).join('')}</div></div>`;
     }
     const walls = p.estates.filter(e => D.ESTATES[e.id].t === 'wall');
     if (walls.length) out += `<div class="nrow"><div class="n">🧱</div><div class="chips">${walls.map(e => `<span class="chip t-wall" data-act="info-estate" data-id="${e.id}">🧱 ${esc(D.ESTATES[e.id].name)}</span>`).join('')}</div></div>`;
@@ -2870,8 +3368,24 @@ if (typeof module !== 'undefined') module.exports = Engine;
     if (sg || sp) out += `<div class="sec-h"><h3>Оборона</h3><span>${sg && sp ? 'против осад и шпионов' : sg ? 'против осад' : 'против шпионов'}</span></div><dl class="kv">${sg ? `<dt>Против осады</dt><dd>⚔️ ${E.prod(S, p).war} + 🧱 ${E.walls(S, p)}${m.defense ? ` + ${m.defense} (Маршал)` : ''} + кубик</dd>` : ''}${sp ? `<dt>Стража</dt><dd>🔗 ${E.prod(S, p).int}${m.guard ? ` + ${m.guard}` : ''}${R.spyDice ? ' + кубик' : ''}</dd>` : ''}</dl>`;
     return out;
   }
+  // сколько принесло каждое владение (по uid) на последнем броске
+  function hitsOf(rv) {
+    const h = {};
+    if (!rv) return h;
+    for (const x of rv.ev) if (x.amt > 0) h[x.uid] = (h[x.uid] || 0) + x.amt; else if (x.zero && h[x.uid] == null) h[x.uid] = 0;
+    return h;
+  }
+  function estChip(e, hit, o) {
+    const d = D.ESTATES[e.id];
+    const v = hit[e.uid];
+    return `<span class="chip t-${d.t}${v != null ? ' hit' : ''}" data-act="info-estate" data-id="${e.id}"${o != null ? ` data-o="${o}"` : ''}>${D.ETYPE[d.t].mark} ${esc(d.name)}${d.sym ? ' ' + D.SYM[d.sym] : ''}${v != null ? `<b class="hv${v > 0 ? '' : ' z'}">${v > 0 ? '+' + v : '0'}</b>` : ''}</span>`;
+  }
   function barHtml(p) {
     if (S.winner !== null) return `<button class="btn" data-act="results">Итоги</button><button class="btn primary" data-act="new">Новая партия</button>`;
+    if (nextReq && lastRec) {
+      const q = S.players[lastRec.p];
+      return `<div class="status"><b>Ход ${esc(E.shortG(q))} окончен</b><span class="muted">что изменилось — в сводке выше</span></div><button class="btn primary" data-act="next">Дальше</button>`;
+    }
     if (adjustReq) {
       const q = adjustReq.q;
       const has1 = q.shifts.some(x => x >= 1), has2 = q.shifts.some(x => x >= 2);
@@ -2894,45 +3408,80 @@ if (typeof module !== 'undefined') module.exports = Engine;
     }
     const cur = S.players[S.cur];
     const sp = { slow: 'Медленно', normal: 'Обычно', fast: 'Быстро' }[speed];
-    return `<div class="status"><b>Ходит ${pname(cur)}</b><span class="muted">Скорость ботов: ${sp}</span></div>${WATCH ? `<button class="btn small" data-act="pause">${paused ? '▶︎' : '❚❚'}</button>` : ''}<button class="btn small" data-act="speed">⏩</button>`;
+    return `<div class="status"><b>${cur.i === ME ? 'Ваш ход начинается…' : `Ходят ${pname(cur)}`}</b><span class="muted">Скорость ботов: ${sp}</span></div>${WATCH ? `<button class="btn small" data-act="pause">${paused ? '▶︎' : '❚❚'}</button>` : ''}<button class="btn small" data-act="speed">⏩</button>`;
   }
 
-  // ---------- стартовый экран ----------
-  function renderStart() {
+  // ---------- главное меню ----------
+  function savedInfo() {
+    if (!savedGame) return null;
+    try { const x = JSON.parse(savedGame.S); const me = savedGame.ME != null ? x.players[savedGame.ME] : null; return { round: x.round, house: me ? me.house : null, watch: !!savedGame.WATCH, tut: !!x.tut }; } catch (e) { return null; }
+  }
+  function renderHome() {
     app.classList.add('start-mode');
     barEl.hidden = true;
+    const si = savedInfo();
+    const hs = Object.keys(D.HOUSES);
+    app.innerHTML = `<section class="home">
+      <div class="home-hero">
+        <div class="emblem" aria-hidden="true"><img src="${IMG('icons/i_crown.svg')}" alt=""></div>
+        <span class="kicker">Карточная игра</span>
+        <h1>Претенденты</h1>
+        <div class="orn" aria-hidden="true"><i></i><b>◆</b><i></i></div>
+        <p>Король умер без наследника. Шесть Домов спорят за трон: побеждает тот, кто первым соберёт под свои знамёна вассалов.</p>
+        <div class="crests">${hs.map(h => `<img src="${IMG(`icons/h_${h}.svg`)}" alt="${esc(D.HOUSES[h].name)}" title="${esc(D.HOUSES[h].name)}">`).join('')}</div>
+      </div>
+      <div class="home-acts">
+        ${si ? `<button class="btn primary big" data-act="continue"><span>Продолжить партию</span><small>${si.tut ? 'обучение' : si.watch ? 'партия ботов' : si.house ? esc(D.HOUSES[si.house].short) : 'партия'} · круг ${si.round}</small></button>` : ''}
+        <button class="btn ${si ? '' : 'primary '}big" data-act="setup"><span>Новая партия</span><small>Дом, соперники и правила</small></button>
+        <button class="btn big" data-act="tutorial"><span>🎓 Обучение</span><small>базовые правила с подсказками</small></button>
+      </div>
+      <nav class="list" aria-label="Справка и настройки">
+        <button class="li" data-act="rules">${gico('econ')}<span>Правила</span><i aria-hidden="true">›</i></button>
+        <button class="li" data-act="aid">${gico('plot')}<span>Памятка</span><i aria-hidden="true">›</i></button>
+        <button class="li" data-act="catalog">${gico('card')}<span>Все карты</span><i aria-hidden="true">›</i></button>
+        <button class="li" data-act="settings"><span class="gear" aria-hidden="true">⚙︎</span><span>Настройки</span><i aria-hidden="true">›</i></button>
+      </nav>
+      ${LINKS.tutorial || LINKS.catalog ? `<nav class="list" aria-label="Ссылки">${LINKS.tutorial ? `<a class="li" href="${LINKS.tutorial}" target="_blank" rel="noopener">${gico('dawn')}<span>Учебник</span><i aria-hidden="true">↗</i></a>` : ''}${LINKS.catalog ? `<a class="li" href="${LINKS.catalog}" target="_blank" rel="noopener">${gico('banner')}<span>Каталог карт</span><i aria-hidden="true">↗</i></a>` : ''}</nav>` : ''}
+      <p class="foot">Прототип · правила и баланс ещё меняются</p>
+    </section>`;
+  }
+
+  // ---------- новая партия ----------
+  function renderSetup() {
+    app.classList.add('start-mode');
     fixSetup();
     const hs = Object.keys(D.HOUSES);
     const av = availHouses();
     const pk = presetOf(setup.mods);
     const nOn = setup.mods.length;
-    app.innerHTML = `<section class="hero"><span class="crest">Карточная игра · прототип</span><h1>Претенденты</h1>
-      <p>Король умер без наследника. Шесть Домов спорят за трон. Побеждает тот, кто первым соберёт ${goalLine()}.</p></section>
+    app.innerHTML = `<header class="nav"><button class="nav-back" data-act="home">‹ Меню</button><h1>Новая партия</h1><span class="nav-r"></span></header>
       <div class="startbox">
-        ${savedGame ? `<button class="btn primary wide" data-act="continue">Продолжить партию</button>` : ''}
-        <button class="btn wide tut-btn" data-act="tutorial">🎓 Обучающая партия<span class="muted">Базовые правила, Хартвуды против Корриганов, с подсказками</span></button>
-        <span class="lbl">Набор правил</span>
+        <h2 class="lbl">Набор правил</h2>
         <div class="seg presets">${Object.entries(D.PRESETS).map(([k, x]) => `<button class="${pk === k ? 'on' : ''}" data-act="preset" data-k="${k}">${x.name}</button>`).join('')}</div>
         <p class="pdesc">${pk ? D.PRESETS[pk].desc : 'Свой набор модулей.'} ${av.length} ${D.plural(av.length, 'Дом', 'Дома', 'Домов')}, до ${av.length} игроков.</p>
         <details class="mods"${modsOpen || !pk ? ' open' : ''}><summary>Модули · включено ${nOn} из ${MODK.length}</summary>
           <div class="modlist">${MODK.map(k => { const x = D.MODULES[k]; return `<button class="mod ${setupOn(k) ? 'on' : ''}" data-act="mod" data-k="${k}" role="switch" aria-checked="${setupOn(k)}"><span class="sw" aria-hidden="true"></span><span class="mi">${x.icon}</span><span><b>${x.name}</b><span class="muted">${x.desc}</span></span></button>`; }).join('')}</div>
         </details>
-        <span class="lbl">Ваш Дом</span>
+        <h2 class="lbl">Ваш Дом</h2>
         <div class="houses">${hs.map(h => { const x = D.HOUSES[h]; const ok = av.includes(h); const need = needOf('house', h); return `<button class="house ${setup.house === h ? 'on' : ''} ${ok ? '' : 'off'}" data-act="pick" data-h="${h}" ${ok ? '' : 'disabled'}><img class="sgi" src="${IMG(`icons/h_${h}.svg`)}" alt=""><b>${x.name}</b><span class="pth">${x.path}</span>${ok ? `<span class="ab muted">${x.about}</span><span class="ab">${x.ability}</span>` : `<span class="ab need">Нужен модуль «${D.MODULES[need].name}»</span>`}</button>`; }).join('')}</div>
-        <span class="lbl">Соперников-ботов</span>
+        <h2 class="lbl">Соперников-ботов</h2>
         <div class="cnt">${[1, 2, 3, 4, 5].map(n => `<button class="${setup.opps === n ? 'on' : ''}" data-act="opps" data-n="${n}" ${n > av.length - 1 ? 'disabled' : ''}>${n}</button>`).join('')}</div>
-        <button class="btn primary wide" data-act="start">Начать партию</button>
-        <button class="btn wide" data-act="watch">Смотреть партию ботов</button>
-        <div class="links"><button class="link" data-act="aid">Памятка</button><button class="link" data-act="rules">Правила</button><button class="link" data-act="catalog">Все карты</button>${LINKS.tutorial ? `<a class="link" href="${LINKS.tutorial}" target="_blank" rel="noopener">Учебник ↗</a>` : ''}${LINKS.catalog ? `<a class="link" href="${LINKS.catalog}" target="_blank" rel="noopener">Каталог карт ↗</a>` : ''}</div>
+        <p class="goalnote">Цель — первым собрать ${goalLine()}.</p>
+        <button class="link" data-act="watch">Смотреть партию ботов</button>
       </div>`;
+    barEl.hidden = false;
+    barEl.dataset.focus = '';
+    barEl.innerHTML = `<div class="in"><button class="btn primary" data-act="start">Начать партию · ${esc(D.HOUSES[setup.house].short)}</button></div>`;
   }
 
   // ---------- игра: запуск ----------
   function startGame(watch, opts = {}) {
     runId++;
-    closeAllSheets();
-    endTurnResolve = null; adjustReq = null; busy = false; diceView = null; paused = false; goldPop = null;
+    closeAllSheets(); closeAllPages();
+    endTurnResolve = null; adjustReq = null; busy = false; diceView = null; paused = false;
+    rollView = null; turnRec = null; lastRec = null; nextReq = null;
     for (const k in goldSeen) delete goldSeen[k];
+    for (const k in pops) delete pops[k];
     fixSetup();
     const houses = availHouses();
     let players;
@@ -2953,6 +3502,9 @@ if (typeof module !== 'undefined') module.exports = Engine;
     runId++;
     closeAllSheets();
     endTurnResolve = null; adjustReq = null; busy = false; paused = false;
+    rollView = null; turnRec = null; lastRec = null; nextReq = null;
+    for (const k in goldSeen) delete goldSeen[k];
+    for (const k in pops) delete pops[k];
     S = JSON.parse(saved.S); ME = saved.ME; WATCH = !!saved.WATCH;
     diceView = S.lastRoll ? { ...S.lastRoll, final: true } : null;
     schedule();
@@ -2964,7 +3516,17 @@ if (typeof module !== 'undefined') module.exports = Engine;
       while (S && S.winner === null) {
         if (my !== runId) return;
         saveSafe();
+        const cur = S.players[S.cur];
         await E.runTurn(S);
+        if (my !== runId) return;
+        // после хода соперника — сводка и пауза до «Дальше»
+        if (cur.isBot && ME !== null && !WATCH && S.winner === null && turnRec && turnRec.p === cur.i) {
+          lastRec = turnRec;
+          if (pauseBots) {
+            await new Promise(res => { nextReq = { res }; schedule(); setTimeout(() => revealEl(app.querySelector('.tsum')), 60); });
+            if (my !== runId) return;
+          }
+        }
       }
     } catch (e) {
       if (e instanceof Stale) return;
@@ -2979,36 +3541,211 @@ if (typeof module !== 'undefined') module.exports = Engine;
   }
   function showResults() {
     if (!S || S.winner === null) return;
+    if (pageRoot.querySelector('.page.results:not(.out)')) return;
     const w = S.players[S.winner];
     const cap = modOn('sieges') || modOn('spy');
-    const rows = [...S.players].sort((a, b) => E.regCount(b) - E.regCount(a) || b.gold - a.gold).map(q => `<tr><td>${pname(q)}</td><td>${E.regCount(q)}/${E.goal(S)}</td><td>${q.estates.length}</td><td>${q.gold}</td>${cap ? `<td>${q.stats.captured}</td>` : ''}</tr>`).join('');
-    const title = ME !== null ? (S.winner === ME ? '🏆 Вы победили' : `${H(w).sigil} Победил ${esc(H(w).name)}`) : `${H(w).sigil} Победил ${esc(H(w).name)}`;
-    const sh = openSheet({ title, body: `<p>Партия длилась ${S.round} ${D.plural(S.round, 'круг', 'круга', 'кругов')}.</p><div style="overflow-x:auto"><table class="endtable"><thead><tr><th>Дом</th><th>Знамёна</th><th>Владения</th><th>🪙</th>${cap ? '<th>Захваты</th>' : ''}</tr></thead><tbody>${rows}</tbody></table></div><div class="acts"><button class="btn primary wide" data-act="new">Новая партия</button></div>` });
-    sh.el.addEventListener('click', (e) => { if (e.target.closest('[data-act="new"]')) sh.close(); });
+    const won = ME !== null && S.winner === ME;
+    const list = [...S.players].sort((a, b) => (b.i === S.winner) - (a.i === S.winner) || E.regCount(b) - E.regCount(a) || b.gold - a.gold);
+    const rows = list.map((q, k) => `<li class="${q.i === S.winner ? 'win' : ''} ${q.i === ME ? 'me' : ''}"><span class="rk">${k + 1}</span><img src="${IMG(`icons/h_${q.house}.svg`)}" alt=""><span class="nm"><b>${esc(q.i === ME ? `Вы · ${H(q).short}` : H(q).short)}</b><small>владений ${q.estates.length} · ${q.gold}🪙${cap ? ` · захватов ${q.stats.captured}` : ''}</small></span><span class="st"><b>🚩 ${E.regCount(q)}/${E.goal(S)}</b></span></li>`).join('');
+    const title = ME !== null ? (won ? 'Победа!' : 'Партия окончена') : 'Партия окончена';
+    const sub = won ? `Вы собрали ${D.banners(E.regCount(w))} за ${S.round} ${D.plural(S.round, 'круг', 'круга', 'кругов')}.` : `Победил ${esc(H(w).name)}${S.timeout ? ' — по числу знамён, время вышло' : ''}. Партия длилась ${S.round} ${D.plural(S.round, 'круг', 'круга', 'кругов')}.`;
+    openPage({ title: 'Итоги', back: 'К столу', cls: 'results', body: `<div class="res-hero ${won ? 'won' : ''}"><div class="res-crest"><img src="${IMG(`icons/h_${w.house}.svg`)}" alt=""></div><h2>${title}</h2><p>${sub}</p></div>
+      <ol class="podium">${rows}</ol>
+      <div class="res-acts"><button class="btn primary big" data-act="new"><span>Новая партия</span></button><button class="btn big" data-act="home"><span>Главное меню</span></button></div>` });
   }
 
   // ---------- инфо-листы ----------
-  function infoEstate(id) {
-    const d = D.ESTATES[id], T = D.ETYPE[d.t], pv = d.p ? D.PROV[d.p] : null;
-    openSheet({ title: `${T.mark} ${esc(d.name)}`, body: `<div class="grid2" style="grid-template-columns:minmax(0,1fr)">${estateCard(id)}</div>
-      <dl class="kv"><dt>Тип</dt><dd>${T.name}: ${T.desc.toLowerCase()}</dd><dt>Числа</dt><dd>${D.numText(d.n)}</dd><dt>Провинция</dt><dd>${pv ? `${pv.icon} ${pv.name}${modOn('unions') ? ` — союз даёт ${pv.union}` : ''}` : 'нет'}</dd><dt>Значок</dt><dd>${d.sym ? `${D.SYM[d.sym]} ${D.SYM_NAME[d.sym]}` : 'нет'}</dd><dt>Цена</dt><dd>${d.cost}🪙</dd><dt>Копий</dt><dd>${d.basic ? 'всегда в продаже, без ограничений' : `${d.copies || 3} в колоде владений`}${d.limit ? '; у игрока не больше одной' : ''}</dd></dl>` });
+  // ---------- подробно по нажатию: простыми словами, с примером и с числами игрока ----------
+  const pct = (x) => (x > 0 && x < 0.01 ? '<1' : String(Math.round(x * 100))) + '%';
+  function chanceTxt(nums) {
+    const p1 = nums.reduce((t, r) => t + E.pRoll(1, r), 0), p2 = nums.reduce((t, r) => t + E.pRoll(2, r), 0);
+    return `1 кубик — ${p1 ? pct(p1) : 'никогда'}, 2 кубика — ${p2 ? pct(p2) : 'никогда'}`;
   }
-  function infoCourt(id) {
+  // чьи числа показывать: владелец (из листа соперника), иначе вы, в наблюдении — кто ходит
+  const subj = (o) => (!S ? null : o != null && o !== '' && S.players[+o] ? S.players[+o] : S.players[ME !== null ? ME : S.cur] || null);
+  const atWho = (q) => (q.i === ME ? 'у вас' : `у ${esc(E.shortG(q))}`);
+  const up1 = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+  const lo1 = (t) => t.charAt(0).toLowerCase() + t.slice(1);
+  const nOf = (n, a, b, c) => `${n} ${D.plural(n, a, b, c)}`;
+  const oppsOf = (q) => S.players.filter(o => o.i !== q.i);
+  const exHtml = (rows) => `<div class="ex">${rows.filter(Boolean).map(([k, v, cls]) => `<div class="ex-r${cls ? ' ' + cls : ''}"><div class="ex-k">${k}</div><div class="ex-v">${v}</div></div>`).join('')}</div>`;
+
+  function estateRows(id, q) {
+    const d = D.ESTATES[id], nm = `«${esc(d.name)}»`, n = D.numText(d.n), n0 = d.n[0];
+    const m = q ? E.mods(S, q) : {};
+    const rows = [];
+    if (d.t === 'wall') {
+      rows.push(['Как работает', `От кубика не срабатывает. Даёт 🧱 +${d.walls} к обороне от осад: осаждающему нужно перебить ваши ⚔️ + 🧱 + кубик. Саму стену захватить нельзя.`]);
+      if (!modOn('sieges')) rows.push(['В этой партии', 'Осады выключены — стена ничего не даёт.']);
+    } else {
+      const cnt = d.per === 'land' ? (x) => x.estates.filter(e => D.ESTATES[e.id].t === 'land').length
+        : d.per === 'provS' ? (x) => x.estates.filter(e => D.ESTATES[e.id].p === 'S').length
+        : d.per ? (x) => E.prod(S, x)[d.per] : null;
+      const perTxt = d.per === 'land' ? 'за каждую вашу 🟦 Землю' : d.per === 'provS' ? 'за каждое ваше владение Юга (сам Порт тоже считается)' : d.per ? `за каждый ваш значок ${D.SYM[d.per]}` : '';
+      const perIf = d.per === 'land' ? 'у вас 3 Земли' : d.per === 'provS' ? 'у вас 3 владения Юга' : d.per ? `у вас ${D.SYM[d.per]} 3` : '';
+      let v = null, now = '';
+      if (d.t === 'land' || d.t === 'craft') {
+        if (q) {
+          v = E.estateIncome(S, q, d, m);
+          const bon = [];
+          if (d.t === 'land' && m.blueBonus) bon.push(`+${m.blueBonus} с каждой Земли`);
+          if (d.t === 'land' && m.winter && d.p !== 'N') bon.push('−1 зимой');
+          if (d.t === 'craft' && m.greenBonus) bon.push(`+${m.greenBonus} с каждого Ремесла`);
+          if (cnt) { const k = cnt(q); now = `${up1(atWho(q))} ${d.per === 'land' ? nOf(k, 'Земля', 'Земли', 'Земель') : d.per === 'provS' ? nOf(k, 'владение Юга', 'владения Юга', 'владений Юга') : `${D.SYM[d.per]} ${k}`}${bon.length ? `, бонусы: ${bon.join(', ')}` : ''} → ${v}🪙.`; }
+          else if (bon.length) now = `С бонусами (${bon.join(', ')}) → ${v}🪙.`;
+        }
+      } else if (d.t === 'raid') {
+        v = Math.max(0, d.inc + (m.redBonus || 0));
+        if (q && m.redBonus) now = `С бонусом +${m.redBonus} к Набегам → ${v}🪙.`;
+      } else {
+        v = Math.max(0, d.inc + (m.holdBonus || 0));
+        if (q && m.holdBonus) now = `С бонусом сезона → ${v}🪙 с каждого.`;
+      }
+      const v0 = v != null ? v : d.per ? d.perN * 3 : d.inc;
+      const per0 = d.per && !q ? ` (если ${perIf})` : '';
+      rows.push(['Когда', d.t === 'land' ? `Выпало ${n} на любом броске — вашем или чужом.`
+        : d.t === 'craft' ? `Выпало ${n} на вашем броске. На чужом молчит.`
+        : d.t === 'raid' ? `Выпало ${n} на чужом броске. На вашем молчит${m.redOwn ? ' — но у вас срабатывает и на своём, тогда золото из банка' : ''}.`
+        : `Выпало ${n} на вашем броске.`]);
+      rows.push(['Что даёт', d.t === 'land' || d.t === 'craft' ? `Золото из банка: ${d.per ? `${d.perN}🪙 ${perTxt}` : `${d.inc}🪙`}.`
+        : d.t === 'raid' ? `Вы забираете ${d.inc}🪙 у того, кто бросал. Нет столько — берёте сколько есть. Набеги срабатывают раньше доходов: бросивший платит из того, что было у него до броска.`
+        : `Вы забираете по ${d.inc}🪙 у каждого соперника${d.cap ? `, но всего не больше ${d.cap}🪙 за бросок` : ''}. С того, у кого золота нет, — ничего.`]);
+      if (now) rows.push(['Сейчас', now, 'hl']);
+      let ex;
+      if (d.t === 'land') ex = `Соперник выбросил ${n0}. Его владения платят ему, а ${nm} — вам: +${v0}🪙${per0}, хотя бросали не вы.`;
+      else if (d.t === 'craft') ex = `Вы выбросили ${n0} → +${v0}🪙${per0}. Соперник выбросил ${n0} → ${nm} молчит.`;
+      else if (d.t === 'raid') { const t = Math.min(v0, 5); ex = `У соперника 5🪙, он выбросил ${n0} → вы забираете ${t}🪙, у него остаётся ${5 - t}🪙. Было бы у него 0🪙 — ничего.`; }
+      else {
+        const k = q ? S.players.length - 1 : 2, tot = v0 * k, capd = d.cap && tot > d.cap;
+        ex = `${k === 1 ? 'У вас 1 соперник, у него есть золото' : `У вас ${nOf(k, 'соперник', 'соперника', 'соперников')}, у каждого есть золото`}. Вы выбросили ${n0} → по ${v0}🪙 с каждого${capd ? ` — это ${tot}🪙, но потолок ${d.cap}🪙: итого +${d.cap}🪙` : `: итого +${tot}🪙`}.`;
+      }
+      rows.push(['Пример', ex]);
+      rows.push(['Шанс', `${up1(d.t === 'land' ? 'на каждом броске любого игрока' : d.t === 'raid' ? 'на каждом броске каждого соперника' : 'на каждом вашем броске')}: ${chanceTxt(d.n)}.`]);
+    }
+    if (d.sym) rows.push(['Значок', `${D.SYM[d.sym]} ${D.SYM_NAME[d.sym]} +1, пока владение ваше. Значки не тратятся — их нужно иметь: для требований вассалов${modOn('lords') ? ' и лордов' : ''}, для карт «за каждый значок»${modOn('titles') ? ', для титулов' : ''}.`]);
+    if (d.walls && d.t !== 'wall' && modOn('sieges')) rows.push(['Стены', `🧱 +${d.walls} к обороне от осад.`]);
+    if (d.p) { const pv = D.PROV[d.p]; rows.push(['Провинция', `${pv.icon} ${pv.name}.${modOn('unions') ? ` Союз — 3 разных владения этой провинции — даёт ${pv.union}${modOn('sieges') || modOn('spy') ? ', и их нельзя захватить' : ''}.` : ''}`]); }
+    rows.push(['Где взять', `${d.cost}🪙. ${d.basic ? 'Всегда в продаже, без ограничений.' : `${d.copies || 3} шт. в колоде владений${d.limit ? '; у одного игрока — не больше одной' : ''}.`}`]);
+    if (q) { const k = q.estates.filter(e => e.id === id).length; if (k) rows.push(['Есть', `${up1(atWho(q))}: ${k} шт.`]); }
+    return rows;
+  }
+
+  // пояснения к эффектам карт двора; plot — для усиленного эффекта замысла
+  function fxNotes(fx, q, plot) {
+    const out = [];
+    const m = q ? E.mods(S, q) : {};
+    for (const [k, a, b, c] of fx || []) {
+      if (k === 'reroll' && !plot) out.push('Играйте до броска. После броска появится выбор: принять число или перебросить кубики.');
+      else if (k === 'shift' && !plot) out.push(`Играйте до броска. После броска число можно изменить на ${a > 1 ? `1–${a}` : '1'} в любую сторону — например, 6 превратить в 7, чтобы сработали ваши владения на 7.`);
+      else if (k === 'draw' && !plot) out.push('Взятые карты можно сыграть в этот же ход.');
+      else if (k === 'temp') out.push(`${D.SYM[a]} до конца хода считается как обычный значок — например, закрывает требование вассала. В конце хода пропадает.${a === 'war' && modOn('sieges') ? ' Для осады важны именно такие ⚔️: атакуют войска этого хода.' : ''}`);
+      else if (k === 'goldPerCraft' && q) { const n = q.estates.filter(e => D.ESTATES[e.id].t === 'craft').length; out.push(`${up1(atWho(q))} ${nOf(n, 'Ремесло', 'Ремесла', 'Ремёсел')} → сейчас +${Math.min(b, n * a)}🪙.`); }
+      else if (k === 'goldPerSym' && q) { const n = E.sym(S, q, a); out.push(`${up1(atWho(q))} ${D.SYM[a]} ${n} → сейчас +${Math.min(c, n * b)}🪙.`); }
+      else if (k === 'buys') out.push('Действие — это покупка на рынке или привлечение знамени. Обычно оно одно за ход, с этой картой — на одно больше.');
+      else if (k === 'discount') out.push('Скидка на одну следующую покупку на рынке в этот ход. Не потратили — сгорает.');
+      else if (k === 'regDiscount') out.push('Скидка на знамя, привлечённое в этот ход. Не привлекли — сгорает.');
+      else if (k === 'forage') {
+        if (q) {
+          const mine = E.sym(S, q, a), list = oppsOf(q).filter(o => E.sym(S, o, a) < mine && o.gold > 0);
+          out.push(`${up1(atWho(q))} ${D.SYM[a]} ${mine}. Меньше — ${list.length ? `${list.map(o => `${esc(H(o).short)} (${E.sym(S, o, a)})`).join(', ')} → сейчас +${list.reduce((t, o) => t + Math.min(b, o.gold), 0)}🪙` : 'ни у кого: сейчас карта ничего не заберёт'}.`);
+        } else out.push(`Забираете у каждого соперника, у кого ${D.SYM[a]} меньше, чем у вас. Временные ${D.SYM[a]} этого хода считаются.`);
+      } else if (k === 'board') {
+        const os = q ? oppsOf(q).filter(o => o.gold > 0) : [];
+        if (os.length) {
+          const o = os.reduce((x, y) => (y.gold > x.gold ? y : x)), w = E.prod(S, o).war, mine = E.sym(S, q, 'war');
+          out.push(`Самый богатый сейчас — ${esc(H(o).short)}: ${o.gold}🪙, ⚔️ ${w}. ${up1(atWho(q))} ⚔️ ${mine} — ${mine >= w ? `не меньше, будет ${Math.min(a, o.gold)}🪙` : 'меньше, будет только 1🪙'}.`);
+        } else out.push('Сравниваются ваши ⚔️ (с временными) и ⚔️ самого богатого соперника на столе.');
+      } else if (k === 'siege') {
+        if (!modOn('sieges')) out.push('В этой партии осады выключены.');
+        else out.push(`Выберите соперника и его владение. Атака = ⚔️ этого хода + ${a} + кубик, оборона = его ⚔️ + 🧱 + кубик. Атака больше — забираете владение ценой до ${R.siegeLoot}🪙 или 3🪙. Если 📜 у защитника больше, он бросает 2 кубика и берёт лучший.${q && !plot ? ` ${up1(atWho(q))} атака сейчас: ${(q.temp.war || 0) + a + (m.siege || 0)} + кубик.` : ''}`);
+      } else if (k === 'spy') {
+        if (!modOn('spy')) out.push('В этой партии шпионаж выключен.');
+        else out.push(`Сила = ваши 🔗 + ${a}${R.spyDice ? ' + кубик' : ''} против стражи = 🔗 соперника${R.spyDice ? ' + кубик' : ''}. Больше — успех (при равенстве провал), но жертва может откупиться: 2🪙 за каждое очко разницы.${q && !plot ? ` ${up1(atWho(q))} сила сейчас: ${E.sym(S, q, 'int') + a + (m.spy || 0)}${R.spyDice ? ' + кубик' : ''}.` : ''}`);
+      } else if (k === 'trash') out.push('Убранные карты уходят из игры навсегда — обычно убирают «Подать». Колода становится меньше, и сильные карты приходят чаще.');
+      else if (k === 'ambush') out.push(`Засада: если число выпало на чужом броске — забираете ${a}🪙 у бросившего, если на вашем — ${a}🪙 из банка.`);
+    }
+    return out;
+  }
+  function courtRows(id, q) {
+    const c = D.COURT[id], role = c.role ? D.ROLES[c.role] : null;
+    const rows = [['Сыграть', `${D.fxText(c.fx)}.`]];
+    const notes = fxNotes(c.fx, q);
+    if (notes.length) rows.push(['Подробно', notes.join('<br>')]);
+    if (c.ally && role) {
+      const other = Object.keys(D.COURT).find(k => k !== id && D.COURT[k].role === c.role && !D.COURT[k].sig && cardOk('court', k));
+      rows.push(['Свита', `Если в этот ход вы уже сыграли другую карту роли ${role.icon} ${role.name}, эта даст ещё: ${lo1(D.fxText(c.ally))}.${other ? ` Например: сначала «${esc(D.COURT[other].name)}», потом «${esc(c.name)}».` : ''}`]);
+    }
+    if (c.plot && modOn('plots')) {
+      const pf = lo1(D.fxText(c.pfx));
+      const sp = q ? E.mods(S, q).plotSpread || 0 : 0;
+      const nums = []; if (c.plot === 'dice') for (let k = c.pn - sp; k <= c.pn + sp; k++) if (k >= 1 && k <= 12) nums.push(k);
+      rows.push(['Замысел', c.plot === 'dice'
+        ? `Можно не играть, а положить на стол рубашкой вверх. Сработает, когда на любом броске — вашем или чужом — выпадет ${nums.join(', ')} (${chanceTxt(nums)}): ${pf}.`
+        : `Можно не играть, а положить на стол рубашкой вверх. В начале вашего следующего хода сработает сильнее: ${pf}.`]);
+      const pn = fxNotes(c.pfx, q, true);
+      if (pn.length) rows.push(['', pn.join('<br>')]);
+      rows.push(['Места', `Замыслов на столе — не больше ${q ? E.plotSlots(S, q) : R.plotSlots}. Сработавший замысел уходит в сброс.`]);
+    }
+    rows.push(['Где взять', c.start ? `Стартовая карта: ${R.startTax} шт. в колоде каждого Дома.` : c.sig ? 'Фамильная карта: одна, в стартовой колоде своего Дома.' : `${c.cost}🪙 на рынке. В колоде двора 2 копии.`]);
+    if (role) rows.push(['Роль', `${role.icon} ${role.name} — считается для Свиты других карт этой роли.`]);
+    return rows;
+  }
+  function regRows(def, kind, q, st) {
+    const rows = [];
+    const sp = CardFX.splitMods(def.mods, modOn);
+    rows.push(['Что даёт', `${esc(def.text || '')}${sp.offK.length ? ` <span class="muted">Часть не действует: ${sp.offK.length > 1 ? 'модули' : 'модуль'} ${modList(sp.offK)} в этой партии выключен${sp.offK.length > 1 ? 'ы' : ''}.</span>` : ''}`]);
+    const hs = kind === 'own' ? Object.keys(D.HOUSES).find(h => D.HOUSES[h].regalia.includes(def)) : null;
+    rows.push(['Кто', kind === 'great' ? `Великий лорд из общего ряда, один на всю игру: кто первым привлёк, у того и остаётся. Для победы нужно ${R.greatNeeded}.` : `Вассал ${hs ? esc(D.HOUSES[hs].name.replace(/^Дом /, 'Дома ')) : 'Дома'}: привлечь его может только этот Дом. Для победы нужны все ${R.ownRegalia}.`]);
+    if (st === 'built') rows.push(['Сейчас', q ? (q.i === ME ? 'Уже с вами.' : `Уже ${atWho(q)}.`) : 'Привлечён.', 'hl']);
+    else if (st === 'taken') rows.push(['Сейчас', 'Уже у другого Дома.', 'hl']);
+    const reqT = D.reqText(def.req);
+    if (q && !st) {
+      const c = E.regCost(S, q, def), m = E.mods(S, q), k = E.regCount(q);
+      const parts = [`${def.cost}🪙`];
+      if (k) parts.push(`+ ${R.rise * k}🪙 (${atWho(q)} уже ${D.banners(k)})`);
+      if (m.regCheap) parts.push(`− ${m.regCheap}🪙 (способность Дома)`);
+      if (q.turn.regDiscount) parts.push(`− ${q.turn.regDiscount}🪙 (скидка карты в этот ход)`);
+      rows.push(['Цена', `${parts.length > 1 ? `${parts.join(' ')} = ` : ''}${c.gold}🪙. Каждое следующее знамя дороже на ${R.rise}🪙.`]);
+      if (reqT) {
+        const have = D.SYMS.filter(x => def.req[x]).map(x => `${D.SYM[x]} ${E.sym(S, q, x)}`).join(', ');
+        const miss = D.SYMS.filter(x => c.miss[x]).map(x => D.SYM[x].repeat(c.miss[x])).join('');
+        rows.push(['Значки', `Нужно иметь ${reqT} — значки не тратятся. ${up1(atWho(q))}: ${have}. ${c.missN ? `Не хватает ${miss} — докупка по ${m.tradeCheap ? 1 : R.trade}🪙 за значок: +${c.trade}🪙.` : 'Хватает.'}`]);
+      }
+      if (def.req && def.req.unions) rows.push(['Союзы', `Нужно ${def.req.unions} союза провинций. ${up1(atWho(q))}: ${E.unionCount(q)}.`]);
+      rows.push(['Итого', `${c.total}🪙${c.ok ? '' : ' — и нужны союзы'}.`, 'hl']);
+    } else if (reqT) rows.push(['Значки', `Нужно иметь ${reqT} — значки не тратятся. Нет нужного — докупка по ${R.trade}🪙 за значок.`]);
+    if (!st) rows.push(['Когда', 'После броска, вместо покупки на рынке: это ваше действие хода.']);
+    return rows;
+  }
+  function infoEstate(id, o) {
+    const d = D.ESTATES[id], T = D.ETYPE[d.t];
+    openSheet({ title: `${T.mark} ${esc(d.name)}`, body: `<div class="ex-card">${estateCard(id, '', null, { strip: true })}</div>${exHtml(estateRows(id, subj(o)))}` });
+  }
+  function infoCourt(id, o) {
     const c = D.COURT[id];
-    openSheet({ title: esc(c.name), body: `${courtCard(id)}<p class="note">${c.role ? `Роль: ${D.ROLES[c.role].icon} ${D.ROLES[c.role].name}. Свита срабатывает, если в этот ход вы уже сыграли другую карту этой роли.` : 'Карта без роли.'} ${c.start ? `В стартовой колоде каждого Дома: ${R.startTax} шт.` : c.sig ? 'Фамильная карта: одна, в стартовой колоде своего Дома.' : 'В колоде двора 2 копии.'}${c.plot && modOn('plots') ? ` Замысел: положите карту рубашкой вверх вместо розыгрыша — ${c.plot === 'dice' ? 'она сработает, когда на любом броске выпадет число, напечатанное на карте' : 'она сработает в начале вашего следующего хода'}, с усиленным эффектом.` : ''}</p>` });
+    openSheet({ title: esc(c.name), body: `<div class="ex-card">${courtCard(id, '', null, { strip: true })}</div>${exHtml(courtRows(id, subj(o)))}` });
+  }
+  function infoReg(kind, key, o, st) {
+    const q = subj(o);
+    const def = kind === 'great' ? D.GREAT[key] : ((q && D.HOUSES[q.house].regalia.find(r => r.id === key)) || Object.values(D.HOUSES).flatMap(h => h.regalia).find(r => r.id === key));
+    if (!def) return;
+    const img = IMG(`icons/${kind === 'great' ? 'g_' + key : 'v_' + key}.svg`);
+    const mine = kind === 'great' || (q && D.HOUSES[q.house].regalia.includes(def)); // чужого вассала вы не привлечёте — цену не считаем
+    openSheet({ title: esc(def.name), body: `<div class="ex-head"><img class="ex-ic${kind === 'great' ? '' : ' v'}" src="${img}" alt=""><span><span class="ex-t">${def.title ? esc(def.title) : 'великий лорд'}</span>${modsHtml(def)}</span></div>${exHtml(regRows(def, kind, mine ? q : null, st || ''))}` });
   }
   function infoOpp(i) {
     const q = S.players[i];
     const pr = E.prod(S, q);
     const own = D.HOUSES[q.house].regalia;
     const byN = {};
-    for (const e of q.estates) { const d = D.ESTATES[e.id]; const k = d.n.length ? D.numText(d.n) : '🧱'; (byN[k] = byN[k] || []).push(d); }
+    for (const e of q.estates) { const d = D.ESTATES[e.id]; const k = d.n.length ? D.numText(d.n) : '🧱'; (byN[k] = byN[k] || []).push(e); }
+    const hit = hitsOf(rollView);
     const u = E.unionsOf(q);
     const body = `<p class="muted" style="margin:0">${H(q).about}</p><p class="note">${H(q).ability}</p>
       <dl class="kv"><dt>Золото</dt><dd>${q.gold}🪙</dd><dt>Значки</dt><dd>📜 ${pr.sci} · ⚔️ ${pr.war} · 🔗 ${pr.int}${modOn('sieges') ? ` · 🧱 ${E.walls(S, q)}` : ''}</dd><dt>Карты</dt><dd>в руке ${q.hand.length}, всего ${q.deck.length + q.discard.length + q.hand.length + q.inPlay.length}</dd>${modOn('plots') ? `<dt>Замыслы</dt><dd>${q.plots.length ? q.plots.map(pl => pl.kind === 'dice' ? `🎲 на ${pl.nums.join(', ')}` : '⏳').join(', ') : 'нет'}</dd>` : ''}${modOn('unions') ? `<dt>Союзы</dt><dd>${['N', 'S', 'E', 'W'].filter(k => u[k]).map(k => D.PROV[k].icon + ' ' + D.PROV[k].name).join(', ') || 'нет'}</dd>` : ''}</dl>
-      <div class="sec-h"><h3>Знамёна ${E.regCount(q)}/${E.goal(S)}</h3></div><div class="regs">${own.map(r => regRow(null, r, 'own', q.regalia.includes(r.id) ? 'built' : '')).join('')}${q.great.map(id => regRow(null, D.GREAT[id], 'great', 'built')).join('')}</div>
-      <div class="sec-h"><h3>Владения</h3><span>${q.estates.length}</span></div><div class="byn">${Object.keys(byN).map(k => `<div class="nrow"><div class="n">${k}</div><div class="chips">${byN[k].map(d => `<span class="chip t-${d.t}">${D.ETYPE[d.t].mark} ${esc(d.name)}${d.sym ? ' ' + D.SYM[d.sym] : ''}</span>`).join('')}</div></div>`).join('')}</div>`;
-    openSheet({ title: `${H(q).sigil} ${esc(H(q).name)}`, body });
+      <div class="sec-h"><h3>Знамёна ${E.regCount(q)}/${E.goal(S)}</h3></div><div class="regs">${own.map(r => regRow(null, r, 'own', q.regalia.includes(r.id) ? 'built' : '', q.i)).join('')}${q.great.map(id => regRow(null, D.GREAT[id], 'great', 'built', q.i)).join('')}</div>
+      <div class="sec-h"><h3>Владения</h3><span>${q.estates.length}</span></div><div class="byn">${Object.keys(byN).map(k => `<div class="nrow"><div class="n">${k}</div><div class="chips">${byN[k].map(e => estChip(e, hit, q.i)).join('')}</div></div>`).join('')}</div>${rollView ? `<p class="muted" style="font-size:13px;margin:6px 0 0">Подсвечено сработавшее на последнем броске (${rollView.r}).</p>` : ''}`;
+    openSheet({ title: `${H(q).sigil} ${esc(H(q).name)}`, body: `<div class="oppbody">${body}</div>` });
   }
   function showLog() {
     let html = '<ul class="logl">', r = null;
@@ -3017,27 +3754,61 @@ if (typeof module !== 'undefined') module.exports = Engine;
       if (l.r !== r) { r = l.r; html += `<li class="rd">Круг ${r}</li>`; }
       html += `<li>${esc(l.t)}</li>`;
     }
-    openSheet({ title: 'Журнал', body: html + '</ul>' });
+    openPage({ title: 'Журнал партии', body: html + '</ul>' });
   }
-  function showAid() { openSheet({ title: 'Памятка', body: `<div class="aidwrap">${Aid.front(R, gico, modOn)}${Aid.back(R, gico, modOn)}</div>${MODK.some(k => !modOn(k)) ? '<p class="muted" style="font-size:13px;margin:8px 0 0">Показаны правила включённых модулей. Печатная памятка — для полной игры.</p>' : ''}` }); }
+  function showAid() { openPage({ title: 'Памятка', body: `<div class="aidwrap">${Aid.front(R, gico, modOn)}${Aid.back(R, gico, modOn)}</div>${MODK.some(k => !modOn(k)) ? '<p class="muted" style="font-size:13px;margin:8px 0 0">Показаны правила включённых модулей. Печатная памятка — для полной игры.</p>' : ''}` }); }
   function showMenu() {
     const sh = openSheet({ title: 'Меню', body: `<div class="optlist">
-      <button class="opt" data-m="aid"><span class="big">📋</span><span><b>Памятка</b><br><span class="muted">ход, доход по броску, значки, осада</span></span><span></span></button>
-      <button class="opt" data-m="rules"><span class="big">📖</span><span><b>Правила</b></span><span></span></button>
-      <button class="opt" data-m="catalog"><span class="big">🃏</span><span><b>Все карты</b><br><span class="muted">владения, двор, Дома, лорды, сезоны</span></span><span></span></button>
-      ${LINKS.tutorial ? `<a class="opt" href="${LINKS.tutorial}" target="_blank" rel="noopener"><span class="big">🎓</span><span><b>Учебник</b><br><span class="muted">правила по шагам, живые примеры</span></span><span class="r">↗</span></a>` : ''}
-      ${LINKS.catalog ? `<a class="opt" href="${LINKS.catalog}" target="_blank" rel="noopener"><span class="big">🗂</span><span><b>Каталог карт</b><br><span class="muted">сортировка, сочетания, пути к победе</span></span><span class="r">↗</span></a>` : ''}
-      ${S && S.tut ? `<button class="opt" data-m="tut"><span class="big">💡</span><span><b>Подсказки обучения</b><br><span class="muted">${S.tut.off ? 'выключены' : 'включены'}</span></span><span class="r">${S.tut.off ? 'вкл.' : 'выкл.'}</span></button>` : ''}
-      <button class="opt" data-m="log"><span class="big">🗒</span><span><b>Журнал партии</b></span><span></span></button>
-      <button class="opt" data-m="speed"><span class="big">⏩</span><span><b>Скорость ботов</b><br><span class="muted">${{ slow: 'медленно', normal: 'обычно', fast: 'быстро' }[speed]}</span></span><span></span></button>
-      <button class="opt" data-m="quit"><span class="big">🚪</span><span><b>Выйти в главное меню</b><br><span class="muted">партия сохранится</span></span><span></span></button></div>` });
+      <button class="opt" data-m="aid"><span class="big">${gico('plot')}</span><span><b>Памятка</b><br><span class="muted">ход, доход по броску, значки</span></span><span class="r">›</span></button>
+      <button class="opt" data-m="rules"><span class="big">${gico('econ')}</span><span><b>Правила</b></span><span class="r">›</span></button>
+      <button class="opt" data-m="catalog"><span class="big">${gico('card')}</span><span><b>Все карты</b><br><span class="muted">владения, двор, Дома${modOn('lords') ? ', лорды' : ''}</span></span><span class="r">›</span></button>
+      <button class="opt" data-m="log"><span class="big">🗒</span><span><b>Журнал партии</b></span><span class="r">›</span></button>
+      <button class="opt" data-m="settings"><span class="big gear">⚙︎</span><span><b>Настройки</b><br><span class="muted">тема, скорость ботов, пауза${S && S.tut ? ', подсказки' : ''}</span></span><span class="r">›</span></button>
+      ${LINKS.tutorial ? `<a class="opt" href="${LINKS.tutorial}" target="_blank" rel="noopener"><span class="big">${gico('dawn')}</span><span><b>Учебник</b><br><span class="muted">правила по шагам, живые примеры</span></span><span class="r">↗</span></a>` : ''}
+      <button class="opt" data-m="quit"><span class="big">🚪</span><span><b>Выйти в главное меню</b><br><span class="muted">${S && S.winner === null ? 'партия сохранится' : 'партия окончена'}</span></span><span class="r">›</span></button></div>` });
     sh.el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-m]'); if (!b) return;
       const m = b.dataset.m; sh.close();
       if (m === 'rules') showRules(); else if (m === 'catalog') showCatalog(); else if (m === 'log') showLog(); else if (m === 'aid') showAid();
-      else if (m === 'tut' && S && S.tut) { S.tut.off = !S.tut.off; saveSafe(); schedule(); }
-      else if (m === 'speed') { cycleSpeed(); showMenu(); }
-      else if (m === 'quit') { if (S && S.winner === null && lastSafe) savedGame = { S: lastSafe, ME, WATCH }; runId++; S = null; endTurnResolve = null; adjustReq = null; closeAllSheets(); schedule(); }
+      else if (m === 'settings') showSettings();
+      else if (m === 'quit') goHome('home', true);
+    });
+  }
+  // выйти из партии на экран меню или новой партии; незаконченная партия сохраняется
+  function goHome(to, keep) {
+    if (keep && S && S.winner === null && lastSafe) savedGame = { S: lastSafe, ME, WATCH };
+    else if (!keep) clearSave();
+    runId++; S = null; endTurnResolve = null; adjustReq = null; nextReq = null; busy = false;
+    view = to;
+    closeAllSheets(); closeAllPages();
+    schedule();
+  }
+  // ---------- настройки ----------
+  function settingsHtml() {
+    const seg = (key, cur, opts) => `<div class="seg wide" role="radiogroup">${opts.map(([v, l]) => `<button role="radio" aria-checked="${cur === v}" class="${cur === v ? 'on' : ''}" data-set="${key}" data-v="${v}">${l}</button>`).join('')}</div>`;
+    const sw = (key, on, title, sub) => `<button class="mod set ${on ? 'on' : ''}" data-set="${key}" role="switch" aria-checked="${on}"><span class="sw" aria-hidden="true"></span><span><b>${title}</b><span class="muted">${sub}</span></span></button>`;
+    return `<div class="settings">
+      <h2 class="lbl">Оформление</h2>${seg('theme', theme, [['system', 'Как в системе'], ['light', 'Светлое'], ['dark', 'Тёмное']])}
+      <h2 class="lbl">Соперники-боты</h2>
+      <div class="set-row"><span>Скорость ходов</span>${seg('speed', speed, [['slow', 'Медленно'], ['normal', 'Обычно'], ['fast', 'Быстро']])}</div>
+      <div class="group">${sw('pause', pauseBots, 'Пауза после хода соперника', pauseBots ? 'сводка хода и кнопка «Дальше»' : 'боты ходят подряд, без остановки')}</div>
+      ${S && S.tut ? `<h2 class="lbl">Обучение</h2><div class="group">${sw('tut', !S.tut.off, 'Подсказки', 'объяснения на каждом шаге')}</div>` : ''}
+      <h2 class="lbl">Об игре</h2>
+      <div class="about"><img src="${IMG('icons/i_crown.svg')}" alt=""><span><b>Претенденты</b><span class="muted">Карточная игра · прототип. Партия и настройки хранятся в этом браузере.</span></span></div>
+    </div>`;
+  }
+  function showSettings() {
+    if (pageRoot.querySelector('.page.settings:not(.out)')) return;
+    const pg = openPage({ title: 'Настройки', cls: 'settings', body: settingsHtml() });
+    pg.el.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-set]'); if (!b) return;
+      const k = b.dataset.set, v = b.dataset.v;
+      if (k === 'theme') { theme = v; applyTheme(); }
+      else if (k === 'speed') speed = v;
+      else if (k === 'pause') { pauseBots = !pauseBots; if (!pauseBots && nextReq) { const r = nextReq; nextReq = null; r.res(); } }
+      else if (k === 'tut' && S && S.tut) { S.tut.off = !S.tut.off; saveSafe(); }
+      savePrefs(); schedule();
+      pg.body.innerHTML = settingsHtml();
     });
   }
   function cycleSpeed() { speed = speed === 'normal' ? 'fast' : speed === 'fast' ? 'slow' : 'normal'; savePrefs(); toast(`Скорость ботов: ${{ slow: 'медленно', normal: 'обычно', fast: 'быстро' }[speed]}`, 1400); schedule(); }
@@ -3086,7 +3857,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
     if (on('balance')) b += `<h3>Зависть и поддержка</h3><ul><li><b>Зависть:</b> единоличный лидер по знамёнам в начале хода платит 1🪙 за каждое знамя отрыва (до ${R.envyMax}).</li>
         <li><b>Народная поддержка:</b> отстающий от лидера на ${R.supportGap}+ знамени получает +${R.supportGold}🪙 в начале хода.</li></ul>`;
     b += `</div>`;
-    openSheet({ title: 'Правила', body: b });
+    openPage({ title: 'Правила', body: b });
   }
   function showCatalog(which = 'estates') {
     const world = modOn('seasons') || modOn('titles') || modOn('unions');
@@ -3107,7 +3878,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
       if (w === 'houses') {
         return Object.keys(D.HOUSES).filter(h => { const k = needOf('house', h); return !k || modOn(k); }).map(h => { const x = D.HOUSES[h]; return `<div class="sec-h"><h3>${x.sigil} ${x.name}</h3><span>${x.path}</span></div><p class="muted" style="margin:0">${x.about}</p><p class="note">${x.ability}</p>
           <p style="margin:0;font-size:14px"><b>Старт:</b> Пашня, Пекарня, ${x.estates.map(id => D.ESTATES[id].name).join(', ')}; колода — ${R.startTax}× Подать, ${Object.entries(x.deck.reduce((m, id) => (m[id] = (m[id] || 0) + 1, m), {})).map(([id, n]) => (n > 1 ? n + '× ' : '') + D.COURT[id].name).join(', ')}.</p>
-          <div class="grid2" style="grid-template-columns:minmax(0,1fr)">${courtCard(x.deck[x.deck.length - 1])}</div><div class="regs">${x.regalia.map(r => regRow(null, r, 'own', '')).join('')}</div>`; }).join('');
+          <div class="ex-card">${courtCard(x.deck[x.deck.length - 1], '', null, { strip: true })}</div><div class="regs">${x.regalia.map(r => regRow(null, r, 'own', '')).join('')}</div>`; }).join('');
       }
       if (w === 'great') return `<p class="note">Колода — ${Object.keys(D.GREAT).filter(id => cardOk('great', id)).length} лордов по одному, в ряду лежат ${R.greatRow}. Каждого великого лорда может привлечь только один игрок; на его место выходит следующий.</p><div class="regs">${Object.keys(D.GREAT).filter(id => cardOk('great', id)).map(id => regRow(null, D.GREAT[id], 'great', '')).join('')}</div>`;
       let out = '';
@@ -3117,12 +3888,12 @@ if (typeof module !== 'undefined') module.exports = Engine;
       return out;
     };
     if (!segs.some(x => x[0] === which)) which = 'estates';
-    const sh = openSheet({ title: 'Все карты', body: `${head}<div class="seg">${segs.map(([k, l]) => `<button data-seg="${k}" class="${k === which ? 'on' : ''}">${l}</button>`).join('')}</div><div class="catbody">${content(which)}</div>` });
-    sh.el.addEventListener('click', (e) => {
+    const pg = openPage({ title: 'Все карты', cls: 'catalog', body: `${head}<div class="seg catseg">${segs.map(([k, l]) => `<button data-seg="${k}" class="${k === which ? 'on' : ''}">${l}</button>`).join('')}</div><div class="catbody">${content(which)}</div>` });
+    pg.el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-seg]'); if (!b) return;
-      sh.el.querySelectorAll('[data-seg]').forEach(x => x.classList.toggle('on', x === b));
-      sh.el.querySelector('.catbody').innerHTML = content(b.dataset.seg);
-      sh.el.querySelector('.sheet').scrollTop = 0;
+      pg.el.querySelectorAll('[data-seg]').forEach(x => x.classList.toggle('on', x === b));
+      pg.el.querySelector('.catbody').innerHTML = content(b.dataset.seg);
+      pg.body.scrollTop = 0;
     });
   }
 
@@ -3133,10 +3904,12 @@ if (typeof module !== 'undefined') module.exports = Engine;
     try { await fn(); } catch (e) { if (!(e instanceof Stale)) { console.error(e); toast('Ошибка: ' + esc(e.message), 5000); } }
     finally { busy = false; schedule(); }
   }
+  // подробности открываются на столе, в каталоге и в листе соперника (поверх него)
+  const infoOk = (el) => !el.closest('.scrim') || !!el.closest('.catbody') || !!el.closest('.oppbody');
   document.addEventListener('click', (e) => {
     const el = e.target.closest('[data-act]');
     if (!el || el.disabled) return;
-    if (el.closest('.scrim') && !['new', 'info-estate', 'info-court'].includes(el.dataset.act)) return;
+    if (el.closest('.scrim') && !['new', 'info-estate', 'info-court', 'info-reg'].includes(el.dataset.act)) return;
     const a = el.dataset.act;
     const p = S ? S.players[ME !== null ? ME : S.cur] : null;
     switch (a) {
@@ -3149,7 +3922,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
       case 'tutorial': startGame(false, { tut: true }); break;
       case 'tut-ok': if (S && S.tut) { const id = el.dataset.id; if (!S.tut.seen.includes(id)) S.tut.seen.push(id); S.tut.q = S.tut.q.filter(x => x.id !== id); saveSafe(); schedule(); } break;
       case 'tut-off': if (S && S.tut) { S.tut.off = true; saveSafe(); toast('Подсказки выключены. Включить снова можно в меню ☰.', 3600); schedule(); } break;
-      case 'continue': if (savedGame) resumeGame(savedGame); break;
+      case 'continue': if (savedGame) { closeAllPages(); resumeGame(savedGame); } break;
       case 'rules': showRules(); break;
       case 'aid': showAid(); break;
       case 'catalog': showCatalog(); break;
@@ -3157,12 +3930,17 @@ if (typeof module !== 'undefined') module.exports = Engine;
       case 'log': if (S) showLog(); break;
       case 'tab': tab = el.dataset.tab; schedule(); break;
       case 'opp': infoOpp(+el.dataset.i); break;
-      case 'info-estate': if (!el.closest('.scrim') || el.closest('.catbody')) infoEstate(el.dataset.id); break;
-      case 'info-court': if (!el.closest('.scrim') || el.closest('.catbody')) { if (e.target.closest('button')) break; infoCourt(el.dataset.id); } break;
+      case 'info-estate': if (infoOk(el)) infoEstate(el.dataset.id, el.dataset.o); break;
+      case 'info-court': if (infoOk(el)) { if (e.target.closest('button')) break; infoCourt(el.dataset.id, el.dataset.o); } break;
+      case 'info-reg': if (infoOk(el)) { if (e.target.closest('button')) break; infoReg(el.dataset.kind, el.dataset.key, el.dataset.o, el.dataset.st); } break;
       case 'speed': cycleSpeed(); break;
       case 'pause': paused = !paused; schedule(); break;
       case 'results': showResults(); break;
-      case 'new': closeAllSheets(); clearSave(); runId++; S = null; endTurnResolve = null; adjustReq = null; schedule(); break;
+      case 'new': goHome('setup', false); break;
+      case 'home': if (S) goHome('home', S.winner === null); else { view = 'home'; schedule(); } break;
+      case 'setup': view = 'setup'; schedule(); break;
+      case 'settings': showSettings(); break;
+      case 'next': if (nextReq) { const r = nextReq; nextReq = null; r.res(); schedule(); } break;
       case 'roll': if (isMyTurn()) guarded(() => E.roll(S, p, +el.dataset.n)); break;
       case 'adj': if (adjustReq) { const r = adjustReq; adjustReq = null; const d = +el.dataset.d; const k = r.q.shifts.reduce((best, mag, i) => (mag >= Math.abs(d) && (best < 0 || mag < r.q.shifts[best]) ? i : best), -1); r.res({ a: 'shift', k, d }); schedule(); } break;
       case 'adj-reroll': if (adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'reroll' }); schedule(); } break;
@@ -3171,7 +3949,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
       case 'play': if (isMyTurn()) { e.stopPropagation(); const i = +el.dataset.i; guarded(async () => { await E.play(S, p, i); }); } break;
       case 'plot': if (isMyTurn()) { e.stopPropagation(); const i = +el.dataset.i; guarded(async () => { await E.play(S, p, i, { plot: true }); }); } break;
       case 'buy': if (isMyTurn()) { e.stopPropagation(); const src = el.dataset.src; const key = src === 'basic' ? el.dataset.key : +el.dataset.key; guarded(async () => { const r = await E.buy(S, p, src, key); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
-      case 'build': if (isMyTurn()) { const kind = el.dataset.kind; const id = kind === 'great' ? el.dataset.gid : el.dataset.id; guarded(async () => { const r = await E.build(S, p, kind, id); if (!r.ok) toast(esc(r.why || 'Нельзя')); else toast(`🚩 Знамя с вами (${E.regCount(p)}/${E.goal(S)})`); }); } break;
+      case 'build': if (isMyTurn()) { const kind = el.dataset.kind; const id = kind === 'great' ? el.dataset.gid : el.dataset.id; guarded(async () => { const r = await E.build(S, p, kind, id); if (!r.ok) toast(esc(r.why || 'Нельзя')); else { const def = kind === 'great' ? D.GREAT[id] : E.regDef(p, id); toast(`🚩 «${esc(D.regName(def))}» теперь с вами — знамён ${E.regCount(p)} из ${E.goal(S)}`, 3200); } }); } break;
       case 'play-all': if (isMyTurn()) guarded(async () => {
         for (let g = 0; g < 20 && p.hand.length && isMyTurn(); g++) {
           const i = p.hand.findIndex(id => D.COURT[id].fx.some(op => op[0] === 'draw'));
@@ -3185,15 +3963,26 @@ if (typeof module !== 'undefined') module.exports = Engine;
   });
 
   // ---------- запуск ----------
+  function splash() {
+    if (document.getElementById('splash')) return;
+    const el = document.createElement('div');
+    el.id = 'splash';
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = `<div class="sp-in"><img src="${IMG('icons/i_crown.svg')}" alt=""><b>Претенденты</b><span>карточная игра</span></div>`;
+    document.body.appendChild(el);
+    setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), reduceMotion() ? 0 : 420); }, reduceMotion() ? 250 : 1000);
+  }
   function boot(data) {
     loadPrefs();
+    applyTheme();
+    splash();
     if (data && data.save) { savedGame = { S: data.save, ME: data.ME, WATCH: data.WATCH }; resumeGame(savedGame); return; }
     render();
   }
   try { window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(() => ({ save: S && S.winner === null ? lastSafe : null, ME, WATCH })); } catch (e) { /* нет хука */ }
   const hot = window.claude && window.claude.hot;
   if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
-  window.__VD = { get S() { return S; }, get ME() { return ME; }, startGame, isMyTurn, get adjust() { return adjustReq; } };
+  window.__VD = { get S() { return S; }, get ME() { return ME; }, startGame, isMyTurn, get adjust() { return adjustReq; }, get waitNext() { return !!nextReq; }, get view() { return S ? 'game' : view; } };
 })();
 
 SymIcons.observe(document.body, (k) => (typeof ASSET_URL === 'function' ? ASSET_URL(`icons/i_${k}.svg`) : `icons/i_${k}.svg`));
