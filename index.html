@@ -724,7 +724,7 @@ function ASSET_URL(p) {
   };
   const NAME = { gold: 'золото', war: 'мечи', sci: 'свитки', int: 'связи', wall: 'стены', dice: 'кубик', spy: 'шпионаж', plot: 'замысел', banner: 'знамя',
     land: 'Земля', craft: 'Ремесло', raid: 'Набег', hold: 'Твердыня', provN: 'Север', provS: 'Юг', provE: 'Восток', provW: 'Запад', none: 'без роли',
-    deer: 'Хартвуды', owl: 'Эддингтоны', wolf: 'Гримвольды', rose: 'Мальверны', serpent: 'Корриганы', moon: 'Сильвейны', econ: 'экономика',
+    deer: 'Олени', owl: 'Совы', wolf: 'Волки', rose: 'Розы', serpent: 'Змеи', moon: 'Лунные', econ: 'экономика',
     card: 'карта', action: 'действие', siege: 'осада', trash: 'убрать из игры', reroll: 'переброс', shift: 'сдвиг броска', tag: 'скидка', dawn: 'в начале хода',
     crown: 'великий лорд', spring: 'Весна', summer: 'Лето', autumn: 'Осень', winter: 'Зима', treasurer: 'Казначей', magister: 'Магистр', marshal: 'Маршал', whisperer: 'Тайный советник' };
   const src = Object.keys(MAP).sort((a, b) => b.length - a.length).map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
@@ -1158,7 +1158,7 @@ const DATA = (() => {
 
   const HOUSES = {
     deer: {
-      name: 'Дом Хартвудов', short: 'Хартвуды', sigil: '🦌', path: 'Экономика',
+      name: 'Дом Оленя', short: 'Олени', gen: 'Оленей', dat: 'Оленям', sigil: '🦌', path: 'Экономика',
       about: 'Купцы и землевладельцы Юга. Герб — золотой олень.',
       ability: 'Знамёна на 2🪙 дешевле. На старте +3🪙.',
       mods: { regCheap: 2 }, gold: 3,
@@ -1167,13 +1167,13 @@ const DATA = (() => {
         reg('road', 'Томас Хейл', 'смотритель дорог', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
         reg('square', 'Агнесса Фуллер', 'старшина цехов', 6, null, { greenBonus: 1 }, null, '🟩 Ремёсла приносят +1🪙.'),
         reg('mint', 'Бенедикт Ланс', 'банкир', 9, { sci: 1 }, { interest: 3 }, null, 'В начале хода +1🪙 за каждые 5🪙 в казне (макс. +3).'),
-        reg('guild', 'Мирабель Хартвуд', 'глава гильдии купцов', 12, { int: 1 }, { tradeCheap: 1 }, null, 'Докупка недостающих значков стоит 1🪙 вместо 2🪙.'),
+        reg('guild', 'Мирабель из Дома Оленя', 'глава гильдии купцов', 12, { int: 1 }, { tradeCheap: 1 }, null, 'Докупка недостающих значков стоит 1🪙 вместо 2🪙.'),
         reg('granary', 'Сэр Освальд Грейн', 'землевладелец', 15, { war: 1 }, { blueBonus: 1 }, null, '🟦 Земли приносят +1🪙.'),
-        reg('palace', 'Леди Элинор Хартвуд', 'глава торговой палаты', 18, { sci: 1, war: 1, int: 1 }, { buys: 1, startGold: 1 }, null, '+1 действие за ход; +1🪙 в начале хода.'),
+        reg('palace', 'Леди Элинор из Дома Оленя', 'глава торговой палаты', 18, { sci: 1, war: 1, int: 1 }, { buys: 1, startGold: 1 }, null, '+1 действие за ход; +1🪙 в начале хода.'),
       ],
     },
     owl: {
-      name: 'Дом Эддингтонов', short: 'Эддингтоны', sigil: '🦉', path: 'Наука',
+      name: 'Дом Совы', short: 'Совы', gen: 'Сов', dat: 'Совам', sigil: '🦉', path: 'Наука',
       about: 'Учёные Востока: архивы, звездочёты, расчёт. Герб — сова.',
       ability: 'Раз в ход можно перебросить кубики.',
       mods: { reroll: 1 },
@@ -1182,13 +1182,13 @@ const DATA = (() => {
         reg('tower', 'Феликс Мэйр', 'картограф', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
         reg('biblio', 'Сестра Ида', 'библиотекарь', 6, null, null, { sci: 2 }, 'Даёт 📜📜.'),
         reg('observ', 'Магнус Стерн', 'астроном', 9, { sci: 1 }, { reroll: 1 }, null, 'Раз в ход можно перебросить кубики.'),
-        reg('academy', 'Аделард Эддингтон', 'ректор академии', 12, { sci: 2 }, { hand: 1 }, { sci: 1 }, 'Даёт 📜. +1 карта в руку.'),
+        reg('academy', 'Аделард из Дома Совы', 'ректор академии', 12, { sci: 2 }, { hand: 1 }, { sci: 1 }, 'Даёт 📜. +1 карта в руку.'),
         reg('alchem', 'Розалинда Вейл', 'аптекарь', 15, { sci: 2, war: 1 }, { symIncome_sci: 1 }, null, 'В начале хода +1🪙 за каждые 2📜 (макс. +4).'),
         reg('dome', 'Матушка Морвен', 'предсказательница', 18, { sci: 3, int: 1 }, { plotSlots: 1, plotGold: 2 }, null, '+1 замысел. Каждый сработавший замысел +2🪙.'),
       ],
     },
     wolf: {
-      name: 'Дом Гримвольдов', short: 'Гримвольды', sigil: '🐺', path: 'Война',
+      name: 'Дом Волка', short: 'Волки', gen: 'Волков', dat: 'Волкам', sigil: '🐺', path: 'Война',
       about: 'Северные лорды, живут войной. Герб — волк.',
       ability: 'В начале хода +1⚔️ до конца хода. За победу в осаде +4🪙.',
       mods: { warCry: 1, siegeWinGold: 4 },
@@ -1197,13 +1197,13 @@ const DATA = (() => {
         reg('warroad', 'Эйрик Быстрый', 'разведчик', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
         reg('armory', 'Гуннар Хольт', 'оружейник', 6, null, { siege: 1 }, { war: 2 }, 'Даёт ⚔️⚔️. Осады +1.'),
         reg('citadel', 'Бранд Каменный', 'комендант гарнизона', 9, { war: 1 }, { walls: 3 }, null, '🧱 Стены +3.'),
-        reg('hq', 'Сэр Ульрик Гримвольд', 'командир конницы', 12, { war: 2 }, { siege: 2, redBonus: 1 }, null, 'Осады +2. 🟥 Набеги забирают +1🪙.'),
+        reg('hq', 'Сэр Ульрик из Дома Волка', 'командир конницы', 12, { war: 2 }, { siege: 2, redBonus: 1 }, null, 'Осады +2. 🟥 Набеги забирают +1🪙.'),
         reg('forge', 'Торвальд Молот', 'мастер-кузнец', 15, { war: 2, sci: 1 }, { symIncome_war: 1 }, null, 'В начале хода +1🪙 за каждые 2⚔️ (макс. +4).'),
         reg('standard', 'Хальвдан Серый', 'сборщик дани', 18, { war: 3, int: 1 }, { tribute: 1 }, null, 'В начале хода берёте 1🪙 у каждого, у кого ⚔️ меньше.'),
       ],
     },
     rose: {
-      name: 'Дом Мальвернов', short: 'Мальверны', sigil: '🥀', path: 'Интриги',
+      name: 'Дом Розы', short: 'Розы', gen: 'Роз', dat: 'Розам', sigil: '🥀', path: 'Интриги',
       about: 'Западный двор: шпионы, шантаж, яды. Герб — чёрная роза.',
       ability: 'Шпионаж +1, стража +1.',
       mods: { spy: 1, guard: 1 },
@@ -1211,14 +1211,14 @@ const DATA = (() => {
       regalia: [
         reg('paths', 'Корвин Лис', 'контрабандист', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
         reg('network', 'Мадам Сабина', 'хозяйка осведомителей', 6, null, null, { int: 2 }, 'Даёт 🔗🔗.'),
-        reg('chancery', 'Квентин Мальверн', 'глава тайной канцелярии', 9, { int: 1 }, { hand: 1 }, null, '+1 карта в руку.'),
+        reg('chancery', 'Квентин из Дома Розы', 'глава тайной канцелярии', 9, { int: 1 }, { hand: 1 }, null, '+1 карта в руку.'),
         reg('shadows', 'Гаррет Тень', 'телохранитель', 12, { int: 2 }, { plotProtect: 1, plotSlots: 1, guard: 2 }, null, '+1 замысел, ваши замыслы нельзя сорвать, стража +2.'),
         reg('garden', 'Леди Белладонна', 'отравительница', 15, { int: 2, sci: 1 }, { symIncome_int: 1 }, null, 'В начале хода +1🪙 за каждые 2🔗 (макс. +4).'),
-        reg('masks', 'Вивьен Мальверн', 'наставница шпионов', 18, { int: 3, war: 1 }, { spy: 2, stealBonus: 2 }, null, 'Шпионаж +2; при краже забираете на 2🪙 больше.'),
+        reg('masks', 'Вивьен из Дома Розы', 'наставница шпионов', 18, { int: 3, war: 1 }, { spy: 2, stealBonus: 2 }, null, 'Шпионаж +2; при краже забираете на 2🪙 больше.'),
       ],
     },
     serpent: {
-      name: 'Дом Корриганов', short: 'Корриганы', sigil: '🐍', path: 'Экономика и война',
+      name: 'Дом Змея', short: 'Змеи', gen: 'Змей', dat: 'Змеям', sigil: '🐍', path: 'Экономика и война',
       about: 'Мореходы побережья: торгуют, а при случае грабят. Герб — морской змей.',
       ability: '🟥 Набеги забирают +1🪙 и срабатывают и на вашем броске (золото из банка). На старте Лавка и +2🪙.',
       mods: { redBonus: 1, redOwn: 1 }, gold: 2,
@@ -1227,13 +1227,13 @@ const DATA = (() => {
         reg('harbor', 'Финн Мор', 'лоцман', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
         reg('fleet', 'Капитан Ронан', 'капер', 6, null, null, { war: 2 }, 'Даёт ⚔️⚔️.'),
         reg('lighthouse', 'Старый Брендан', 'смотритель маяка', 9, { war: 1 }, { harbor: 1 }, null, 'Если на 2 кубиках выпало 10+, можно добавить +2.'),
-        reg('shipyard', 'Мэйв Корриган', 'мастер верфи', 12, { war: 1, sci: 1 }, { greenBonus: 1 }, null, '🟩 Ремёсла приносят +1🪙.'),
+        reg('shipyard', 'Мэйв из Дома Змея', 'мастер верфи', 12, { war: 1, sci: 1 }, { greenBonus: 1 }, null, '🟩 Ремёсла приносят +1🪙.'),
         reg('cove', 'Кира Чёрная', 'пиратский капитан', 15, { war: 2, int: 1 }, { redIncome: 1 }, null, 'В начале хода +1🪙 за каждый ваш 🟥 Набег (макс. +4).'),
-        reg('admiralty', 'Дуглас Корриган', 'адмирал морской стражи', 18, { war: 3, sci: 1 }, { siege: 2, walls: 2 }, null, 'Осады +2, 🧱 стены +2.'),
+        reg('admiralty', 'Дуглас из Дома Змея', 'адмирал морской стражи', 18, { war: 3, sci: 1 }, { siege: 2, walls: 2 }, null, 'Осады +2, 🧱 стены +2.'),
       ],
     },
     moon: {
-      name: 'Дом Сильвейнов', short: 'Сильвейны', sigil: '🌙', path: 'Наука и интриги',
+      name: 'Дом Луны', short: 'Лунные', gen: 'Лунных', dat: 'Лунным', sigil: '🌙', path: 'Наука и интриги',
       about: 'Советники и гадатели, планируют наперёд. Герб — серебряная луна.',
       ability: '3 замысла вместо 2. 🎲-замыслы срабатывают и на соседние числа (±1). На старте Библиотека.',
       mods: { plotSlots: 1, plotSpread: 1 },
@@ -1243,8 +1243,8 @@ const DATA = (() => {
         reg('mirror', 'Сорель Аш', 'советник', 6, null, null, { sci: 1, int: 1 }, 'Даёт 📜 и 🔗.'),
         reg('temple', 'Иланна', 'жрица Луны', 9, { sci: 1 }, { hand: 1 }, null, '+1 карта в руку.'),
         reg('seers', 'Слепой Тобиас', 'провидец', 12, { sci: 1, int: 1 }, { shift: 1 }, null, 'Раз в ход можно сдвинуть бросок на ±1.'),
-        reg('spire', 'Сайлас Сильвейн', 'капитан тайной стражи', 15, { sci: 1, int: 2 }, { spy: 2, guard: 2 }, null, 'Шпионаж +2, стража +2.'),
-        reg('eye', 'Селена Сильвейн', 'астролог Дома', 18, { sci: 2, int: 2 }, { timedPlotBonus: 3, plotGold: 1 }, null, '⏳-замыслы дают ещё +3🪙; сработавший замысел +1🪙.'),
+        reg('spire', 'Сайлас из Дома Луны', 'капитан тайной стражи', 15, { sci: 1, int: 2 }, { spy: 2, guard: 2 }, null, 'Шпионаж +2, стража +2.'),
+        reg('eye', 'Селена из Дома Луны', 'астролог Дома', 18, { sci: 2, int: 2 }, { timedPlotBonus: 3, plotGold: 1 }, null, '⏳-замыслы дают ещё +3🪙; сработавший замысел +1🪙.'),
       ],
     },
   };
@@ -1417,11 +1417,12 @@ const Engine = (() => {
   const regCount = (p) => p.regalia.length + p.great.length;
   const opps = (S, p) => S.players.filter(q => q !== p);
   const nm = (p) => `${D.HOUSES[p.house].sigil} ${p.name}`;
-  // «Корриганы» → «Корриганов», «Хартвуды (вы)» → «Хартвудов (вы)»: для «у кого», «чья карта»
-  const nmG = (p) => `${D.HOUSES[p.house].sigil} ${p.name.replace(/ы( |$)/, 'ов$1')}`;
-  const nmD = (p) => `${D.HOUSES[p.house].sigil} ${p.name.replace(/ы( |$)/, 'ам$1')}`; // «Корриганам»
+  // падежи названий Домов — из данных: «Змеи» → «Змей», «Олени (вы)» → «Оленей (вы)», «Змеям»
+  const youOf = (p) => (/ \(вы\)$/.test(p.name) ? ' (вы)' : '');
+  const nmG = (p) => `${D.HOUSES[p.house].sigil} ${D.HOUSES[p.house].gen}${youOf(p)}`;
+  const nmD = (p) => `${D.HOUSES[p.house].sigil} ${D.HOUSES[p.house].dat}${youOf(p)}`;
   const short = (p) => D.HOUSES[p.house].short;
-  const shortG = (p) => D.HOUSES[p.house].short.replace(/ы$/, 'ов');
+  const shortG = (p) => D.HOUSES[p.house].gen;
   // дописать итог к строке журнала, если после неё ничего не добавилось; иначе — отдельной строкой
   function logAppend(S, entry, tail, pi, kind) {
     const last = S.log[S.log.length - 1];
@@ -1826,7 +1827,7 @@ const Engine = (() => {
       p.hand.splice(idx, 1);
       let nums = null;
       if (c.plot === 'dice') {
-        // число напечатано на карте; «соседние числа» (±1) — способность Сильвейнов
+        // число напечатано на карте; «соседние числа» (±1) — способность Дома Луны
         const sp = mods(S, p).plotSpread || 0;
         nums = [];
         for (let k = c.pn - sp; k <= c.pn + sp; k++) if (k >= 1 && k <= 12) nums.push(k);
@@ -2623,7 +2624,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const TUT_SEED = 140; // базовые правила, Хартвуды против Корриганов: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
+  const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
   const barEl = document.getElementById('bar');
@@ -3131,7 +3132,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
     }
     return { id: 'end', step: '4/4', title: 'Конец хода', text: `Действие потрачено. Нажмите «Завершить ход»: сыгранные карты и остаток руки уйдут в сброс, вы возьмёте ${E.handSize(S, p)} новые.`, focus: 'end' };
   }
-  const gen = (q) => H(q).short.replace(/ы$/, 'ов'); // «Корриганы» → «Корриганов»
+  const gen = (q) => H(q).gen; // «Змеи» → «Змей»
   const oppOf = (p) => S.players.find(q => q !== p);
   function coachHint(p) {
     if (!tutOn() || S.winner !== null || WATCH) return null;
@@ -3344,7 +3345,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
     }
     for (const x of rec.buys) items.push(['Купили', `${x.estate ? 'владение' : 'карту двора'} «${esc((x.estate ? D.ESTATES : D.COURT)[x.id].name)}» за ${x.price}🪙`]);
     for (const x of rec.regs) { const def = x.kind === 'own' ? E.regDef(q, x.id) : D.GREAT[x.id]; items.push(['Знамя', `${x.kind === 'own' ? 'вассал' : 'великий лорд'} «${esc(D.regName(def))}» за ${x.cost}🪙`]); }
-    if (rec.notes.length) items.push(['События', rec.notes.map(t => esc(t).replace(/(\S+ \S+ \(вы\)|Хартвудов \(вы\)|\(вы\))/g, '<b class="me">$1</b>')).join('<br>')]);
+    if (rec.notes.length) items.push(['События', rec.notes.map(t => esc(t).replace(/(\S+ \S+ \(вы\)|\S+ \(вы\)|\(вы\))/g, '<b class="me">$1</b>')).join('<br>')]);
     if (!rec.plays.length && !rec.buys.length && !rec.regs.length && !rec.roll) items.push(['', 'Ничего не сделали']);
     const dg = q.gold - rec.gold0;
     return `<div class="tsum${nextReq ? ' wait' : ''}"><div class="ts-h"><img class="sgi" src="${IMG(`icons/h_${q.house}.svg`)}" alt=""><b>Ход ${esc(E.shortG(q))}</b><span class="ts-g">🪙 ${rec.gold0} → ${q.gold}${dg ? ` <i class="${dg > 0 ? 'pos' : 'neg'}">${dg > 0 ? '+' : '−'}${Math.abs(dg)}</i>` : ''}</span></div>
@@ -3574,7 +3575,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
       </div>`;
     barEl.hidden = false;
     barEl.dataset.focus = '';
-    barEl.innerHTML = `<div class="in"><button class="btn primary" data-act="start">Начать партию · ${esc(D.HOUSES[setup.house].short)}</button></div>`;
+    barEl.innerHTML = `<div class="in"><button class="btn primary" data-act="start">Начать партию · ${esc(D.HOUSES[setup.house].name)}</button></div>`;
   }
 
   // ---------- игра: запуск ----------
@@ -3589,7 +3590,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
     const houses = availHouses();
     let players;
     const bot = (h) => ({ house: h, isBot: true, persona: (E.NATURAL && E.NATURAL[h]) || 'base' });
-    if (opts.tut) { players = [{ house: 'deer', isBot: false, name: 'Хартвуды (вы)' }, bot('serpent')]; ME = 0; }
+    if (opts.tut) { players = [{ house: 'deer', isBot: false, name: D.HOUSES.deer.short + ' (вы)' }, bot('serpent')]; ME = 0; }
     else if (watch) { players = shuffleArr(houses).slice(0, setup.opps + 1).map(bot); ME = null; }
     else { players = [{ house: setup.house, isBot: false, name: D.HOUSES[setup.house].short + ' (вы)' }, ...shuffleArr(houses.filter(h => h !== setup.house)).slice(0, setup.opps).map(bot)]; ME = 0; }
     WATCH = watch;
@@ -3609,6 +3610,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
     for (const k in goldSeen) delete goldSeen[k];
     for (const k in pops) delete pops[k];
     S = JSON.parse(saved.S); ME = saved.ME; WATCH = !!saved.WATCH;
+    for (const q of S.players) q.name = H(q).short + (q.isBot ? '' : ' (вы)');
     diceView = S.lastRoll ? { ...S.lastRoll, final: true } : null;
     schedule();
     gameLoop();
