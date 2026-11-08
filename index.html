@@ -189,7 +189,9 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 400; text-wrap: bala
 .est.t-hold { background: var(--purpure-t); }
 .est.t-wall { background: var(--neutral-t); }
 .est-top { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-.est-top .prov { margin-left: auto; font-size: 14px; }
+/* тип и провинция рядом; не помещаются в одну строку — провинция уходит на вторую */
+.est-top .et { min-width: 0; line-height: 1.25; display: flex; flex-wrap: wrap; column-gap: 8px; }
+.est-top .et > span { white-space: nowrap; }
 .shield { --c: var(--neutral); flex: none; min-width: 34px; height: 30px; padding: 0 6px 4px; display: grid; place-items: center; background: var(--c); color: #fff; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; clip-path: polygon(0 0, 100% 0, 100% 58%, 50% 100%, 0 58%); }
 .t-land .shield { --c: var(--azure); }
 .t-craft .shield { --c: var(--vert); }
@@ -3654,7 +3656,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     if (!modOn('sieges')) f.perm = f.perm.filter(x => x.i !== 'wall'); // без осад стены ничего не дают
     const art = (typeof ART !== 'undefined' && ART[id]) ? `<div class="cart${opts.strip ? ' strip' : ''}"><img src="${IMG(opts.strip ? ART[id].replace(/\.svg$/, '-s.svg') : ART[id])}" alt="" loading="lazy"></div>` : '';
     return `<div class="card est t-${d.t}" data-act="info-estate" data-id="${id}" tabindex="0">${art}
-      <div class="est-top"><span class="shield">${d.n.length ? D.numText(d.n) : '🧱'}</span><span>${D.ETYPE[d.t].mark} ${D.ETYPE[d.t].name}</span>${pv ? `<span class="prov" title="${pv.name}">${pv.icon}</span>` : ''}</div>
+      <div class="est-top"><span class="shield">${d.n.length ? D.numText(d.n) : '🧱'}</span><span class="et"><span>${D.ETYPE[d.t].mark} ${D.ETYPE[d.t].name}</span>${pv ? `<span class="pv">${pv.icon} ${pv.name}</span>` : ''}</span></div>
       <div class="cname">${esc(d.name)}</div>
       <div class="ctrig">${CardFX.trig(f.trig, gico)}</div>
       <div class="cfx">${FXc(f.main)}</div>
