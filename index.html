@@ -853,6 +853,18 @@ html, body { overflow-x: clip; }
 .pcw.web .pc-panel { overflow: hidden; }
 /* старые браузеры без единиц контейнера: карты фиксированного размера */
 @supports not (width: 1cqw) { .pcw.web { --u0: 0.69mm; } }
+/* переворот карты: новая на рынке, пришедшая в руку — открывается с рубашки */
+.pflip { position: relative; perspective: 1100px; }
+.pflip > .pf-in { position: relative; transform-style: preserve-3d; -webkit-transform-style: preserve-3d; animation: pcflip .64s cubic-bezier(.3, .75, .3, 1) both; animation-delay: var(--fd, 0ms); will-change: transform; }
+.pflip .pf-face { -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+.pflip .pf-back { position: absolute; inset: 0; transform: rotateY(180deg); -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 5% / 3.6%; overflow: hidden; box-shadow: 0 1px 2px rgba(30, 20, 5, .25), 0 4px 12px rgba(30, 20, 5, .16); }
+.pflip .pf-back img { width: 100%; height: 100%; display: block; }
+@keyframes pcflip {
+  0% { transform: translateY(-5%) rotateY(-180deg); }
+  60% { transform: translateY(-2%) rotateY(-25deg); }
+  100% { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .pflip > .pf-in { animation: none; } }
 
 </style>
 </head>
@@ -2022,7 +2034,37 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
 </svg>`;
   }
 
-  return { setup, estate, court, house: KINDS.house, vassal: KINDS.vassal, lord: KINDS.lord, season: KINDS.season, title: KINDS.title, prov: KINDS.prov,
+  // ---------- печатный набор: сколько каких карт в коробке (на партию до maxPlayers игроков) ----------
+  // ключи — как у рисунков: e_ владения, c_ двор, f_ фамильные, h_ Дома, v_ вассалы, g_ лорды, s_ сезоны, t_ титулы, p_ провинции
+  //   { n — всего; deck — в колоде рынка; start — стартовые копии по Домам; stock — общий запас; each — у каждого игрока }
+  function kit() {
+    const R = D.RULES, P = R.maxPlayers || 4, out = {};
+    for (const id in D.ESTATES) {
+      const d = D.ESTATES[id];
+      if (d.basic) { out['e_' + id] = { n: (R.basicStock && R.basicStock[id]) || 0, stock: true }; continue; }
+      const start = {};
+      for (const h in D.HOUSES) for (const x of D.HOUSES[h].estates) if (x === id) start[h] = (start[h] || 0) + 1;
+      const deck = d.copies || 3;
+      out['e_' + id] = { n: deck + Object.values(start).reduce((a, b) => a + b, 0), deck, start };
+    }
+    for (const id in D.COURT) {
+      const c = D.COURT[id];
+      if (c.start) { out['c_' + id] = { n: R.startTax * P, each: R.startTax }; continue; }
+      if (c.sig) { out['f_' + id] = { n: 1, house: houseOfSig(id) }; continue; }
+      const start = {};
+      for (const h in D.HOUSES) for (const x of D.HOUSES[h].deck) if (x === id) start[h] = (start[h] || 0) + 1;
+      out['c_' + id] = { n: 2 + Object.values(start).reduce((a, b) => a + b, 0), deck: 2, start };
+    }
+    for (const h in D.HOUSES) { out['h_' + h] = { n: 1 }; for (const r of D.HOUSES[h].regalia) out['v_' + r.id] = { n: 1 }; }
+    for (const g in D.GREAT) out['g_' + g] = { n: 1 };
+    for (const x of D.SEASONS) out['s_' + x.id] = { n: 1 };
+    for (const t in D.TITLES) out['t_' + t] = { n: 1 };
+    for (const pv in D.PROV) out['p_' + pv] = { n: 1 };
+    out.aid = { n: P };
+    return out;
+  }
+
+  return { setup, kit, estate, court, house: KINDS.house, vassal: KINDS.vassal, lord: KINDS.lord, season: KINDS.season, title: KINDS.title, prov: KINDS.prov,
     card: (kind, id, o) => KINDS[kind](id, o), wrap, scope: SCOPE, startTag, CSS, toU, BACKS, back, FIT, BM, EMB, BW, BH, HOUSE };
 });
 
@@ -2881,6 +2923,13 @@ const Engine = (() => {
   }
   const buysLeft = (S, p) => 1 + p.turn.buys + (mods(S, p).buys || 0) - p.turn.buysUsed;
   const canOwnEstate = (p, id) => !(D.ESTATES[id].limit && p.estates.some(e => e.id === id));
+  // запас базовых владений, как в печатном наборе: Пашни, Пекарни и Стены на всех (стартовые тоже из запаса)
+  const basicLeft = (S, id) => {
+    const st = R.basicStock && R.basicStock[id];
+    if (st == null) return Infinity;
+    let n = 0; for (const q of S.players) for (const e of q.estates) if (e.id === id) n++;
+    return Math.max(0, st - n);
+  };
 
   async function buy(S, p, src, key) {
     if (S.winner !== null || S.players[S.cur] !== p) return { ok: false, why: 'Сейчас не ваш ход' };
@@ -2890,6 +2939,7 @@ const Engine = (() => {
     else if (src === 'estate') id = S.estateRow[key];
     else if (src === 'court') id = S.courtRow[key];
     if (!id) return { ok: false, why: 'Карты нет' };
+    if (src === 'basic' && basicLeft(S, id) <= 0) return { ok: false, why: 'Эти владения кончились' };
     const isEstate = src !== 'court';
     const def = isEstate ? D.ESTATES[id] : D.COURT[id];
     if (isEstate && !canOwnEstate(p, id)) return { ok: false, why: 'Такое владение может быть только одно' };
@@ -3254,7 +3304,7 @@ const Engine = (() => {
     },
     bestPurchase(S, p, maxPrice = Infinity) {
       const opts = [];
-      for (const id of ['field', 'bakery', 'wall']) if (cardOn(S, 'estate', id)) opts.push({ src: 'basic', key: id, id, estate: true });
+      for (const id of ['field', 'bakery', 'wall']) if (cardOn(S, 'estate', id) && basicLeft(S, id) > 0) opts.push({ src: 'basic', key: id, id, estate: true });
       S.estateRow.forEach((id, k) => opts.push({ src: 'estate', key: k, id, estate: true }));
       S.courtRow.forEach((id, k) => opts.push({ src: 'court', key: k, id, estate: false }));
       let best = null, bs = 0.4;
@@ -3382,7 +3432,7 @@ const Engine = (() => {
       }
       if ((mods(S, p).freeBasic || 0) && !p.turn.basicUsed) {
         let bid = null, bsc = -0.5;
-        for (const id of ['field', 'bakery']) { const pr = marketPrice(S, p, D.ESTATES[id].cost); if (pr > p.gold || !this.okToSpend(S, p, pr)) continue; const sc = this.estateValue(S, p, id) - pr; if (sc > bsc) { bsc = sc; bid = id; } }
+        for (const id of ['field', 'bakery']) { if (basicLeft(S, id) <= 0) continue; const pr = marketPrice(S, p, D.ESTATES[id].cost); if (pr > p.gold || !this.okToSpend(S, p, pr)) continue; const sc = this.estateValue(S, p, id) - pr; if (sc > bsc) { bsc = sc; bid = id; } }
         if (bid) { const r = await buy(S, p, 'basic', bid); if (r.ok) await pause(S, 'buy'); }
       }
       const fm = mods(S, p).freeCheap || 0;
@@ -3494,7 +3544,7 @@ const Engine = (() => {
 
   return {
     D, R, on, needGreat, goal, goalText, cardOn, houseOn, seasonText, setHooks, newGame, runTurn, startOfTurn, play, roll, buy, build, endTurn,
-    mods, prod, sym, walls, unionsOf, unionCount, regCount, regCost, regDef, marketPrice, buysLeft, tradePrice,
+    mods, prod, sym, walls, unionsOf, unionCount, regCount, regCost, regDef, marketPrice, buysLeft, tradePrice, basicLeft,
     nmG, shortG, canOwnEstate, plotSlots, handSize, siegeOdds, spyInfo, capturable, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
   };
 })();
@@ -3851,7 +3901,7 @@ if (typeof module !== 'undefined') module.exports = Net;
         // человеку на этом устройстве сводку прошлого хода оставляем
         if (!isLocal(S.players[d.p])) lastRec = null;
         break;
-      case 'endturn': if (turnRec && turnRec.p === d.p) lastRec = turnRec; break;
+      case 'endturn': if (turnRec && turnRec.p === d.p) lastRec = turnRec; freshHand.add(d.p); break; // рука взята заново — откроем все её карты
       case 'dawn': if (rec) rec.dawn = d; break;
       case 'play': if (rec && d.p === rec.p) { if (d.plot) rec.plotsSet++; else rec.plays.push(d); } break;
       case 'buy': if (rec && d.p === rec.p) rec.buys.push(d); break;
@@ -4153,7 +4203,62 @@ if (typeof module !== 'undefined') module.exports = Net;
       else attrs += ` data-id="${id}"${act === 'zoom' ? ` data-kind="${kind}"` : ''}`;
       if (o.o != null) attrs += ` data-o="${o.o}"`;
     }
-    return PCards.wrap(kind, pcHtml(kind, id, o.allyOn) + (o.badge || ''), attrs, `web${o.big ? ' big' : ''}${o.cls ? ' ' + o.cls : ''}`);
+    const html = PCards.wrap(kind, pcHtml(kind, id, o.allyOn) + (o.badge || ''), attrs, `web${o.big ? ' big' : ''}${o.cls ? ' ' + o.cls : ''}`);
+    return o.flip ? flipWrap(o.flip, kind, html) : html;
+  }
+  // ---------- переворот: новая карта на рынке и карта, пришедшая в руку, открываются с рубашки ----------
+  const FLIP_MS = 640, FLIP_STEP = 120;
+  const flips = new Map(); // место карты → когда начать переворот
+  let seenTable = null;    // что лежало на столе при прошлой перерисовке
+  const freshHand = new Set(); // чья рука взята заново в конце хода
+  const BACK_OF = { estate: 'estates', court: 'court', lord: 'lords' };
+  // ключ места: где лежит + карта + какая по счёту из одинаковых (сдвиг ряда после покупки ключ не меняет)
+  const placeKeys = (where, ids) => { const n = {}; return ids.map(id => { n[id] = (n[id] || 0) + 1; return `${where}|${id}#${n[id]}`; }); };
+  function noteNew(where, before, after, t0) {
+    const was = new Set(placeKeys(where, before));
+    let k = 0;
+    placeKeys(where, after).forEach(key => { if (!was.has(key)) flips.set(key, t0 + FLIP_STEP * k++); });
+  }
+  // новые карты ряда рынка: сколько ушло из колоды — столько последних карт ряда (добор кладёт в конец)
+  function noteRow(where, before, after, deck0, deck1, t0) {
+    const n = Math.max(0, deck0 - deck1);
+    if (!n) return noteNew(where, before, after, t0);
+    placeKeys(where, after).slice(-n).forEach((key, k) => flips.set(key, t0 + FLIP_STEP * k));
+  }
+  function trackFlips() {
+    if (!S || reduceMotion()) { seenTable = null; flips.clear(); freshHand.clear(); return; }
+    const now = performance.now();
+    const gid = `${S.seed}|${S.players.length}`;
+    const len = (a) => (a ? a.length : 0);
+    const snap = () => ({ gid, est: S.estateRow.slice(), court: S.courtRow.slice(), great: (S.greatRow || []).slice(), hand: S.players.map(q => q.hand.slice()),
+      dE: len(S.estateDeck), dC: len(S.courtDeck), dG: len(S.greatDeck) });
+    if (!seenTable || seenTable.gid !== gid) {
+      // новая или загруженная партия: стол уже разложен, а свою руку игрок «берёт» — карты открываются по одной
+      flips.clear(); seenTable = snap();
+      if (ME !== null && S.players[ME]) noteNew(`hand${ME}`, [], S.players[ME].hand, now + 250);
+      freshHand.clear();
+      return;
+    }
+    noteRow('est', seenTable.est, S.estateRow, seenTable.dE, len(S.estateDeck), now);
+    noteRow('court', seenTable.court, S.courtRow, seenTable.dC, len(S.courtDeck), now);
+    noteRow('great', seenTable.great, S.greatRow || [], seenTable.dG, len(S.greatDeck), now);
+    S.players.forEach((q, i) => {
+      if (freshHand.has(i)) placeKeys(`hand${i}`, q.hand).forEach((key, k) => flips.set(key, now + FLIP_STEP * k));
+      else noteNew(`hand${i}`, seenTable.hand[i] || [], q.hand, now);
+    });
+    freshHand.clear();
+    seenTable = snap();
+    for (const [key, t] of flips) if (now - t > FLIP_MS + 50) flips.delete(key);
+  }
+  // для ряда карт: { key } переворота каждой карты или null
+  const flipsFor = (where, ids) => placeKeys(where, ids).map(key => (flips.has(key) ? { key } : null));
+  function flipWrap(f, kind, html) {
+    const t = flips.get(f.key);
+    if (t == null) return html;
+    const el = performance.now() - t;
+    if (el > FLIP_MS) return html;
+    // при перерисовке анимация продолжается с того же места (отрицательная задержка)
+    return `<div class="pflip" style="--fd:${Math.round(-el)}ms"><div class="pf-in"><div class="pf-face">${html}</div><div class="pf-back"><img src="${backSrc(BACK_OF[kind] || 'court')}" alt=""></div></div></div>`;
   }
   const pslot = (card, below = '') => `<div class="pslot">${card}${below}</div>`;
   // рубашка колоды с числом карт. Рубашка — картинкой: страница легче, а надпись в таком размере всё равно не читается
@@ -4173,7 +4278,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     return parts.join(' ');
   }
   const greatId = (def) => Object.keys(D.GREAT).find(k => D.GREAT[k] === def);
-  function regSlot(p, def, kind, state, owner) {
+  function regSlot(p, def, kind, state, owner, flip) {
     const built = state === 'built', taken = state === 'taken';
     const c = !built && !taken && p ? E.regCost(S, p, def) : null;
     const my = p && S && ME !== null && p.i === ME && isMyTurn();
@@ -4185,7 +4290,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     }
     const o = owner != null ? owner : p ? p.i : null;
     const badge = built ? '<span class="pcb own">🚩 с вами</span>' : taken ? '<span class="pcb tag">у другого</span>' : '';
-    return pslot(pcard(kind === 'great' ? 'lord' : 'vassal', kind === 'great' ? greatId(def) : def.id, { o, st: built ? 'built' : taken ? 'taken' : '', cls: built ? 'built' : '', badge }), below);
+    return pslot(pcard(kind === 'great' ? 'lord' : 'vassal', kind === 'great' ? greatId(def) : def.id, { o, st: built ? 'built' : taken ? 'taken' : '', cls: built ? 'built' : '', badge, flip }), below);
   }
   // свойства, которым нужен выключенный модуль, на карте бледные — поясняем почему
   const offNote = (m) => { const sp = CardFX.splitMods(m, modOn); return sp.offK.length ? `<p class="note">Бледные свойства не действуют: ${sp.offK.length > 1 ? 'модули' : 'модуль'} ${modList(sp.offK)} в этой партии ${sp.offK.length > 1 ? 'выключены' : 'выключен'}.</p>` : ''; };
@@ -4316,6 +4421,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     renderCover();
     if (!S) { tabEl.hidden = true; if (view === 'setup') renderSetup(); else if (view === 'join') renderJoin(); else if (view === 'lobby' && NETG) renderLobby(); else renderHome(); return; }
     app.classList.remove('start-mode');
+    trackFlips();
     const p = S.players[viewIdx()];
     // всплывающие изменения золота у всех игроков; близкие по времени складываются
     const now = performance.now();
@@ -4563,6 +4669,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     else if (!p.turn.rolled && p.hand.some(id => D.COURT[id].fx.some(op => op[0] === 'reroll' || op[0] === 'shift'))) out += `<p class="note">Карты с переброской или сдвигом кубика работают, только если сыграть их до броска.</p>`;
     const dis = !my || busy || adjustReq;
     if (my && p.hand.length > 1) out += `<div class="sec-h"><h3>Рука</h3><button class="btn small" data-act="play-all" ${dis ? 'disabled' : ''}>Сыграть все</button></div>`;
+    const fh = flipsFor(`hand${p.i}`, p.hand);
     out += p.hand.length ? `<div class="pgrid hand">${p.hand.map((id, i) => {
       const c = D.COURT[id];
       const allyOn = !!(c.role && p.turn.roles[c.role] && c.ally);
@@ -4570,7 +4677,7 @@ if (typeof module !== 'undefined') module.exports = Net;
       const atk = attackOf(id);
       const playTxt = atk === 'siege' ? '⚔️ Начать осаду' : atk === 'spy' ? '🗝 Подослать шпиона' : 'Сыграть';
       const btns = WATCH ? '' : `<div class="btns"><button class="btn small primary${atk ? ' atkb' : ''}" data-act="play" data-i="${i}" ${dis ? 'disabled' : ''}>${playTxt}</button>${c.plot && modOn('plots') ? `<button class="btn small" data-act="plot" data-i="${i}" ${dis || !canPlot ? 'disabled' : ''}>${c.plot === 'dice' ? '🎲' : '⏳'} Замысел</button>` : ''}</div>`;
-      return pslot(pcard('court', id, { allyOn, badge: allyOn ? '<span class="pcb ok">✓ свита сработает</span>' : '' }), btns);
+      return pslot(pcard('court', id, { allyOn, badge: allyOn ? '<span class="pcb ok">✓ свита сработает</span>' : '', flip: fh[i] }), btns);
     }).join('')}</div>` : '<p class="muted">Рука пуста.</p>';
     if (p.inPlay.length) out += `<div class="sec-h"><h3>Сыграно</h3><span>в этот ход</span></div><div class="pgrid mini">${p.inPlay.map(id => pcard('court', id)).join('')}</div>`;
     if (modOn('plots')) {
@@ -4595,16 +4702,18 @@ if (typeof module !== 'undefined') module.exports = Net;
       const price = E.marketPrice(S, p, def.cost, !isEstate);
       let why = '';
       if (!my) why = 'не ваш ход'; else if (!p.turn.rolled) why = 'после броска'; else if (left <= 0) why = 'действий нет';
-      else if (isEstate && !E.canOwnEstate(p, id)) why = 'уже есть'; else if (p.gold < price) why = `нужно ${price}🪙`;
+      else if (isEstate && !E.canOwnEstate(p, id)) why = 'уже есть'; else if (src === 'basic' && E.basicLeft(S, id) <= 0) why = 'кончились'; else if (p.gold < price) why = `нужно ${price}🪙`;
       return `<button class="btn small act ${why ? '' : 'primary'}" data-act="buy" data-src="${src}" data-key="${key}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : `Купить · ${price}🪙`}</button>`;
     };
     const priceOf = (def) => E.marketPrice(S, p, def.cost, !!D.COURT[Object.keys(D.COURT).find(k => D.COURT[k] === def)]);
     let out = `<p class="note">${note}</p>`;
     // цена со скидкой (Гильдмастер, Осень) — плашкой поверх напечатанной
     const sale = (def, price) => (price !== def.cost ? `<span class="pcb sale">${price}🪙</span>` : '');
-    out += deckHead('Владения', 'estates', S.estateDeck.length, 'Колода владений') + `<div class="pgrid">${S.estateRow.map((id, k) => pslot(pcard('estate', id, { badge: sale(D.ESTATES[id], priceOf(D.ESTATES[id])) }), btn('estate', k, id, true))).join('')}</div>`;
-    out += deckHead('Двор', 'court', S.courtDeck.length, 'Колода двора') + `<div class="pgrid">${S.courtRow.map((id, k) => pslot(pcard('court', id, { badge: sale(D.COURT[id], priceOf(D.COURT[id])) }), btn('court', k, id, false))).join('')}</div>`;
-    out += `<div class="sec-h"><h3>Всегда в продаже</h3><span>без ограничений</span></div><div class="pgrid">${['field', 'bakery', 'wall'].filter(id => cardOk('estate', id)).map(id => pslot(pcard('estate', id, { badge: sale(D.ESTATES[id], priceOf(D.ESTATES[id])) }), btn('basic', id, id, true))).join('')}</div>`;
+    const fe = flipsFor('est', S.estateRow), fc = flipsFor('court', S.courtRow);
+    out += deckHead('Владения', 'estates', S.estateDeck.length, 'Колода владений') + `<div class="pgrid">${S.estateRow.map((id, k) => pslot(pcard('estate', id, { badge: sale(D.ESTATES[id], priceOf(D.ESTATES[id])), flip: fe[k] }), btn('estate', k, id, true))).join('')}</div>`;
+    out += deckHead('Двор', 'court', S.courtDeck.length, 'Колода двора') + `<div class="pgrid">${S.courtRow.map((id, k) => pslot(pcard('court', id, { badge: sale(D.COURT[id], priceOf(D.COURT[id])), flip: fc[k] }), btn('court', k, id, false))).join('')}</div>`;
+    const stock = (id) => { const n = E.basicLeft(S, id), all = R.basicStock && R.basicStock[id]; return all ? `<div class="pmeta"><span class="${n ? 'muted' : 'miss'}">${n ? `в запасе ${n} из ${all}` : `запас кончился (${all} шт.)`}</span></div>` : ''; };
+    out += `<div class="sec-h"><h3>Всегда в продаже</h3><span>пока есть в запасе</span></div><div class="pgrid">${['field', 'bakery', 'wall'].filter(id => cardOk('estate', id)).map(id => pslot(pcard('estate', id, { badge: sale(D.ESTATES[id], priceOf(D.ESTATES[id])), cls: E.basicLeft(S, id) <= 0 ? 'dim' : '' }), stock(id) + btn('basic', id, id, true))).join('')}</div>`;
     return out;
   }
   function regaliaPanel(p) {
@@ -4617,7 +4726,8 @@ if (typeof module !== 'undefined') module.exports = Net;
     if (!lords) return out;
     out += deckHead('Великие лорды', 'lords', S.greatDeck.length, 'Колода лордов', `у вас ${p.great.length}/${R.greatNeeded}`);
     if (p.great.length) out += `<div class="pgrid">${p.great.map(id => regSlot(p, D.GREAT[id], 'great', 'built')).join('')}</div>`;
-    if (p.great.length < R.greatNeeded) out += `<div class="pgrid">${S.greatRow.map(id => regSlot(p, D.GREAT[id], 'great', '')).join('')}</div>`;
+    const fg = flipsFor('great', S.greatRow);
+    if (p.great.length < R.greatNeeded) out += `<div class="pgrid">${S.greatRow.map((id, k) => regSlot(p, D.GREAT[id], 'great', '', null, fg[k])).join('')}</div>`;
     else out += `<p class="muted" style="margin:0">У вас уже оба великих лорда.</p>`;
     return out;
   }
@@ -4962,7 +5072,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     if (d.sym) rows.push(['Значок', `${D.SYM[d.sym]} ${D.SYM_NAME[d.sym]} +1, пока владение ваше. Значки не тратятся — их нужно иметь: для требований вассалов${modOn('lords') ? ' и лордов' : ''}, для карт «за каждый значок»${modOn('titles') ? ', для титулов' : ''}.`]);
     if (d.walls && d.t !== 'wall' && modOn('sieges')) rows.push(['Стены', `🧱 +${d.walls} к обороне от осад.`]);
     if (d.p) { const pv = D.PROV[d.p]; rows.push(['Провинция', `${pv.icon} ${pv.name}.${modOn('unions') ? ` Каждые 3 владения этой провинции, можно одинаковые, — союз: ${pv.union}. Союзы копятся.` : ''}`]); }
-    rows.push(['Где взять', `${d.cost}🪙. ${d.basic ? 'Всегда в продаже, без ограничений.' : `${d.copies || 3} шт. в колоде владений${d.limit ? '; у одного игрока — не больше одной' : ''}.`}`]);
+    rows.push(['Где взять', `${d.cost}🪙. ${d.basic ? `Всегда в продаже, пока есть в запасе: всего ${R.basicStock[id]} шт. на всех, стартовые тоже из запаса${S ? `; сейчас осталось ${E.basicLeft(S, id)}` : ''}.` : `${d.copies || 3} шт. в колоде владений${d.limit ? '; у одного игрока — не больше одной' : ''}.`}`]);
     if (q) { const k = q.estates.filter(e => e.id === id).length; if (k) rows.push(['Есть', `${up1(atWho(q))}: ${k} шт.`]); }
     return rows;
   }
@@ -5194,7 +5304,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     b += `<h3>Владения</h3><ul>
       <li>🟦 <b>Земля</b> — доход на любом броске, в том числе чужом.</li><li>🟩 <b>Ремесло</b> — доход только на вашем броске.</li>
       <li>🟥 <b>Набег</b> — на чужом броске забирает золото у бросившего.</li><li>🟪 <b>Твердыня</b> — на вашем броске забирает золото у каждого соперника. Каждой — не больше одной у игрока.</li>
-      <li><b>Копии.</b> Пашня и Пекарня всегда в продаже. Остальные владения — по 3 в колоде (Крепость и Гильдия воров — по 2). Карты двора — по 2.</li></ul>`;
+      <li><b>Копии.</b> Пашня, Пекарня и Каменная стена всегда в продаже, пока есть в запасе: ${R.basicStock.field}, ${R.basicStock.bakery} и ${R.basicStock.wall} карт на всех (стартовые тоже из запаса). Остальные владения — по 3 в колоде (Крепость и Гильдия воров — по 2). Карты двора — по 2.</li></ul>`;
     b += `<h3>Значки и вассалы</h3><p>📜 Свитки, ⚔️ Мечи и 🔗 Связи — значки на ваших картах. Они не тратятся: вассал требует, чтобы они у вас были. Недостающий значок докупается за ${R.trade}🪙. Каждое следующее знамя дороже на ${R.rise}🪙.</p>`;
     b += `<h3>Карты двора</h3><p>Роли: 🪙 Купец, 📜 Учёный, ⚔️ Рыцарь, 🔗 Шпион. <b>Свита</b> — бонус, если в этот ход вы уже сыграли карту той же роли.</p>`;
     { const dg = R.startGold + (D.HOUSES.deer.gold || 0), a = dg + 4, b2 = a - 2, c = b2 + 4, d = c - (4 - D.HOUSES.deer.mods.regCheap);
@@ -5218,7 +5328,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     const content = (w) => {
       if (w === 'estates') {
         const ids = Object.keys(D.ESTATES).filter(id => cardOk('estate', id)).sort((a, b) => (D.ESTATES[a].n[0] || 99) - (D.ESTATES[b].n[0] || 99));
-        return `<p class="note">Пашня и Пекарня${cardOk('estate', 'wall') ? ', Каменная стена' : ''} — всегда в продаже. Остальные владения — по 3 копии в колоде (Крепость и Гильдия воров — по 2), в ряду рынка ${R.estateRow}.</p><div class="pgrid">${ids.map(id => pcard('estate', id)).join('')}</div>`;
+        return `<p class="note">Пашня и Пекарня${cardOk('estate', 'wall') ? ', Каменная стена' : ''} — всегда в продаже, пока есть в запасе (${R.basicStock.field}, ${R.basicStock.bakery}${cardOk('estate', 'wall') ? ` и ${R.basicStock.wall}` : ''} карт на всех). Остальные владения — по 3 копии в колоде (Крепость и Гильдия воров — по 2), в ряду рынка ${R.estateRow}.</p><div class="pgrid">${ids.map(id => pcard('estate', id)).join('')}</div>`;
       }
       if (w === 'court') {
         const ids = Object.keys(D.COURT).filter(id => !D.COURT[id].sig && cardOk('court', id));
