@@ -1045,7 +1045,7 @@ function ASSET_URL(p) {
     } else main = [{ v: `+${d.inc}`, i: 'gold', big: true }];
     const perm = [];
     if (d.sym) perm.push({ v: '+1', i: d.sym });
-    if (d.walls && d.t !== 'wall') perm.push({ v: `+${d.walls}`, i: 'wall' });
+    if (d.walls && d.t !== 'wall') perm.push({ v: `+${d.walls}`, i: 'wall', c: 'стены' });
     if (d.guard) perm.push({ v: `+${d.guard}`, i: 'int', c: 'стража' });
     if (d.mods) perm.push(...mods(d.mods));
     if (d.fixed) perm.push({ c: 'захватить нельзя' });
@@ -1311,7 +1311,7 @@ const DATA = (() => {
     smithy: { name: 'Кузница', n: [8], t: 'craft', per: 'war', perN: 1, cost: 4, p: 'N', sym: 'war', copies: 3 },
     mint: { name: 'Монетный двор', n: [8, 9], t: 'hold', inc: 1, cap: 3, cost: 7, p: 'N', copies: 2, mods: { interest: 2 }, ptext: 'в начале хода +1🪙 за каждые 5🪙 у вас, до +2' },
     mine: { name: 'Рудник', n: [9], t: 'land', inc: 5, cost: 5, p: 'N', copies: 3 },
-    cliffkeep: { name: 'Замок на скале', n: [2, 3], t: 'hold', inc: 2, cap: 4, cost: 7, p: 'N', walls: 3, copies: 2, mods: { defense: 2 }, ptext: 'оборона от осад +2' },
+    cliffkeep: { name: 'Замок на скале', n: [2, 3], t: 'hold', inc: 2, cap: 4, cost: 7, p: 'N', walls: 5, copies: 2 },
 
     shop: { name: 'Лавка', n: [4], t: 'craft', inc: 4, cost: 2, p: 'S', copies: 3 },
     winery: { name: 'Винодельня', n: [7], t: 'craft', per: 'land', perN: 2, cost: 5, p: 'S', copies: 3 },
