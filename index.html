@@ -1094,6 +1094,7 @@ function ASSET_URL(p) {
     blueBonus: (n) => ({ pre: 'land', v: `+${n}`, i: 'gold', c: 'с каждой Земли' }),
     winter: () => ({ pre: 'land', v: '−1', i: 'gold', c: 'с каждой Земли, кроме Севера' }),
     interest: (n) => ({ dawn: 1, v: '+1', i: 'gold', c: `за каждые 5🪙 у вас, до +${n}` }),
+    symBuy: (n) => ({ v: `${n}`, i: 'gold', c: 'за значок: можно докупать недостающие' }),
     tradeCheap: (n) => { const t = (typeof DATA !== 'undefined' ? DATA : require('./data.js')).RULES.trade; return { v: String(Math.max(1, t - (n || 1))), i: 'gold', c: `докупка значка вместо ${t}🪙` }; },
     buys: (n) => ({ v: `+${n}`, i: 'action', c: 'действие каждый ход' }),
     startGold: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале хода' }),
@@ -1139,7 +1140,7 @@ function ASSET_URL(p) {
     unionBounty: (n) => ({ v: `+${n}`, i: 'gold', c: 'сразу за новый союз; обычных бонусов союзов нет' }),
     seasonDouble: () => ({ i: 'spring', c: 'хорошее от сезона ×2, плохое — нет' }),
   };
-  const ORDER = ['dice2', 'buys', 'hand', 'reroll', 'shift', 'regCheap', 'tradeCheap', 'blueBonus', 'greenBonus', 'winter', 'redBonus', 'redOwn', 'siege', 'defense', 'walls', 'spy', 'guard', 'stealBonus',
+  const ORDER = ['dice2', 'buys', 'hand', 'reroll', 'shift', 'regCheap', 'symBuy', 'tradeCheap', 'blueBonus', 'greenBonus', 'winter', 'redBonus', 'redOwn', 'siege', 'defense', 'walls', 'spy', 'guard', 'stealBonus',
     'warCry', 'startGold', 'interest', 'symIncome_sci', 'symIncome_war', 'symIncome_int', 'redIncome', 'unionGold', 'tribute', 'symFee_sci', 'symFee_int', 'symFee_war', 'siegeWinGold',
     'plotSlots', 'plotSpread', 'plotGold', 'timedPlotBonus', 'plotProtect', 'harbor', 'extraTurn', 'captureImmune', 'envyImmune', 'marketDiscount', 'landOthers', 'landOwn', 'courtCheap', 'courtToHand', 'unionSize', 'unionNoSym', 'unionBounty', 'seasonDouble'];
   // какой модуль нужен способности, чтобы она работала (остальные работают всегда)
@@ -1226,8 +1227,8 @@ function ASSET_URL(p) {
       rules.push(`<div class="rule">${ico('siege')}<span><b>Осада:</b> ⚔️ на ход + бонусы + 🎲 &gt; ⚔️ на столе + 🧱 + 🎲. Ничья — у защиты; больше 📜 у защиты — лучший из 2🎲. Победа — владение до ${R.siegeLoot}🪙, иначе до 3🪙.</span></div>`);
       rules.push(`<div class="rule">${ico('wall')}<span><b>Стены:</b> у каждого ${R.baseWalls} + 🧱 с карт.</span></div>`);
     }
-    if (on('spy')) rules.push(`<div class="rule">${ico('spy')}<span><b>Шпионаж:</b> все ваши 🔗 + бонусы + 🎲 &gt; 🔗 соперника на столе + 🎲. Откуп — 2🪙 за очко разницы.</span></div>`);
-    rules.push(`<div class="rule">${ico('banner')}<span><b>Знамя:</b> цена + ${R.rise}🪙 за каждое ваше знамя, +${R.trade}🪙 за каждый недостающий значок. Цель: ${goal}.</span></div>`);
+    if (on('spy')) rules.push(`<div class="rule">${ico('spy')}<span><b>Шпионаж:</b> все ваши 🔗 + бонусы + 🎲 &gt; ${R.baseGuard ? R.baseGuard + ' + ' : ''}🔗 соперника на столе + 🎲. Откуп — 2🪙 за очко разницы.</span></div>`);
+    rules.push(`<div class="rule">${ico('banner')}<span><b>Знамя:</b> цена + ${R.rise}🪙 за каждое ваше знамя; значки нужно иметь, докупать нельзя. Цель: ${goal}.</span></div>`);
     rules.push(`<div class="rule">${ico('card')}<span><b>Свита:</b> бонус, если в этот ход уже была карта той же роли.</span></div>`);
     if (on('plots')) rules.push(`<div class="rule">${ico('plot')}<span><b>Замысел</b> вместо розыгрыша: ⏳ — в начале след. хода, 🎲N — на любом броске N. До ${R.plotSlots}.</span></div>`);
     return `<div class="aid back">
@@ -1253,7 +1254,7 @@ const DATA = (() => {
     startTax: 6,          // карт «Подать» в стартовой колоде
     hand: 3,              // карт в руке
     plotSlots: 2,         // замыслов одновременно
-    trade: 3,             // цена докупки недостающего значка
+    trade: 3,             // старая докупка значка; теперь докупать можно только со способностью symBuy
     rise: 1,              // +1🪙 к каждой регалии за каждую уже построенную
     seasonLen: 2,         // кругов на сезон
     estateRow: 4,
@@ -1266,7 +1267,7 @@ const DATA = (() => {
     greatNeeded: 2,
     foreignNeeded: 2, foreignRow: 3,
     maxRounds: 70,
-    baseWalls: 2,         // родовой замок: базовые стены у всех
+    baseWalls: 3, baseGuard: 2,         // родовой замок: базовые стены у всех
     siegeLoot: 4,         // осадой можно захватить владение ценой до 4🪙
     seatGold: 2,          // все, кроме первого игрока, начинают с +2🪙
     basicStock: { field: 7, bakery: 7, wall: 10 }, // печатная версия: запас базовых владений в коробке (4 игрока; Стен больше 10 — в 0,3% партий ботов)
@@ -1389,14 +1390,14 @@ const DATA = (() => {
       name: 'Дом Оленя', short: 'Олени', gen: 'Оленей', dat: 'Оленям', sigil: '🦌', path: 'Экономика',
       about: 'Купцы и землевладельцы Юга. Герб — золотой олень.',
       ability: 'Каждое знамя на 2🪙 дешевле.',
-      mods: { regCheap: 2 }, gold: -1,
+      mods: { regCheap: 2 }, gold: -3,
       deck: ['collector', 'collector', 'goldhorn'], estates: ['shop'],
       regalia: [
         reg('road', 'Томас Хейл', 'смотритель дорог', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
         reg('square', 'Агнесса Фуллер', 'старшина цехов', 6, null, { greenBonus: 1 }, null, '🟩 Ремёсла приносят +1🪙.'),
         reg('mint', 'Бенедикт Ланс', 'банкир', 9, { sci: 1 }, { interest: 3 }, null, 'В начале хода +1🪙 за каждые 5🪙 в казне (макс. +3).'),
-        reg('guild', 'Мирабель из Дома Оленя', 'глава гильдии купцов', 12, { int: 1, sci: 1 }, { tradeCheap: 2 }, { int: 1 }, 'Даёт 🔗. Докупка недостающих значков стоит 1🪙 вместо 3🪙.'),
-        reg('granary', 'Сэр Освальд Грейн', 'землевладелец', 15, { war: 2, sci: 1 }, { blueBonus: 1 }, null, '🟦 Земли приносят +1🪙.'),
+        reg('guild', 'Мирабель из Дома Оленя', 'глава гильдии купцов', 12, { int: 1, sci: 1 }, { symBuy: 1 }, { int: 1 }, 'Даёт 🔗. Можно докупать недостающие значки: 1🪙 за значок.'),
+        reg('granary', 'Сэр Освальд Грейн', 'землевладелец', 15, { war: 1, sci: 1, int: 1 }, { blueBonus: 1 }, null, '🟦 Земли приносят +1🪙.'),
         reg('palace', 'Леди Элинор из Дома Оленя', 'глава торговой палаты', 18, { sci: 2, war: 1, int: 1 }, { buys: 1, startGold: 1 }, null, '+1 действие за ход; +1🪙 в начале хода.'),
       ],
     },
@@ -1410,16 +1411,16 @@ const DATA = (() => {
         reg('tower', 'Феликс Мэйр', 'картограф', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
         reg('biblio', 'Сестра Ида', 'библиотекарь', 6, null, null, { sci: 2 }, 'Даёт 📜📜.'),
         reg('observ', 'Магнус Стерн', 'астроном', 9, { sci: 1 }, { reroll: 1 }, null, 'Раз в ход можно перебросить кубики.'),
-        reg('academy', 'Аделард из Дома Совы', 'ректор академии', 12, { sci: 2, int: 1 }, { hand: 1, symFee_sci: 1 }, { sci: 1 }, 'Даёт 📜. +1 карта в руку. В начале хода +1🪙 за каждого соперника, у кого 📜 меньше, чем у вас.'),
-        reg('alchem', 'Розалинда Вейл', 'аптекарь', 15, { sci: 3, war: 1 }, { symIncome_sci: 1 }, null, 'В начале хода +1🪙 за каждые 2📜 (макс. +2).'),
+        reg('academy', 'Аделард из Дома Совы', 'ректор академии', 12, { sci: 2 }, { hand: 1, symFee_sci: 1 }, { int: 1 }, 'Даёт 🔗. +1 карта в руку. В начале хода +1🪙 за каждого соперника, у кого 📜 меньше, чем у вас.'),
+        reg('alchem', 'Розалинда Вейл', 'аптекарь', 15, { sci: 3, int: 1 }, { symIncome_sci: 1 }, null, 'В начале хода +1🪙 за каждые 2📜 (макс. +2).'),
         reg('dome', 'Матушка Морвен', 'предсказательница', 18, { sci: 3, int: 2 }, { shift: 1, startGold: 1 }, null, 'Раз в ход можно сдвинуть бросок на ±1. +1🪙 в начале хода.'),
       ],
     },
     wolf: {
       name: 'Дом Волка', short: 'Волки', gen: 'Волков', dat: 'Волкам', sigil: '🐺', path: 'Война',
       about: 'Северные лорды, живут войной. Герб — волк.',
-      ability: 'Осады +1. В начале хода +1⚔️ до конца хода. За победу в осаде +3🪙.',
-      mods: { warCry: 1, siegeWinGold: 3, siege: 1 }, gold: 2,
+      ability: 'Осады +1. В начале хода +1⚔️ до конца хода.',
+      mods: { warCry: 1, siege: 1 }, gold: -3,
       deck: ['collector', 'collector', 'wolfpack'], estates: ['barracks'],
       regalia: [
         reg('warroad', 'Эйрик Быстрый', 'разведчик', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
@@ -1449,22 +1450,22 @@ const DATA = (() => {
       name: 'Дом Змея', short: 'Змеи', gen: 'Змей', dat: 'Змеям', sigil: '🐍', path: 'Экономика и война',
       about: 'Мореходы побережья: торгуют, а при случае грабят. Герб — морской змей.',
       ability: '🟥 Набеги забирают +1🪙 и срабатывают и на вашем броске (золото из банка).',
-      mods: { redBonus: 1, redOwn: 1 }, gold: 8,
+      mods: { redBonus: 1, redOwn: 1 }, gold: 6,
       deck: ['mercenary', 'collector', 'boarding'], estates: ['barracks', 'shop'],
       regalia: [
         reg('harbor', 'Финн Мор', 'лоцман', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
         reg('fleet', 'Капитан Ронан', 'капер', 6, null, null, { war: 2 }, 'Даёт ⚔️⚔️.'),
         reg('lighthouse', 'Старый Брендан', 'смотритель маяка', 9, { war: 1 }, { harbor: 1 }, { int: 1 }, 'Даёт 🔗. Если на 2 кубиках выпало 10+, можно добавить +2.'),
         reg('shipyard', 'Мэйв из Дома Змея', 'мастер верфи', 12, { war: 2, sci: 1 }, { greenBonus: 1 }, null, '🟩 Ремёсла приносят +1🪙.'),
-        reg('cove', 'Кира Чёрная', 'пиратский капитан', 15, { war: 2, int: 2 }, { redIncome: 1 }, null, 'В начале хода +1🪙 за каждый ваш 🟥 Набег (макс. +4).'),
-        reg('admiralty', 'Дуглас из Дома Змея', 'адмирал морской стражи', 18, { war: 3, sci: 2 }, { tribute: 1 }, null, 'В начале хода +1🪙 с каждого соперника, у кого ⚔️ меньше, чем у вас.'),
+        reg('cove', 'Кира Чёрная', 'пиратский капитан', 15, { war: 3, int: 1 }, { redIncome: 1 }, null, 'В начале хода +1🪙 за каждый ваш 🟥 Набег (макс. +4).'),
+        reg('admiralty', 'Дуглас из Дома Змея', 'адмирал морской стражи', 18, { war: 3, sci: 1, int: 1 }, { tribute: 1 }, null, 'В начале хода +1🪙 с каждого соперника, у кого ⚔️ меньше, чем у вас.'),
       ],
     },
     moon: {
       name: 'Дом Луны', short: 'Лунные', gen: 'Лунных', dat: 'Лунным', sigil: '🌙', path: 'Наука и интриги',
       about: 'Советники и гадатели, планируют наперёд. Герб — серебряная луна.',
       ability: '3 замысла вместо 2. 🎲-замыслы срабатывают и на соседних числах (±1).',
-      mods: { plotSlots: 1, plotSpread: 1 }, gold: 5,
+      mods: { plotSlots: 1, plotSpread: 1 }, gold: -2,
       deck: ['scribe', 'collector', 'moonlight'], estates: ['caravan', 'library'],
       regalia: [
         reg('moonpath', 'Брат Эммерих', 'паломник', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
@@ -1494,7 +1495,7 @@ const DATA = (() => {
       name: 'Дом Льва', short: 'Львы', gen: 'Львов', dat: 'Львам', sigil: '🦁', path: 'Двор',
       about: 'Столичная знать: приёмы, посольства, большой двор. Герб — золотой лев.',
       ability: 'Купленная карта двора сразу идёт в руку — её можно сыграть в тот же ход.',
-      mods: { courtToHand: 1 }, gold: -1,
+      mods: { courtToHand: 1 }, gold: 3,
       deck: ['collector', 'scribe', 'lionroar'], estates: ['caravan', 'pasture'],
       regalia: [
         reg('courier', 'Гай Скороход', 'королевский гонец', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
@@ -1502,14 +1503,14 @@ const DATA = (() => {
         reg('ceremony', 'Октавиан из Дома Льва', 'церемониймейстер', 9, { int: 1 }, { hand: 1 }, null, '+1 карта в руку.'),
         reg('purveyor', 'Бальтазар Монетный', 'королевский поставщик', 12, { int: 2, sci: 1 }, { marketDiscount: 1 }, null, 'Рынок на 1🪙 дешевле (не ниже 1🪙).'),
         reg('treasury', 'Корнелия Пышная', 'хранительница казны', 15, { int: 3, sci: 1 }, { startGold: 2 }, null, '+2🪙 в начале хода.'),
-        reg('throne', 'Леонора из Дома Льва', 'хозяйка тронного зала', 18, { int: 3, sci: 1, war: 1 }, { buys: 1, hand: 1 }, null, '+1 действие за ход; +1 карта в руку.'),
+        reg('throne', 'Леонора из Дома Льва', 'хозяйка тронного зала', 18, { int: 3, sci: 2 }, { buys: 1, hand: 1 }, null, '+1 действие за ход; +1 карта в руку.'),
       ],
     },
     eagle: {
       name: 'Дом Орла', short: 'Орлы', gen: 'Орлов', dat: 'Орлам', sigil: '🦅', path: 'Провинции',
       about: 'Наместники и гонцы: держат связь между провинциями. Герб — серый орёл.',
-      ability: 'Союз провинции — уже из 2 владений, а не из 3. Обычных бонусов союзов у вас нет: за каждый новый союз сразу +3🪙.',
-      mods: { unionSize: 2, unionBounty: 3, unionNoSym: 1 }, gold: 0,
+      ability: 'Союз провинции — уже из 2 владений, а не из 3. Обычных бонусов союзов у вас нет: за каждый новый союз сразу +2🪙.',
+      mods: { unionSize: 2, unionBounty: 2, unionNoSym: 1 }, gold: 1,
       deck: ['collector', 'scribe', 'eagleeye'], estates: ['pasture', 'runestone'],
       regalia: [
         reg('rider', 'Дан Быстрокрыл', 'конный гонец', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
@@ -1524,7 +1525,7 @@ const DATA = (() => {
       name: 'Дом Солнца', short: 'Солнечные', gen: 'Солнечных', dat: 'Солнечным', sigil: '🌞', path: 'Сезоны',
       about: 'Жрецы и садовники Юга: живут по календарю урожая. Герб — золотое солнце.',
       ability: 'Хорошие эффекты сезона действуют на вас вдвойне, плохие — не действуют.',
-      mods: { seasonDouble: 1 }, gold: 11,
+      mods: { seasonDouble: 1 }, gold: 16,
       deck: ['collector', 'scribe', 'sunrise'], estates: ['sawmill'],
       regalia: [
         reg('dawn', 'Ярина Заря', 'вестница рассвета', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
@@ -1559,13 +1560,13 @@ const DATA = (() => {
     abbot: { set: 'foreign', name: 'Аббат Белой обители', cost: 15, req: { sci: 3 }, prod: { sci: 1 }, mods: { symIncome_sci: 1 }, text: 'Даёт 📜. В начале хода +1🪙 за каждые 2📜, до +2.' },
     jarl: { set: 'foreign', name: 'Ярл Ледяных фьордов', cost: 14, req: { war: 2, sci: 1 }, prod: {}, mods: { landOthers: 1 }, text: '🟦 Земли на чужом броске приносят +1🪙.' },
     emir: { set: 'foreign', name: 'Эмир Песчаных городов', cost: 17, req: { int: 3, war: 1 }, prod: {}, mods: { buys: 1 }, text: '+1 действие каждый ход.' },
-    margrave: { set: 'foreign', name: 'Маркграф Восточной марки', cost: 15, req: { sci: 1, war: 1, int: 1 }, prod: {}, mods: { tradeCheap: 1, regCheap: 1 }, text: 'Докупка значка на 1🪙 дешевле. Каждое знамя на 1🪙 дешевле.' },
+    margrave: { set: 'foreign', name: 'Маркграф Восточной марки', cost: 15, req: { sci: 1, war: 1, int: 1 }, prod: {}, mods: { symBuy: 2, regCheap: 1 }, text: 'Можно докупать недостающие значки: 2🪙 за значок. Каждое знамя на 1🪙 дешевле.' },
     regent: { set: 'foreign', name: 'Регентша Тирены', cost: 16, req: { sci: 2, int: 2 }, prod: {}, mods: { shift: 1, startGold: 1 }, text: 'Раз в ход сдвиг броска на ±1. +1🪙 в начале хода.' },
     banker: { set: 'foreign', name: 'Банкир из Вельса', cost: 13, req: { int: 2 }, prod: {}, mods: { courtCheap: 1, startGold: 1 }, text: 'Карты двора на рынке на 1🪙 дешевле. +1🪙 в начале хода.' },
     condottiere: { set: 'foreign', name: 'Кондотьер Альбы', cost: 14, req: { war: 3, int: 1 }, prod: {}, mods: { siege: 1, siegeWinGold: 2 }, text: 'Осады +1. +2🪙 за каждую победу в осаде.' },
     envoy2: { set: 'foreign', name: 'Посол Тайного совета', cost: 14, req: { int: 3, sci: 1 }, prod: {}, mods: { spy: 1, guard: 2, stealBonus: 1 }, text: 'Шпионаж +1, стража +2. Каждая кража на 1🪙 больше.' },
     oracle: { set: 'foreign', name: 'Оракул Южных островов', cost: 15, req: { sci: 2, int: 1 }, prod: {}, mods: { plotSpread: 1, timedPlotBonus: 2 }, text: '🎲-замыслы срабатывают и на соседних числах. Каждый ⏳-замысел +2🪙.' },
-    hetman: { set: 'foreign', name: 'Гетман Вольных земель', cost: 15, req: { unions: 2 }, prod: {}, mods: { unionGold: 1 }, text: 'Нужно 2 союза провинций. В начале хода +1🪙 за каждый союз.' },
+    hetman: { set: 'foreign', name: 'Гетман Вольных земель', cost: 15, req: { unions: 2 }, prod: {}, mods: { startGold: 1, regCheap: 1 }, text: 'Нужно 2 союза провинций. +1🪙 в начале хода. Каждое знамя на 1🪙 дешевле.' },
   };
 
   const SEASONS = [
@@ -1795,7 +1796,11 @@ if (typeof module !== 'undefined') module.exports = DATA;
     const icons = ['sci', 'war', 'int'].flatMap(s => Array((req && req[s]) || 0).fill(s)).map(k => ico(k)).join('');
     return `<span class="pc-req"><span class="pc-k">Нужно</span>${icons || 'без условий'}</span>`;
   };
-  const mtag = (...ks) => { ks = ks.filter(Boolean); return ks.length ? `<span class="pc-mtag">${ks.map(k => D.MODULES[k].icon).join('')} ${ks.map(k => D.MODULES[k].short).join(' + ')}</span>` : null; };
+  // сверху — только условие «союзы»; значки показываются внизу рядом с ценой
+  const topReq = (req) => (req && req.unions ? reqHtml(req) : '');
+  const reqIcons = (req) => ['sci', 'war', 'int'].flatMap(s => Array((req && req[s]) || 0).fill(s)).map(k => ico(k)).join('');
+  // два модуля: значки обоих, подпись — только второго (первый ясен из типа карты)
+  const mtag = (...ks) => { ks = ks.filter(Boolean); return ks.length ? `<span class="pc-mtag">${ks.map(k => D.MODULES[k].icon).join('')} ${D.MODULES[ks[ks.length - 1]].short}</span>` : null; };
   const est = (id) => D.ESTATES[id];
   // свойства, которым нужен выключенный модуль, в игре видны бледно
   function modChips(m, prod, o) {
@@ -1816,12 +1821,12 @@ if (typeof module !== 'undefined') module.exports = DATA;
     if (kind === 'vassal') {
       const h = Object.keys(D.HOUSES).find(x => D.HOUSES[x].regalia.some(r => r.id === id));
       const H = D.HOUSES[h], k = H.regalia.findIndex(r => r.id === id), r = H.regalia[k];
-      return { key: `v_${id}`, c: HOUSE[h], icon: H.sigil, tag: `${k + 1}/6`, name: r.name, type: r.title, pre: reqHtml(r.req), fx: modChips(r.mods, r.prod, o), left: `вассал ${H.name.replace(/^Дом /, 'Дома ')}`, cost: r.cost };
+      return { key: `v_${id}`, c: HOUSE[h], icon: H.sigil, tag: `${k + 1}/6`, name: r.name, type: r.title, pre: topReq(r.req), req: r.req, fx: modChips(r.mods, r.prod, o), left: `вассал · ${H.short}`, cost: r.cost };
     }
     if (kind === 'lord') {
       const x = D.GREAT[id];
       const fr = x.set === 'foreign';
-      return { key: `g_${id}`, c: fr ? FOREIGN : GREAT, icon: fr ? '🧭' : '👑', name: x.name, type: fr ? 'Иноземный лорд' : 'Великий лорд', pre: reqHtml(x.req), fx: modChips(x.mods, x.prod, o), left: mtag(fr ? 'foreign' : 'lords', D.NEEDS.great[id]), cost: x.cost };
+      return { key: `g_${id}`, c: fr ? FOREIGN : GREAT, icon: fr ? '🧭' : '👑', name: x.name, type: fr ? 'Иноземный лорд' : 'Великий лорд', pre: topReq(x.req), req: x.req, fx: modChips(x.mods, x.prod, o), left: mtag(fr ? 'foreign' : 'lords', D.NEEDS.great[id]), cost: x.cost };
     }
     if (kind === 'season') {
       const s = D.SEASONS.find(x => x.id === id);
@@ -1840,7 +1845,8 @@ if (typeof module !== 'undefined') module.exports = DATA;
   function misc(kind, id, o = {}) {
     const sp = spec(kind, id, o);
     const [c, dark] = sp.c;
-    const right = sp.cost != null ? `<span class="pc-cost">${sp.cost}${coin(1)}</span>` : '<span></span>';
+    const ri = sp.req ? reqIcons(sp.req) : '';
+    const right = sp.cost != null ? `<span class="pc-cost">${sp.cost}${coin(1)}${ri ? `<span class="pc-dot">·</span><span class="pc-rq">${ri}</span>` : ''}</span>` : '<span></span>';
     return iconize(root('pc-misc', c, dark, o, `
       <div class="pc-art"><img src="${CFG.art(sp.key.slice(0, 1), id)}" alt=""><div class="pc-shield"><span class="pc-emo">${sp.icon}</span></div>${sp.tag ? `<div class="pc-corner">${sp.tag}</div>` : ''}</div>
       <div class="pc-name">${sp.name}</div>
@@ -1916,7 +1922,10 @@ if (typeof module !== 'undefined') module.exports = DATA;
 .pc-type { font-size: 2.4mm; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--cd); }
 .pc-eff { display: grid; align-content: center; justify-items: center; --u: calc(var(--u0) * var(--k, 1)); }
 .pc-foot { display: flex; justify-content: space-between; align-items: center; border-top: 0.3mm solid #cdbd98; padding-top: 1mm; font-size: 3.6mm; font-weight: 700; }
-.pc-cost { display: inline-flex; align-items: center; gap: 0.7mm; }
+.pc-cost { display: inline-flex; align-items: center; gap: 0.7mm; white-space: nowrap; }
+.pc-cost .pc-dot { color: #9a8a6a; margin: 0 0.3mm; }
+.pc-cost .pc-rq { display: inline-flex; gap: 0.2mm; }
+.pc-cost .pc-rq img.ic { width: 3.9mm; height: 3.9mm; }
 .pc-basic { font-size: 2.2mm; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #8a7a5c; }
 .pc-mtag { display: inline-flex; align-items: center; gap: 0.6mm; font-size: 2.2mm; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: #5d5140; border-radius: 1mm; padding: 0.35mm 1.2mm; white-space: nowrap; }
 .pc-mtag img.ic { width: 2.9mm; height: 2.9mm; }
@@ -1954,7 +1963,7 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
 .pc-eff { gap: 1.2mm; padding: 0.8mm 0.4mm 0.6mm; }
 .pc-foot { min-height: 5mm; }
 .ic { display: inline-block; vertical-align: -0.12em; }
-.pc-misc .pc-foot .pc-mtag { max-width: 40mm; overflow: hidden; text-overflow: ellipsis; }
+.pc-misc .pc-foot .pc-mtag { max-width: 30mm; overflow: hidden; text-overflow: ellipsis; }
 .pc-misc .pc-post { font-size: 2.45mm; text-align: center; color: #5d5140; line-height: 1.22; border-top: 0.25mm dotted #b9a67c; padding-top: 0.7mm; width: 100%; }
 .pc-misc .pc-post b { color: var(--cd); }
 ` + ICCSS;
@@ -2148,12 +2157,12 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
       adds = [`Колода великих лордов: ${N} карт, каждый лорд в одном экземпляре. В ряду открыто ${R.greatRow}.`];
       rules = [
         'Лорда привлекают так же, как вассала: после броска, вместо покупки на рынке. Это действие хода.',
-        `Цена — напечатанная плюс ${R.rise}🪙 за каждое ваше знамя (вассалы и лорды считаются вместе). Значки-требования нужно иметь, недостающий значок докупается за ${R.trade}🪙.`,
+        `Цена — напечатанная плюс ${R.rise}🪙 за каждое ваше знамя (вассалы и лорды считаются вместе). Значки-требования нужно иметь; докупать их нельзя.`,
         'Каждый лорд один на всю игру: кто первым привлёк, у того и остаётся. На его место сразу выходит следующий из колоды.',
         'Лорды дают значки и способности, как вассалы. Вассалов и лордов можно привлекать в любом порядке.',
       ];
       const greq = D.SYMS.filter(x => g.req[x]).map(x => D.SYM[x].repeat(g.req[x])).join('');
-      exs = [ex('Сколько стоит лорд', `У вас ${k} знамени. ${q(g.name)} стоит ${g.cost}🪙 и требует ${greq}. Цена: ${g.cost} + ${k} = ${g.cost + k}🪙. Нужных значков у вас хватает, кроме одного 🔗 — докупка +${R.trade}🪙. Итого ${g.cost + k + R.trade}🪙.`)];
+      exs = [ex('Сколько стоит лорд', `У вас ${k} знамени. ${q(g.name)} стоит ${g.cost}🪙 и требует ${greq}. Цена: ${g.cost} + ${k} = ${g.cost + k}🪙. Значков должно хватать: не хватает одного 🔗 — сначала добудьте его (владение со 🔗 или карта двора «+1🔗 до конца хода»).`)];
       tips = ['Следите за рядом: нужного лорда может забрать соперник. Лорды со значками 📜 проще всего достаются Домам науки, поэтому Совам и Луне выгоднее брать их раньше.'];
       with_ = ['Часть лордов требует другие модули (осады, шпионаж, замыслы, союзы) — без них эти карты убираются из колоды.'];
       with_.push(`С ${q(D.MODULES.foreign.name)}: нужно ещё ${R.foreignNeeded} иноземных лорда из их отдельного ряда — всего ${D.banners(R.ownRegalia + R.greatNeeded + R.foreignNeeded)}.`);
@@ -2170,7 +2179,7 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
       adds = [`Колода иноземных лордов: ${F.length} карт со своей рубашкой, каждый лорд в одном экземпляре. В ряду открыто ${R.foreignRow}.`];
       rules = [
         `Цель: ${R.ownRegalia} вассалов + ${R.foreignNeeded} иноземных лорда (${D.banners(R.ownRegalia + R.foreignNeeded)}). Вместе с «Великими лордами» — ${R.ownRegalia} + ${R.greatNeeded} + ${R.foreignNeeded} = ${D.banners(R.ownRegalia + R.greatNeeded + R.foreignNeeded)}.`,
-        'Иноземного лорда привлекают как вассала: после броска, вместо покупки. Цена — напечатанная плюс надбавка за каждое ваше знамя; значки нужно иметь, недостающие докупаются.',
+        'Иноземного лорда привлекают как вассала: после броска, вместо покупки. Цена — напечатанная плюс надбавка за каждое ваше знамя; значки нужно иметь, докупать нельзя.',
         `Больше ${R.foreignNeeded} иноземных лордов взять нельзя. Взятого лорда заменяет следующий из колоды иноземцев.`,
         'Иноземные лорды — тоже знамёна: считаются для Зависти и поддержки и для надбавки к цене.',
       ];
@@ -2277,14 +2286,13 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
         'Атака больше — победа; ничья — у защиты. Если 📜 у защитника больше, чем у нападающего, защитник бросает 2 кубика и берёт лучший.',
         `Победа: заберите одно владение соперника ценой до ${R.siegeLoot}🪙 (кроме Каменной стены). Если брать нечего — заберите до 3🪙.`,
       ];
-      exs = [ex('Осада', `Вы сыграли «Наёмник» (+1⚔️ на ход) и ${q(sb.name)} (+3). Атака: 1 + 3 + 🎲4 = 8. У соперника ⚔️2 на столе и 🧱${R.baseWalls} стены: оборона 2 + ${R.baseWalls} + 🎲3 = ${2 + R.baseWalls + 3}. 8 > ${2 + R.baseWalls + 3} — вы забираете его Лавку.`)];
+      exs = [ex('Осада', `Вы сыграли «Наёмник» (+1⚔️ на ход) и ${q(sb.name)} (+3). Атака: 1 + 3 + 🎲6 = 10. У соперника ⚔️2 на столе и 🧱${R.baseWalls} стены: оборона 2 + ${R.baseWalls} + 🎲3 = ${2 + R.baseWalls + 3}. 10 > ${2 + R.baseWalls + 3} — вы забираете его Лавку.`)];
       tips = ['⚔️ на столе защищают, ⚔️ на ход нападают: значки на владениях — оборона, карты двора — атака. Домам без ⚔️ (Олень, Сова, Лев) стоит купить Каменную стену.'];
       with_ = ['С «Титулами»: появляется Маршал (+2 к обороне). С «Сезонами»: летом осады +2.'];
       qa = [
         ['Можно осадить без карты?', 'Нет, осаду всегда начинает карта.'],
         ['Что нельзя захватить?', `Каменную стену и владения дороже ${R.siegeLoot}🪙.`],
       ];
-      bal = 'По симуляциям с одним модулем «Осады» Волк слабее остальных, а Дома с ⚔️ на столе (Медведь, Змей) — сильнее: на них реже нападают. В полной игре Волк в норме.';
     }
     if (key === 'spy') {
       const cards = ['pickpocket', 'briber', 'saboteur', 'blackmailer'].map(id => C[id]);
@@ -2293,11 +2301,11 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
       rules = [
         `Шпионаж начинает карта: ${cards.map(c => `${q(c.name)} — ${lo(D.fxText(c.fx))}`).join('; ')}.`,
         'Сила шпиона = ваши 🔗 (на столе и на ход) + бонус карты + способности + 🎲.',
-        'Стража = 🔗 соперника на столе + способности и стража с владений + 🎲. Сила больше — успех; ничья — провал.',
+        `Стража = ${R.baseGuard || 0} (дворцовая стража у каждого) + 🔗 соперника на столе + способности и стража с владений + 🎲. Сила больше — успех; ничья — провал.`,
         'Откуп: жертва может заплатить в банк 2🪙 за каждое очко перевеса — тогда шпион ничего не получает. Платить выгодно, только когда откуп дешевле потери.',
       ];
       exs = [
-        ex('Откуп не нужен', 'Шпион: 🔗3 + «Карманник» 1 + 🎲4 = 8. Стража: 🔗1 + 🎲3 = 4. Перевес 4 — откуп стоил бы 8🪙, а кража всего 2🪙. Выгоднее отдать 2🪙.'),
+        ex('Откуп не нужен', `Шпион: 🔗3 + «Карманник» 1 + 🎲6 = 10. Стража: ${R.baseGuard || 0} + 🔗1 + 🎲3 = ${(R.baseGuard || 0) + 4}. Перевес ${10 - (R.baseGuard || 0) - 4} — откуп стоил бы ${2 * (10 - (R.baseGuard || 0) - 4)}🪙, а кража всего 2🪙. Выгоднее отдать 2🪙.`),
         ex('Откуп выгоден', 'Шантажист хочет забрать вашу Лавку — она приносит 4🪙 на вашем броске 4. Перевес 1 — откуп 2🪙. Выгоднее заплатить в банк 2🪙 и оставить Лавку.'),
       ];
       with_ = ['С «Замыслами»: «Саботажник» срывает замыслы. С «Сезонами»: зимой шпионаж +2. С «Титулами»: Тайный советник (+1 карта в руку) — Розе он особенно нужен.'];
@@ -3030,7 +3038,16 @@ const Engine = (() => {
 
   // ---------- знамёна (вассалы и великие лорды) ----------
   // докупка недостающего значка: обычная цена, у Мирабель (Олени) — на 1🪙 дешевле
-  const tradePrice = (S, p) => Math.max(1, R.trade - (mods(S, p).tradeCheap || 0));
+  // докупать значки можно только со способностью «symBuy» (цена за значок; из нескольких — самая низкая)
+  function tradePrice(S, p) {
+    let best = null;
+    const see = (m) => { if (m && m.symBuy && (best === null || m.symBuy < best)) best = m.symBuy; };
+    for (const id of p.regalia) see(regDef(p, id).mods);
+    for (const id of p.great) see(D.GREAT[id].mods);
+    return best;
+  }
+  // во сколько бот оценивает недостающий значок: по цене докупки, а без неё — дорого
+  const symWorth = (S, p) => { const t = tradePrice(S, p); return t == null ? 6 : t; };
   function regCost(S, p, def) {
     const m = mods(S, p);
     const gold = Math.max(0, def.cost + R.rise * regCount(p) - p.turn.regDiscount - (m.regCheap || 0));
@@ -3040,8 +3057,10 @@ const Engine = (() => {
       miss[s] = Math.max(0, need - sym(S, p, s)); missN += miss[s];
     }
     const price = tradePrice(S, p);
-    const ok = !(def.req && def.req.unions) || unionCount(p) >= def.req.unions;
-    return { gold, trade: missN * price, total: gold + missN * price, miss, missN, ok };
+    const unionsOk = !(def.req && def.req.unions) || unionCount(p) >= def.req.unions;
+    const symsOk = !missN || price != null;
+    const trade = missN && price != null ? missN * price : 0;
+    return { gold, trade, total: gold + trade, miss, missN, ok: unionsOk && symsOk, unionsOk, symsOk, price };
   }
   async function build(S, p, kind, id) {
     if (S.winner !== null || S.players[S.cur] !== p) return { ok: false, why: 'Сейчас не ваш ход' };
@@ -3059,7 +3078,8 @@ const Engine = (() => {
       def = D.GREAT[id];
     }
     const c = regCost(S, p, def);
-    if (!c.ok) return { ok: false, why: 'Нужно 2 союза провинций' };
+    if (!c.unionsOk) return { ok: false, why: 'Нужно 2 союза провинций' };
+    if (!c.symsOk) return { ok: false, why: 'Не хватает значков' };
     if (p.gold < c.total) return { ok: false, why: `Нужно ${c.total}🪙` };
     p.gold -= c.total; p.stats.trade += c.trade; p.turn.built = true; p.turn.buysUsed++; p.turn.regDiscount = 0;
     if (kind === 'own') p.regalia.push(id);
@@ -3221,11 +3241,12 @@ const Engine = (() => {
     // сколько ещё ходов продлится партия: лидер берёт знамя примерно раз в 2 круга
     horizon(S) { const mx = Math.max(...S.players.map(regCount)); return clamp(2.1 * (goal(S) - mx) - 0.5, 2, 14); },
 
-    regOptions(S, p) {
+    regOptions(S, p, all) {
       const out = [];
       for (const r of D.HOUSES[p.house].regalia) if (!p.regalia.includes(r.id)) out.push({ kind: 'own', id: r.id, def: r, cost: regCost(S, p, r) });
       for (const set of ['lords', 'foreign']) if (greatOf(p, set) < needSet(S, set)) for (const id of lordRow(S, set) || []) out.push({ kind: 'great', id, def: D.GREAT[id], cost: regCost(S, p, D.GREAT[id]) });
-      return out.filter(o => o.cost.ok);
+      // all — и те, что пока не по силам из-за значков (для планов бота)
+      return all ? out.filter(o => o.cost.unionsOk) : out.filter(o => o.cost.ok);
     },
     target(S, p) {
       const os = this.regOptions(S, p);
@@ -3271,7 +3292,7 @@ const Engine = (() => {
           switch (k) {
             case 'gold': v += a; break;
             case 'draw': v += a * avg; break;
-            case 'temp': v += 0.6 * b; break;
+            case 'temp': v += b * (0.6 + 0.8 * Math.min(2, this.symNeed(S, p, a))); break;
             case 'goldPerCraft': v += Math.min(b, a * p.estates.filter(e => ES(e).t === 'craft').length); break;
             case 'goldPerSym': v += Math.min(cc, b * (prod(S, p)[a] + 0.5)); break;
             case 'goldPerLand': v += Math.min(b, a * (p.estates.filter(e => ES(e).t === 'land').length + 0.5)); break;
@@ -3302,7 +3323,7 @@ const Engine = (() => {
     symNeed(S, p, s) {
       let need = 0;
       const have = prod(S, p)[s];
-      for (const o of this.regOptions(S, p)) { const r = (o.def.req && o.def.req[s]) || 0; if (r > have) need += 1; }
+      for (const o of this.regOptions(S, p, true)) { const r = (o.def.req && o.def.req[s]) || 0; if (r > have) need += 1 + (r - have > 1 ? 0.5 : 0); }
       return Math.min(3, need);
     },
     estateValue(S, p, id) {
@@ -3336,13 +3357,13 @@ const Engine = (() => {
       }
       const T = this.horizon(S);
       let val = (ev + syn) * T;
-      if (d.sym) val += 1.2 + this.symNeed(S, p, d.sym) * 0.9 * tradePrice(S, p);
+      if (d.sym) val += 1.2 + this.symNeed(S, p, d.sym) * 0.9 * symWorth(S, p);
       if (d.p && on(S, 'unions')) {
         // шаг к следующему союзу этой провинции; Юг даёт +1🪙 каждый ход, остальные — значок (⚔️/📜/🔗)
         const sz = unionsOf(p).size, k = p.estates.filter(e => ES(e).p === d.p).length % sz;
         const US = { N: 'war', E: 'sci', W: 'int' };
         const hm = D.HOUSES[p.house].mods || {};
-        const base = hm.unionNoSym ? 0 : (d.p === 'S' ? T * 0.9 : 1.2 + this.symNeed(S, p, US[d.p]) * 0.9 * tradePrice(S, p));
+        const base = hm.unionNoSym ? 0 : (d.p === 'S' ? T * 0.9 : 1.2 + this.symNeed(S, p, US[d.p]) * 0.9 * symWorth(S, p));
         const uv = base + (m.unionGold ? T * m.unionGold * 0.9 : 0) + (hm.unionBounty || 0);
         val += k === sz - 1 ? uv : k === sz - 2 ? uv * 0.3 : uv * 0.1;
       }
@@ -3383,7 +3404,9 @@ const Engine = (() => {
           S.courtRow.forEach((id2, k2) => { if (k2 === o.key) return; const p2 = marketPrice(S, p, D.COURT[id2].cost, true); if (p2 + price > p.gold) return; b2 = Math.max(b2, this.courtValue(S, p, id2) - p2); });
           v += b2;
         }
-        const sc = v - price + rnd(S) * 0.6;
+        // богатому боту цена почти не важна: золото без дела не приносит знамён
+        const pw = p.gold >= 30 ? 0.25 : p.gold >= 18 ? 0.6 : 1;
+        const sc = v - price * pw + rnd(S) * 0.6;
         if (sc > bs) { bs = sc; best = { ...o, price, score: sc }; }
       }
       return best;
@@ -4077,7 +4100,7 @@ if (typeof module !== 'undefined') module.exports = Net;
         html: `<b>${esc(H(t).short)}</b><br><span class="muted">шпион ${o.A}${dice ? ' + 🎲' : ''} против стражи ${o.G}${dice ? ' + 🎲' : ''}<br>успех — ${gain}</span>` };
     });
     opts.push({ icon: '✋', value: null, html: '<b>Отказаться</b>' });
-    const note = `${R.spyDice ? 'Шпион = ваши 🔗 + бонус карты + способности. Стража = 🔗 соперника + способности. Обе стороны добавляют кубик; при равенстве — провал.' : 'Удача, если ваши 🔗 больше стражи (🔗 соперника на столе).'} Если шпион победит, соперник может откупиться — 2🪙 за каждое очко перевеса, в банк; тогда вы ничего не получите. Боты платят, только когда откуп дешевле потери.`;
+    const note = `${R.spyDice ? 'Шпион = ваши 🔗 + бонус карты + способности. Стража = ' + (R.baseGuard || 0) + ' + 🔗 соперника + способности. Обе стороны добавляют кубик; при равенстве — провал.' : 'Удача, если ваши 🔗 больше стражи (🔗 соперника на столе).'} Если шпион победит, соперник может откупиться — 2🪙 за каждое очко перевеса, в банк; тогда вы ничего не получите. Боты платят, только когда откуп дешевле потери.`;
     return choiceSheet(`🗝 Шпионаж: ${eff}`, `<p class="note">${note}</p>`, opts);
   }
   // что захваченное владение будет давать вам
@@ -4355,8 +4378,8 @@ if (typeof module !== 'undefined') module.exports = Net;
     const my = p && S && ME !== null && p.i === ME && isMyTurn();
     let below = '';
     if (c) {
-      const why = !p.turn.rolled ? 'после броска' : E.buysLeft(S, p) <= 0 ? 'действий нет' : !c.ok ? 'нужно 2 союза' : p.gold < c.total ? `нужно ${c.total}🪙` : '';
-      const tradeTxt = c.missN ? `докупка ${c.missN}× → +${c.trade}🪙` : 'значков хватает';
+      const why = !p.turn.rolled ? 'после броска' : E.buysLeft(S, p) <= 0 ? 'действий нет' : !c.unionsOk ? 'нужно 2 союза' : !c.symsOk ? 'не хватает значков' : p.gold < c.total ? `нужно ${c.total}🪙` : '';
+      const tradeTxt = !c.missN ? 'значков хватает' : c.price != null ? `докупка ${c.missN}× → +${c.trade}🪙` : `не хватает значков: ${c.missN}`;
       below = `<div class="pmeta"><span>сейчас ${c.gold}🪙 ${reqHtml(def.req, c.miss)}</span><span class="muted">${tradeTxt}</span></div>${my ? `<button class="btn small ${why ? '' : 'primary'}" data-act="build" data-kind="${kind}" data-id="${def.id || ''}" data-gid="${kind === 'great' ? greatId(def) : ''}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : `Привлечь · ${c.total}🪙`}</button>` : ''}`;
     }
     const o = owner != null ? owner : p ? p.i : null;
@@ -4412,7 +4435,7 @@ if (typeof module !== 'undefined') module.exports = Net;
   const ONCE = [
     ['welcome', (p, my) => my && S.tut.turns === 1 && !p.turn.rolled && !p.inPlay.length && { title: 'Обучающая партия', text: `Вы играете за ${esc(gen(p))} против ${esc(gen(oppOf(p)))}. Цель — первым собрать ${goalLine()}. ${E.goal(S) === R.ownRegalia ? 'Правила базовые: без великих лордов, замыслов, сезонов, осад и шпионажа — их можно включить потом в настройках партии. ' : ''}Каждый ход: карты из руки → бросок кубика → доход → одно действие → конец хода. Я подскажу на каждом шаге.`, btn: 'Начнём' }],
     ['dice2', (p, my) => my && !p.turn.rolled && E.mods(S, p).dice2 && { title: 'Теперь можно бросать 2 кубика', text: `С двумя выпадает 2–12, чаще всего 7, и срабатывают владения на 7–12. С одним — только 1–6. Сейчас ваш бросок в среднем принесёт: 1 кубик ≈ ${f1(evRoll(p, 1))}🪙, 2 кубика ≈ ${f1(evRoll(p, 2))}🪙 (с учётом чужих Набегов). Выбирайте кнопкой внизу.`, focus: 'roll' }],
-    ['banner1', (p) => E.regCount(p) >= 1 && { title: 'Первое знамя!', text: `Каждое следующее знамя дороже на ${R.rise}🪙. На вкладке «Знамёна» видно, каких значков 📜 ⚔️ 🔗 не хватает: они красные. Недостающий значок можно докупить за ${R.trade}🪙 прямо при взятии знамени.` }],
+    ['banner1', (p) => E.regCount(p) >= 1 && { title: 'Первое знамя!', text: `Каждое следующее знамя дороже на ${R.rise}🪙. На вкладке «Знамёна» видно, каких значков 📜 ⚔️ 🔗 не хватает: они красные. Без нужных значков знамя не взять: их дают владения, вассалы, лорды и карты двора «до конца хода».` }],
     ['plot', (p) => p.plots.length > 0 && { title: 'Замысел отложен', text: `⏳ сработает в начале вашего следующего хода, 🎲 — когда на любом броске выпадет его число. Одновременно можно держать ${E.plotSlots(S, p)} замысла.` }],
     ['attack', (p, my) => my && p.hand.some(id => D.COURT[id].fx.some(op => op[0] === 'siege' || op[0] === 'spy')) && { title: 'Карта нападения', text: 'Осада: ⚔️ этого хода + бонус карты + кубик против ⚔️ и 🧱 стен соперника + его кубик; победа — его владение ценой до 4🪙. Шпионаж: ваши 🔗 + бонус + кубик против его 🔗 + кубик. Перед выбором цели игра покажет шанс успеха.' }],
     ['title', (p) => { const k = Object.keys(S.titles).find(t => S.titles[t] === ME); return k && { title: `Титул: ${D.TITLES[k].icon} ${D.TITLES[k].name}`, text: `${D.TITLES[k].text} Титул держится, пока у вас больше всех (${D.TITLES[k].cond}).` }; }],
@@ -4815,7 +4838,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     const gl = greatOfP(p, 'lords'), gf = greatOfP(p, 'foreign');
     const track = `<div class="track" aria-label="Прогресс знамён">${own.map(r => `<i class="${p.regalia.includes(r.id) ? 'on' : ''}"></i>`).join('')}${Array.from({ length: needL() }, (_, k) => `<i class="gr ${gl > k ? 'on' : ''}"></i>`).join('')}${Array.from({ length: needF() }, (_, k) => `<i class="gr fr ${gf > k ? 'on' : ''}"></i>`).join('')}</div>`;
     let out = `<div class="sec-h"><h3>Знамёна</h3><span>${E.regCount(p)}/${E.goal(S)}</span></div>${track}`;
-    out += `<p class="note">Нужно ${goalTxt()}. Каждое следующее знамя дороже на ${R.rise}🪙. Свитки 📜, мечи ⚔️ и связи 🔗 не тратятся — их нужно иметь. Недостающие (<span class="miss">красные</span>) докупаются по ${E.tradePrice(S, p)}🪙. Знамя тратит действие, как покупка.</p>`;
+    out += `<p class="note">Нужно ${goalTxt()}. Каждое следующее знамя дороже на ${R.rise}🪙. Свитки 📜, мечи ⚔️ и связи 🔗 не тратятся — их нужно иметь. Недостающие — <span class="miss">красные</span>${E.tradePrice(S, p) != null ? `; у вас их можно докупать по ${E.tradePrice(S, p)}🪙` : ': докупать их нельзя — нужны владения, вассалы или карты двора со значками'}. Знамя тратит действие, как покупка.</p>`;
     out += `<div class="sec-h"><h3>${esc(H(p).name)}</h3><span>вассалы · ${p.regalia.length}/${R.ownRegalia}</span></div><div class="pgrid">${own.map(r => regSlot(p, r, 'own', p.regalia.includes(r.id) ? 'built' : '')).join('')}</div>`;
     const lordBlock = (set, title, back, row, deck, need, have) => {
       let h = deckHead(title, back, (deck || []).length, `Колода: ${title.toLowerCase()}`, `у вас ${have}/${need}`);
@@ -4845,7 +4868,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     out += `<div class="pgrid lands">${estStacks(p.estates, hit).map(g => stackCard(g)).join('')}</div>`;
     const m = E.mods(S, p);
     const sg = modOn('sieges'), sp = modOn('spy');
-    if (sg || sp) out += `<div class="sec-h"><h3>Оборона</h3><span>${sg && sp ? 'против осад и шпионов' : sg ? 'против осад' : 'против шпионов'}</span></div><dl class="kv">${sg ? `<dt>Против осады</dt><dd>⚔️ ${E.prod(S, p).war} + 🧱 ${E.walls(S, p)}${m.defense ? ` + ${m.defense} (Маршал)` : ''} + кубик</dd>` : ''}${sp ? `<dt>Стража</dt><dd>🔗 ${E.prod(S, p).int}${m.guard ? ` + ${m.guard}` : ''}${estGuard(p) ? ` + ${estGuard(p)} (владения)` : ''}${R.spyDice ? ' + кубик' : ''}</dd>` : ''}</dl>`;
+    if (sg || sp) out += `<div class="sec-h"><h3>Оборона</h3><span>${sg && sp ? 'против осад и шпионов' : sg ? 'против осад' : 'против шпионов'}</span></div><dl class="kv">${sg ? `<dt>Против осады</dt><dd>⚔️ ${E.prod(S, p).war} + 🧱 ${E.walls(S, p)}${m.defense ? ` + ${m.defense} (Маршал)` : ''} + кубик</dd>` : ''}${sp ? `<dt>Стража</dt><dd>${R.baseGuard ? `${R.baseGuard} + ` : ''}🔗 ${E.prod(S, p).int}${m.guard ? ` + ${m.guard}` : ''}${estGuard(p) ? ` + ${estGuard(p)} (владения)` : ''}${R.spyDice ? ' + кубик' : ''}</dd>` : ''}</dl>`;
     return out;
   }
   // сколько принесло каждое владение (по uid) на последнем броске
@@ -5211,7 +5234,7 @@ if (typeof module !== 'undefined') module.exports = Net;
         else out.push(`Выберите соперника и его владение. Атака = ⚔️ этого хода + ${a} + кубик, оборона = его ⚔️ + 🧱 + кубик. Атака больше — забираете владение ценой до ${R.siegeLoot}🪙 или 3🪙. Если 📜 у защитника больше, он бросает 2 кубика и берёт лучший.${q && !plot ? ` ${up1(atWho(q))} атака сейчас: ${(q.temp.war || 0) + a + (m.siege || 0)} + кубик.` : ''}`);
       } else if (k === 'spy') {
         if (!modOn('spy')) out.push('В этой партии шпионаж выключен.');
-        else out.push(`Сила = ваши 🔗 + ${a}${R.spyDice ? ' + кубик' : ''} против стражи = 🔗 соперника${R.spyDice ? ' + кубик' : ''}. Больше — успех (при равенстве провал), но жертва может откупиться: 2🪙 за каждое очко разницы.${q && !plot ? ` ${up1(atWho(q))} сила сейчас: ${E.sym(S, q, 'int') + a + (m.spy || 0)}${R.spyDice ? ' + кубик' : ''}.` : ''}`);
+        else out.push(`Сила = ваши 🔗 + ${a}${R.spyDice ? ' + кубик' : ''} против стражи = ${R.baseGuard ? R.baseGuard + ' + ' : ''}🔗 соперника${R.spyDice ? ' + кубик' : ''}. Больше — успех (при равенстве провал), но жертва может откупиться: 2🪙 за каждое очко разницы.${q && !plot ? ` ${up1(atWho(q))} сила сейчас: ${E.sym(S, q, 'int') + a + (m.spy || 0)}${R.spyDice ? ' + кубик' : ''}.` : ''}`);
       } else if (k === 'trash') out.push('Убранные карты уходят из игры навсегда — обычно убирают «Подать». Колода становится меньше, и сильные карты приходят чаще.');
       else if (k === 'ambush') out.push(`Засада: если число выпало на чужом броске — забираете ${a}🪙 у бросившего, если на вашем — ${a}🪙 из банка.`);
     }
@@ -5262,11 +5285,11 @@ if (typeof module !== 'undefined') module.exports = Net;
       if (reqT) {
         const have = D.SYMS.filter(x => def.req[x]).map(x => `${D.SYM[x]} ${E.sym(S, q, x)}`).join(', ');
         const miss = D.SYMS.filter(x => c.miss[x]).map(x => D.SYM[x].repeat(c.miss[x])).join('');
-        rows.push(['Значки', `Нужно иметь ${reqT} — значки не тратятся. ${up1(atWho(q))}: ${have}. ${c.missN ? `Не хватает ${miss} — докупка по ${E.tradePrice(S, q)}🪙 за значок: +${c.trade}🪙.` : 'Хватает.'}`]);
+        rows.push(['Значки', `Нужно иметь ${reqT} — значки не тратятся. ${up1(atWho(q))}: ${have}. ${c.missN ? (c.price != null ? `Не хватает ${miss} — докупка по ${c.price}🪙 за значок: +${c.trade}🪙.` : `Не хватает ${miss} — докупать нельзя.`) : 'Хватает.'}`]);
       }
       if (def.req && def.req.unions) rows.push(['Союзы', `Нужно ${def.req.unions} союза провинций. ${up1(atWho(q))}: ${E.unionCount(q)}.`]);
       rows.push(['Итого', `${c.total}🪙${c.ok ? '' : ' — и нужны союзы'}.`, 'hl']);
-    } else if (reqT) rows.push(['Значки', `Нужно иметь ${reqT} — значки не тратятся. Нет нужного — докупка по ${R.trade}🪙 за значок.`]);
+    } else if (reqT) rows.push(['Значки', `Нужно иметь ${reqT} — значки не тратятся. Докупать недостающие нельзя, если нет особой способности.`]);
     if (!st) rows.push(['Когда', 'После броска, вместо покупки на рынке: это ваше действие хода.']);
     return rows;
   }
@@ -5409,7 +5432,7 @@ if (typeof module !== 'undefined') module.exports = Net;
       <li>🟦 <b>Земля</b> — доход на любом броске, в том числе чужом.</li><li>🟩 <b>Ремесло</b> — доход только на вашем броске.</li>
       <li>🟥 <b>Набег</b> — на чужом броске забирает золото у бросившего.</li><li>🟪 <b>Твердыня</b> — на вашем броске забирает золото у каждого соперника. Каждой — не больше одной у игрока.</li>
       <li><b>Копии.</b> Пашня, Пекарня и Каменная стена всегда в продаже, пока есть в запасе: ${R.basicStock.field}, ${R.basicStock.bakery} и ${R.basicStock.wall} карт на всех (стартовые тоже из запаса). Остальные владения — по 3 в колоде (твердыни — по 2). Карты двора — по 2.</li></ul>`;
-    b += `<h3>Значки и вассалы</h3><p>📜 Свитки, ⚔️ Мечи и 🔗 Связи — значки на ваших картах. Они не тратятся: вассал требует, чтобы они у вас были. Недостающий значок докупается за ${R.trade}🪙. Каждое следующее знамя дороже на ${R.rise}🪙.</p>`;
+    b += `<h3>Значки и вассалы</h3><p>📜 Свитки, ⚔️ Мечи и 🔗 Связи — значки на ваших картах. Они не тратятся: вассал требует, чтобы они у вас были. Недостающие значки докупать нельзя — только со способностью «можно докупать» (Мирабель у Оленей, иноземец Маркграф). Каждое следующее знамя дороже на ${R.rise}🪙.</p>`;
     b += `<h3>Карты двора</h3><p>Роли: 🪙 Купец, 📜 Учёный, ⚔️ Рыцарь, 🔗 Шпион. <b>Свита</b> — бонус, если в этот ход вы уже сыграли карту той же роли.</p>`;
     { const dg = R.startGold + (D.HOUSES.deer.gold || 0), a = dg + 4, b2 = a - 2, c = b2 + 4, d = c - (4 - D.HOUSES.deer.mods.regCheap);
       b += `<h3>Пример первого хода</h3><div class="mr-ex"><b>Дом Оленя против Дома Змея</b><p>Вы ходите первыми: у Оленей на старте ${dg}🪙. Играете Подать, Подать и Сборщика податей: +4🪙 (${a}). Выпало 4: сначала Казарма Змей забирает 2🪙 — 1 по карте и +1 от их Дома (${b2}), потом ваша Лавка: +4🪙 (${c}). Действие: первый вассал, Томас Хейл, за 4🪙 − ${D.HOUSES.deer.mods.regCheap}🪙 скидки Дома = ${4 - D.HOUSES.deer.mods.regCheap}🪙 (${d}). Со следующего хода можно бросать 2 кубика.</p></div>`; }
