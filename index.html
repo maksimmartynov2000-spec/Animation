@@ -1126,6 +1126,7 @@ function ASSET_URL(p) {
     walls: (n) => ({ v: `+${n}`, i: 'wall', c: 'стены' }),
     siegeWinGold: (n) => ({ v: `+${n}`, i: 'gold', c: 'за победу в осаде' }),
     redBonus: (n) => ({ pre: 'raid', v: `+${n}`, i: 'gold', c: 'каждый Набег забирает больше' }),
+    raidShield: (n) => ({ pre: 'raid', v: `−${n}`, i: 'gold', c: 'Набеги соперников берут у вас меньше' }),
     redOwn: () => ({ i: 'raid', c: 'Набеги и на вашем броске, золото из банка' }),
     spy: (n) => ({ v: `+${n}`, i: 'spy', c: 'к шпионажу' }),
     guard: (n) => ({ v: `+${n}`, i: 'int', c: 'к страже от шпионов' }),
@@ -1144,7 +1145,7 @@ function ASSET_URL(p) {
     unionBounty: (n) => ({ v: `+${n}`, i: 'gold', c: 'сразу за новый союз; обычных бонусов союзов нет' }),
     seasonDouble: () => ({ i: 'spring', c: 'хорошее от сезона ×2, плохое — нет' }),
   };
-  const ORDER = ['dice2', 'buys', 'hand', 'reroll', 'shift', 'regCheap', 'symBuy', 'tradeCheap', 'blueBonus', 'greenBonus', 'winter', 'redBonus', 'redOwn', 'siege', 'defense', 'walls', 'spy', 'guard', 'stealBonus',
+  const ORDER = ['dice2', 'buys', 'hand', 'reroll', 'shift', 'regCheap', 'symBuy', 'tradeCheap', 'blueBonus', 'greenBonus', 'winter', 'redBonus', 'raidShield', 'redOwn', 'siege', 'defense', 'walls', 'spy', 'guard', 'stealBonus',
     'warCry', 'startGold', 'tithe', 'buyToll', 'interest', 'symIncome_sci', 'symIncome_war', 'symIncome_int', 'redIncome', 'unionGold', 'tribute', 'symFee_sci', 'symFee_int', 'symFee_war', 'siegeWinGold',
     'plotSlots', 'plotSpread', 'plotGold', 'timedPlotBonus', 'plotProtect', 'harbor', 'extraTurn', 'captureImmune', 'envyImmune', 'marketDiscount', 'landOthers', 'landOwn', 'courtCheap', 'courtToHand', 'unionSize', 'unionNoSym', 'unionBounty', 'seasonDouble'];
   // какой модуль нужен способности, чтобы она работала (остальные работают всегда)
@@ -2382,13 +2383,15 @@ const Engine = (() => {
 
   let HOOKS = {};
   function setHooks(h) { HOOKS = h || {}; }
-  function emit(S, type, data) { if (HOOKS.event) HOOKS.event(S, type, data); }
+  // S.sim — партия-«прикидка» сильного бота: без событий, журнала и пауз
+  function emit(S, type, data) { if (HOOKS.event && !S.sim) HOOKS.event(S, type, data); }
   function log(S, text, pi = null, kind = '') {
+    if (S.sim) return;
     S.log.push({ r: S.round, t: text, p: pi, k: kind });
     if (S.log.length > 500) S.log.shift();
     emit(S, 'log', { text, pi, kind });
   }
-  async function pause(S, what) { if (HOOKS.delay) await HOOKS.delay(S, what); }
+  async function pause(S, what) { if (HOOKS.delay && !S.sim) await HOOKS.delay(S, what); }
 
   // ---------- случайность (воспроизводимая) ----------
   function rnd(S) {
@@ -2421,6 +2424,7 @@ const Engine = (() => {
   const shortG = (p) => D.HOUSES[p.house].gen;
   // дописать итог к строке журнала, если после неё ничего не добавилось; иначе — отдельной строкой
   function logAppend(S, entry, tail, pi, kind) {
+    if (S.sim || !entry) return;
     const last = S.log[S.log.length - 1];
     if (last === entry) { entry.t += tail; emit(S, 'log', { text: entry.t, pi, kind, edit: true }); }
     else log(S, `   итог: ${tail.replace(/^[:,]\s*/, '')}`, pi, kind);
@@ -2506,7 +2510,7 @@ const Engine = (() => {
     opts.players.forEach((po, i) => {
       const H = D.HOUSES[po.house];
       const p = {
-        i, house: po.house, name: po.name || H.short, isBot: !!po.isBot, persona: po.persona || 'base', gold: R.startGold + (H.gold || 0),
+        i, house: po.house, name: po.name || H.short, isBot: !!po.isBot, persona: po.persona || 'base', skill: po.skill || 'normal', gold: R.startGold + (H.gold || 0),
         estates: [], regalia: [], great: [], deck: [], hand: [], discard: [], inPlay: [], plots: [],
         temp: { sci: 0, war: 0, int: 0 }, turn: freshTurn(), stats: { stolen: 0, sieges: 0, captured: 0, lost: 0, rollInc: 0, raidInc: 0, cardGold: 0, startInc: 0, trade: 0, siegeWins: 0 },
       };
@@ -3206,6 +3210,9 @@ const Engine = (() => {
     if (p.isBot || !HOOKS.humanTurn) await Bot.takeTurn(S, p);
     else await HOOKS.humanTurn(S, p);
     if (S.winner !== null) return;
+    return afterTurn(S, p);
+  }
+  async function afterTurn(S, p) {
     if (!p.turn.rolled) await roll(S, p, 1); // ход без броска невозможен
     if (S.winner !== null) return;
     endTurn(S, p);
@@ -3241,6 +3248,10 @@ const Engine = (() => {
   };
   // родной «характер» бота для каждого Дома
   const NATURAL = { deer: 'econ', owl: 'sci', wolf: 'war', rose: 'spy', serpent: 'war', moon: 'sci', bear: 'econ', lion: 'deck', eagle: 'econ', sun: 'econ' };
+  // уровни силы: k — сколько прикидок на вариант, d — на сколько кругов вперёд, top — сколько вариантов каждого вида
+  const SCORE_W = { reg: 20, gold: 0.3, inc: 4 };
+  const SKILL = { novice: null, normal: null, strong: { k: 3, d: 4, top: 3, ms: 500 }, expert: { k: 8, d: 6, top: 5, ms: 1500 } };
+  const SKILL_NAMES = { novice: 'Новичок', normal: 'Обычный', strong: 'Сильный', expert: 'Эксперт' };
   const Bot = {
     PERSONAS,
     P(p) { return PERSONAS[p.persona] || PERSONAS.base; },
@@ -3266,6 +3277,7 @@ const Engine = (() => {
     rollEV(S, p, n) { let ev = 0; for (let r = 1; r <= 12; r++) { const pr = pRoll(n, r); if (pr) ev += pr * this.rollValue(S, p, r); } return ev; },
     diceCount(S, p) {
       if (!mods(S, p).dice2) return 1;
+      if (p.skill === 'novice' && rnd(S) < 0.35) return rnd(S) < 0.5 ? 1 : 2;
       return this.rollEV(S, p, 1) > this.rollEV(S, p, 2) + 0.05 ? 1 : 2;
     },
     // сколько ещё ходов продлится партия: лидер берёт знамя примерно раз в 2 круга
@@ -3295,6 +3307,7 @@ const Engine = (() => {
     pickBuild(S, p, aff) {
       const dice = aff.find(o => o.def.mods && o.def.mods.dice2);
       if (dice) return dice;
+      if (p.skill === 'novice') return aff[Math.floor(rnd(S) * aff.length)];
       let best = null, bv = Infinity;
       for (const o of aff) {
         let v = o.cost.total;
@@ -3439,7 +3452,7 @@ const Engine = (() => {
         }
         // богатому боту цена почти не важна: золото без дела не приносит знамён
         const pw = p.gold >= 30 ? 0.25 : p.gold >= 18 ? 0.6 : 1;
-        const sc = v - price * pw + rnd(S) * 0.6;
+        const sc = v - price * pw + rnd(S) * (p.skill === 'novice' ? 5 : 0.6);
         if (sc > bs) { bs = sc; best = { ...o, price, score: sc }; }
       }
       return best;
@@ -3528,6 +3541,21 @@ const Engine = (() => {
       }
       // одно действие за ход (или больше с бонусами): знамя ИЛИ покупка
       guard = 0;
+      if (SKILL[p.skill] && SKILL[p.skill].k && !S.sim) {
+        while (buysLeft(S, p) > 0 && guard++ < 4) {
+          const ch = await this.lookahead(S, p, SKILL[p.skill]);
+          if (!ch || ch.type === 'pass') break;
+          const r = ch.type === 'build' ? await build(S, p, ch.kind, ch.id) : await buy(S, p, ch.src, ch.key);
+          await pause(S, ch.type === 'build' ? 'build' : 'buy');
+          if (S.winner !== null) return;
+          if (!r.ok) break;
+          if (ch.type === 'buy' && ch.src === 'court' && mods(S, p).courtToHand) {
+            const bid = S.lastBought || null; const idx = bid ? p.hand.lastIndexOf(bid) : -1;
+            if (idx >= 0 && !D.COURT[bid].fx.some(op => op[0] === 'reroll' || op[0] === 'shift')) { await play(S, p, idx); if (S.winner !== null) return; }
+          }
+        }
+        guard = 99;
+      }
       while (buysLeft(S, p) > 0 && guard++ < 4) {
         const aff = this.regOptions(S, p).filter(o => o.cost.total <= p.gold);
         if (aff.length && this.wantRecruit(S, p, aff)) {
@@ -3577,7 +3605,68 @@ const Engine = (() => {
         }
       }
     },
+    // варианты действия: знамёна по силам, покупки на рынке (лучшие по оценке) и «ничего»
+    candidates(S, p, top) {
+      const out = [{ type: 'pass' }];
+      for (const o of this.regOptions(S, p)) if (o.cost.total <= p.gold) out.push({ type: 'build', kind: o.kind, id: o.id, h: 100 - o.cost.total });
+      const opts = [];
+      for (const id of ['field', 'bakery', 'wall']) if (cardOn(S, 'estate', id) && basicLeft(S, id) > 0) opts.push({ src: 'basic', key: id, id, estate: true });
+      S.estateRow.forEach((id, k) => opts.push({ src: 'estate', key: k, id, estate: true }));
+      (S.holdRow || []).forEach((id, k) => opts.push({ src: 'hold', key: k, id, estate: true }));
+      S.courtRow.forEach((id, k) => opts.push({ src: 'court', key: k, id, estate: false }));
+      const buys = [];
+      for (const o of opts) {
+        const def = o.estate ? D.ESTATES[o.id] : D.COURT[o.id];
+        if (o.estate && !canOwnEstate(p, o.id)) continue;
+        const price = marketPrice(S, p, def.cost, !o.estate);
+        if (price > p.gold) continue;
+        const v = o.estate ? this.estateValue(S, p, o.id) : this.courtValue(S, p, o.id);
+        buys.push({ type: 'buy', src: o.src, key: o.key, id: o.id, h: v - price });
+      }
+      buys.sort((a, b) => b.h - a.h);
+      const builds = out.filter(x => x.type === 'build').sort((a, b) => b.h - a.h).slice(0, top);
+      return [out[0], ...builds, ...buys.slice(0, top)];
+    },
+    // оценка позиции для игрока i: знамёна, золото и будущий доход — против лучшего соперника
+    score(S, i) {
+      const W = SCORE_W; const val = (q) => (S.winner === q.i ? 1000 : 0) + regCount(q) * W.reg + q.gold * W.gold + this.incomeEst(S, q) * W.inc;
+      const me = val(S.players[i]);
+      return me - Math.max(...S.players.filter(q => q.i !== i).map(val));
+    },
+    async lookahead(S, p, cfg) {
+      const cands = this.candidates(S, p, cfg.top);
+      if (cands.length <= 1) return cands[0] || null;
+      const strip = JSON.stringify(Object.assign({}, S, { log: [] }));
+      const sum = cands.map(() => 0), cnt = cands.map(() => 0);
+      const t0 = Date.now();
+      // прикидки идут по кругу по всем вариантам; если время на ход вышло — останавливаемся (но не раньше двух кругов)
+      for (let k = 0; k < cfg.k; k++) {
+        for (let ci = 0; ci < cands.length; ci++) {
+          const c = cands[ci];
+          const C = JSON.parse(strip); C.sim = true;
+          C.seed = (S.seed ^ (0x9E3779B1 * (k + 1))) | 0;
+          for (const q of C.players) { q.isBot = true; q.skill = 'normal'; }
+          const q = C.players[p.i];
+          if (c.type === 'build') await build(C, q, c.kind, c.id);
+          else if (c.type === 'buy') await buy(C, q, c.src, c.key);
+          // остаток хода закрываем, дальше несколько кругов играют обычные боты
+          q.turn.buysUsed = 99;
+          await afterTurn(C, q);
+          const stop = C.round + cfg.d;
+          let g = 0;
+          while (C.winner === null && C.round < stop && g++ < 60) await runTurn(C);
+          sum[ci] += this.score(C, p.i); cnt[ci]++;
+        }
+        // в браузере даём странице перерисоваться между кругами прикидок
+        if (typeof window !== 'undefined') await new Promise(r => setTimeout(r, 0));
+        if (k >= 1 && cfg.ms && Date.now() - t0 > cfg.ms) break;
+      }
+      let best = null, bv = -Infinity;
+      cands.forEach((c, ci) => { const v = sum[ci] / cnt[ci] + (c.type === 'pass' ? -0.5 : 0); if (v > bv) { bv = v; best = c; } });
+      return best;
+    },
     wantRecruit(S, p, aff) {
+      if (p.skill === 'novice' && rnd(S) < 0.3) return false;
       // знамя почти всегда лучше; рано и при слабом доходе иногда выгоднее вложиться в доход
       const pick = this.pickBuild(S, p, aff);
       if (pick.def.mods && pick.def.mods.dice2) return true;
@@ -3664,7 +3753,7 @@ const Engine = (() => {
 
   return {
     D, R, on, needGreat, needSet, greatOf, lordRow, goal, goalText, cardOn, houseOn, seasonText, setHooks, newGame, runTurn, startOfTurn, play, roll, buy, build, endTurn,
-    mods, prod, sym, walls, unionsOf, unionCount, regCount, regCost, regDef, marketPrice, buysLeft, tradePrice, basicLeft,
+    SKILL, SKILL_NAMES, SCORE_W, mods, prod, sym, walls, unionsOf, unionCount, regCount, regCost, regDef, marketPrice, buysLeft, tradePrice, basicLeft,
     nmG, shortG, canOwnEstate, plotSlots, handSize, siegeOdds, spyInfo, capturable, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
   };
 })();
@@ -3874,7 +3963,7 @@ if (typeof module !== 'undefined') module.exports = Net;
   let nextReq = null;   // ждём «Дальше» после хода соперника
   let pauseBots = true; // пауза после хода соперника (меню)
   // соперники: тип места (бот / человек на этом устройстве / игрок по сети) и Дом ('random' — случайный)
-  let setup = { house: 'deer', seats: [{ type: 'bot', house: 'random' }, { type: 'bot', house: 'random' }], mods: D.PRESETS.basic.modules.slice() };
+  let setup = { house: 'deer', seats: [{ type: 'bot', house: 'random' }, { type: 'bot', house: 'random' }], mods: D.PRESETS.basic.modules.slice(), skill: 'normal' };
   let NETG = null;      // партия по сети: { role: 'host' | 'guest', … }
   let coverReq = null;  // игра на одном устройстве: «передайте устройство» { p, why, res }
   let evCur = null;     // у гостя: чей ход шёл, когда случилось событие (события приходят пачкой)
@@ -3962,11 +4051,11 @@ if (typeof module !== 'undefined') module.exports = Net;
 
   // ---------- настройки ----------
   function loadPrefs() {
-    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) setup.mods = x.mods.filter(k => MODK.includes(k)); if (x.pause === false) pauseBots = false; if (['system', 'light', 'dark'].includes(x.theme)) theme = x.theme; } } catch (e) { /* хранилище недоступно */ }
+    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) setup.mods = x.mods.filter(k => MODK.includes(k)); if (x.pause === false) pauseBots = false; if (E.SKILL_NAMES && E.SKILL_NAMES[x.skill]) setup.skill = x.skill; if (['system', 'light', 'dark'].includes(x.theme)) theme = x.theme; } } catch (e) { /* хранилище недоступно */ }
     fixSetup();
     try { const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (g && g.S) savedGame = g; } catch (e) { /* нет сохранения */ }
   }
-  function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ house: setup.house, opps: setup.seats.length, seats: setup.seats, speed, mods: setup.mods, pause: pauseBots, theme })); } catch (e) { /* ignore */ } }
+  function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ house: setup.house, opps: setup.seats.length, seats: setup.seats, speed, mods: setup.mods, skill: setup.skill, pause: pauseBots, theme })); } catch (e) { /* ignore */ } }
   function saveSafe() {
     if (!S || guest()) return; // гость партию не хранит — она у хозяина
     lastSafe = JSON.stringify(S);
@@ -5034,6 +5123,7 @@ if (typeof module !== 'undefined') module.exports = Net;
         <div class="sec-h"><h2 class="lbl">Соперники · ${setup.seats.length}</h2><span class="seat-n"><button class="btn small" data-act="seat-del" aria-label="Убрать игрока" ${setup.seats.length > 1 ? '' : 'disabled'}>−</button><button class="btn small" data-act="seat-add" aria-label="Добавить игрока" ${setup.seats.length < Math.min(av.length - 1, R.maxPlayers - 1) ? '' : 'disabled'}>+</button></span></div>
         <div class="seats">${setup.seats.map((s, k) => seatEditor(s, k, av)).join('')}</div>
         <p class="muted seatnote"><b>Человек</b> играет на этом же устройстве: передаёте его по очереди, карты каждого скрыты от остальных. <b>По сети</b> — со своего телефона по коду комнаты${NETOK ? '' : ' (только в отдельной версии игры — файл index.html)'}.</p>
+        ${setup.seats.some(x => x.type === 'bot') ? `<h2 class="lbl">Сила ботов</h2><div class="seg wide skill" role="radiogroup" aria-label="Сила ботов">${Object.entries(E.SKILL_NAMES).map(([k, n]) => `<button role="radio" aria-checked="${setup.skill === k}" class="${setup.skill === k ? 'on' : ''}" data-act="skill" data-k="${k}">${n}</button>`).join('')}</div><p class="pdesc">${SKILL_DESC[setup.skill]}</p>` : ''}
         <p class="goalnote">Цель — первым собрать ${goalLine()}.</p>
         <button class="link" data-act="watch">Смотреть партию ботов</button>
       </div>`;
@@ -5041,6 +5131,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     barEl.dataset.focus = '';
     barEl.innerHTML = `<div class="in"><button class="btn primary" data-act="start">${hasRemote() ? 'Создать комнату' : `Начать партию · ${esc(D.HOUSES[setup.house].name)}`}</button></div>`;
   }
+  const SKILL_DESC = { novice: 'Часто ошибается: покупает наугад и не спешит со знамёнами. Для первых партий.', normal: 'Играет по простым правилам — каждый ход выбирает самое выгодное сейчас.', strong: 'Перед каждым действием просчитывает несколько кругов вперёд.', expert: 'Просчитывает дальше и больше вариантов; думает до полутора секунд за ход.' };
   // одно место за столом: кто играет и каким Домом
   function seatEditor(s, k, av) {
     const taken = new Set([setup.house, ...setup.seats.filter((x, j) => j !== k && x.house !== 'random').map(x => x.house)]);
@@ -5064,7 +5155,7 @@ if (typeof module !== 'undefined') module.exports = Net;
   }
   // места за столом → игроки движка; порядок мест — порядок хода (кто первый — решает жребий)
   function playersOf(seats) {
-    return seats.map(s => ({ house: s.house, isBot: s.type === 'bot', persona: s.type === 'bot' ? ((E.NATURAL && E.NATURAL[s.house]) || 'base') : 'base', name: D.HOUSES[s.house].short }));
+    return seats.map(s => ({ house: s.house, isBot: s.type === 'bot', persona: s.type === 'bot' ? ((E.NATURAL && E.NATURAL[s.house]) || 'base') : 'base', skill: s.type === 'bot' ? setup.skill : 'normal', name: D.HOUSES[s.house].short }));
   }
   function startGame(watch, opts = {}) {
     runId++;
@@ -5959,6 +6050,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     const p = S ? S.players[ME !== null ? ME : S.cur] : null;
     switch (a) {
       case 'pick': if (houseOk(el.dataset.h)) { setup.house = el.dataset.h; fixSetup(); savePrefs(); schedule(); } break;
+      case 'skill': setup.skill = el.dataset.k; savePrefs(); schedule(); break;
       case 'preset': setup.mods = D.PRESETS[el.dataset.k].modules.slice(); fixSetup(); savePrefs(); schedule(); break;
       case 'mod': { const k = el.dataset.k; setup.mods = setupOn(k) ? setup.mods.filter(x => x !== k) : MODK.filter(x => x === k || setupOn(x)); fixSetup(); savePrefs(); schedule(); break; }
       case 'seat-type': { const k = +el.dataset.k; if (setup.seats[k]) { setup.seats[k].type = el.dataset.v; fixSetup(); savePrefs(); schedule(); } break; }
