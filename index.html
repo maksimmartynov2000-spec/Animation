@@ -871,6 +871,111 @@ html, body { overflow-x: clip; }
 .pgrid.common-row { grid-template-columns: repeat(5, minmax(0, 92px)); gap: 6px 8px; justify-content: start; }
 .common .pmeta { font-size: 11.5px; color: var(--muted, #6c6455); }
 
+/* ================= Стол: сукно, кубик рукой, монеты рукой, «лицом к лицу» ================= */
+:root[data-theme="table"] {
+  --bg: #163222; --surface: #1c2b21; --surface-2: #24362a; --line: #3a4d3d; --fg: #f2ebd9; --muted: #b5ad94;
+  --or: #e9be5a; --or-ink: #1b1406; --or-soft: #3a3420; --or-line: #9c7c34;
+  --azure: #8db4ee; --vert: #7ad49f; --gules: #f08b81; --purpure: #c7a4e7; --neutral: #b5b09b;
+  --azure-t: #1b2a3a; --vert-t: #1b3124; --gules-t: #3a2321; --purpure-t: #2d2537; --neutral-t: #29302a;
+  --gold-grad: linear-gradient(180deg, #f2c869, #d4a13b); --btn-ts: none;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 22px rgba(0, 0, 0, .32);
+  --scrim: rgba(0, 0, 0, .62);
+  --paper: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.75 0 0 0 0 0.9 0 0 0 0 0.7 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23f)'/%3E%3C/svg%3E");
+  --glow: radial-gradient(120% 80% at 50% 30%, rgba(78, 150, 98, .33), rgba(0, 0, 0, 0) 68%);
+  --wood: repeating-linear-gradient(92deg, rgba(255, 220, 170, .045) 0 2px, rgba(0, 0, 0, .05) 2px 5px, rgba(255, 220, 170, .02) 5px 9px), linear-gradient(180deg, #4b3321, #2e1e12);
+  --bar-bg: rgba(46, 31, 19, .97);
+  color-scheme: dark;
+}
+:root[data-theme="table"] body { background-color: #173423; background-image: var(--glow), var(--paper), radial-gradient(140% 110% at 50% 40%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, .45)); }
+:root[data-theme="table"] body::before { background: #2e1e12; }
+:root[data-theme="table"] .bar, :root[data-theme="table"] .tabbar { background: var(--wood); border-top: 1px solid #6b4c2f; box-shadow: 0 -6px 18px rgba(0, 0, 0, .35); }
+:root[data-theme="table"] .top { background: var(--wood); border-bottom: 1px solid #6b4c2f; }
+:root[data-theme="table"] .tb { color: #d4c2a2; }
+:root[data-theme="table"] .tb.on { color: #ffd77a; }
+:root[data-theme="table"] .table { background: radial-gradient(120% 120% at 50% 40%, #1f4a30, #12301f); border: 1px solid rgba(0, 0, 0, .35); box-shadow: inset 0 2px 10px rgba(0, 0, 0, .45); }
+:root[data-theme="table"] .die { background: #fbf6ea; border-color: #2a2116; box-shadow: 0 3px 0 #b9ac90, 0 5px 10px rgba(0, 0, 0, .35); }
+:root[data-theme="table"] .die i { background: #2a2116; }
+:root[data-theme="table"] .pgrid .pc, :root[data-theme="table"] .pslot > .pc { box-shadow: 0 2px 3px rgba(0, 0, 0, .45), 0 10px 18px rgba(0, 0, 0, .28); }
+
+/* кубик в нижней панели: смахнуть или нажать */
+.tdie-w { flex: none; display: grid; justify-items: center; gap: 2px; border: 0; background: none; padding: 2px 6px; cursor: grab; color: var(--muted); font: 700 11px var(--font-body); touch-action: none; -webkit-user-select: none; user-select: none; }
+.tdie-w:disabled { opacity: .45; cursor: default; }
+.tdie-w > .tdie + .tdie { margin-left: -10px; }
+.tdie-w { grid-auto-flow: row; }
+.tdie-w .tdie { display: inline-grid; width: 46px; height: 46px; border-radius: 10px; background: #fbf6ea; border: 1.5px solid #2a2116; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 6px; box-sizing: border-box; box-shadow: 0 3px 0 #b9ac90, 0 6px 12px rgba(0, 0, 0, .3); animation: diceidle 2.6s ease-in-out infinite; }
+.tdie-w .tdie i { width: 7px; height: 7px; border-radius: 50%; background: #2a2116; place-self: center; visibility: hidden; }
+.tdie-w .tdie i.on { visibility: visible; }
+.tdie-w:active .tdie { transform: scale(.92) rotate(-8deg); }
+@keyframes diceidle { 0%, 86%, 100% { transform: rotate(0); } 90% { transform: rotate(-9deg); } 94% { transform: rotate(7deg); } }
+.throwlayer { position: fixed; inset: 0; z-index: 80; pointer-events: none; transition: opacity .25s; }
+.throwlayer.out { opacity: 0; }
+.die.fly { position: absolute; width: 52px; height: 52px; padding: 7px; box-sizing: border-box; background: #fbf6ea; border: 1.5px solid #2a2116; box-shadow: 0 10px 22px rgba(0, 0, 0, .45); }
+.die.fly i { width: 8px; height: 8px; background: #2a2116; }
+.die.fly.landed { box-shadow: 0 3px 0 #b9ac90, 0 6px 12px rgba(0, 0, 0, .35); }
+
+/* монеты на столе: забрать касанием */
+.bar .tray { width: 100%; display: grid; gap: 6px; }
+.tray-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 14px; }
+.tray-h .muted { font-size: 12.5px; }
+.tray-h .btn { margin-left: auto; }
+.tray-r { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.tray-r::-webkit-scrollbar { display: none; }
+.cg { display: flex; gap: 8px; align-items: stretch; flex: none; }
+.cg.rot { transform: rotate(180deg); }
+.cg-h { display: grid; justify-items: center; align-content: center; gap: 2px; font-size: 11px; color: var(--muted); min-width: 44px; }
+.cg-h img { width: 26px; height: 26px; }
+.coinbtn { flex: none; display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; align-items: center; gap: 0 8px; padding: 6px 12px 6px 6px; border-radius: 12px; border: 1.5px solid var(--or-line); background: var(--surface-2); color: var(--fg); min-height: 56px; cursor: pointer; text-align: left; animation: coinpulse 1.8s ease-in-out infinite; }
+.coinbtn:active { transform: scale(.96); }
+.cb-art { grid-row: span 2; width: 44px; height: 44px; border-radius: 8px; object-fit: cover; display: grid; place-items: center; background: var(--or-soft); }
+.cb-art .ic { width: 26px; height: 26px; }
+.cb-n { font: 700 20px/1 var(--font-display); display: flex; align-items: center; gap: 5px; color: var(--or); }
+.cb-c, .flycoin { background: radial-gradient(circle at 35% 30%, #fff2c0, #e2b14a 55%, #8a5f12); box-shadow: 0 1px 2px rgba(0, 0, 0, .45), inset 0 0 0 2px rgba(255, 255, 255, .22); border-radius: 50%; }
+.cb-c { display: inline-block; width: 17px; height: 17px; }
+.cb-s { font-size: 11.5px; color: var(--muted); max-width: 132px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@keyframes coinpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(233, 190, 90, 0); } 50% { box-shadow: 0 0 0 5px rgba(233, 190, 90, .3); } }
+.flycoin { position: fixed; z-index: 90; width: 24px; height: 24px; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .coinbtn, .tdie-w .tdie { animation: none; } }
+
+/* «лицом к лицу»: планшет лежит между игроками, стол поворачивается к тому, кто ходит */
+body.face { position: fixed; inset: 0; overflow: hidden; transition: transform .7s cubic-bezier(.4, .1, .2, 1); }
+body.face #app { position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+body.face.flipped { transform: rotate(180deg); }
+body.face .opp.facing { transform: rotate(180deg); }
+.facebanner { position: fixed; left: 50%; top: 38%; z-index: 95; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 4px; padding: 18px 28px; border-radius: 18px; background: rgba(20, 14, 8, .88); color: #f7efd9; box-shadow: 0 14px 40px rgba(0, 0, 0, .5); animation: banner 1.7s ease both; pointer-events: none; text-align: center; }
+.facebanner img { width: 56px; height: 56px; }
+.facebanner b { font: 26px var(--font-display); }
+.facebanner span { font-size: 14px; color: #d8c9a6; }
+@keyframes banner { 0% { opacity: 0; transform: translate(-50%, -40%) scale(.92); } 15%, 75% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -55%); } }
+.handcover { display: grid; justify-items: center; gap: 12px; padding: 22px 12px; text-align: center; }
+.hc-backs { display: flex; justify-content: center; }
+.hc-b { width: 62px; height: 87px; border-radius: 6px; margin-left: -22px; box-shadow: 0 3px 8px rgba(0, 0, 0, .35); object-fit: cover; }
+.hc-b:first-child { margin-left: 0; }
+.handcover .muted { max-width: 320px; font-size: 13px; }
+
+/* ===================== телефон боком: вкладки — колонкой слева, стол и карты — рядом ===================== */
+@media (orientation: landscape) and (max-height: 520px) {
+  :root { --tab-w: calc(70px + env(safe-area-inset-left, 0px)); --bar-h: 64px; }
+  body[data-view="game"] .tabbar { top: 0; right: auto; bottom: 0; width: var(--tab-w); border-top: 0; border-right: 1px solid var(--line); padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+  :root[data-theme="table"] body[data-view="game"] .tabbar { border-right-color: #6b4c2f; box-shadow: 6px 0 18px rgba(0, 0, 0, .3); }
+  body[data-view="game"] .tabbar .in { grid-template-columns: 1fr; grid-template-rows: repeat(4, 1fr); height: 100%; max-width: none; }
+  body[data-view="game"] #app { max-width: none; margin-left: var(--tab-w); padding-bottom: calc(var(--bar-h) + 18px + env(safe-area-inset-bottom, 0px)); }
+  body[data-view="game"] .bar { left: var(--tab-w); bottom: 0; padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+  body[data-view="game"] .bar .in { max-width: none; min-height: 48px; }
+  body[data-view="game"] #toasts { bottom: calc(var(--bar-h) + 14px + env(safe-area-inset-bottom, 0px)); left: var(--tab-w); }
+  body[data-view="game"] .top { padding-top: 4px; padding-bottom: 4px; }
+  body[data-view="game"] .top .season span { display: none; }
+  .gwrap { display: grid; grid-template-columns: minmax(250px, 300px) minmax(0, 1fr); gap: 0 18px; align-items: start; }
+  .gside { display: block; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 48px); max-height: calc(100dvh - 48px - var(--bar-h) - 24px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding-bottom: 8px; }
+  .gside .opps { flex-wrap: wrap; margin-right: 0; padding-right: 0; }
+  .gmain { display: block; min-width: 0; }
+  .gmain .pgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 10px; }
+  .gmain .pgrid.lands { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .tray-r { padding-bottom: 2px; }
+  .coinbtn { min-height: 48px; padding-top: 4px; padding-bottom: 4px; }
+  .cb-art { width: 38px; height: 38px; }
+  .tdie-w .tdie { width: 40px; height: 40px; padding: 5px; }
+}
+
 </style>
 </head>
 <body>
@@ -2634,6 +2739,7 @@ const Engine = (() => {
       for (const o of opps(S, p)) if (prod(S, o).war < pr.war && o.gold > 0) { o.gold -= 1; p.gold += 1; tribute.push(o.i); log(S, `Дань: ${nm(o)} отдали 1🪙 ${nmD(p)} — у них ⚔️ меньше`, p.i, 'steal'); }
     }
     emit(S, 'dawn', { p: p.i, gain: g, src, envy: envyPaid, support: supportGot, tribute });
+    if (HOOKS.collect && !S.sim && g > 0) await HOOKS.collect(S, { kind: 'dawn', p: p.i, gain: g, src });
     if (m.warCry) p.temp.war += m.warCry;
     const timed = p.plots.filter(x => x.kind === 'timed');
     for (const pl of timed) {
@@ -3031,6 +3137,8 @@ const Engine = (() => {
       log(S, `   ${nm(q)}: ${parts.join(', ')}${parts.length > 1 ? ` → итого ${net > 0 ? '+' : net < 0 ? '−' : ''}${Math.abs(net)}🪙` : ''}`, q.i, 'income');
     }
     emit(S, 'income', { r, ev: paid.concat(ev.filter(x => x.zero)), a: a.i });
+    // ручной сбор монет: интерфейс ждёт, пока игроки за этим устройством заберут золото со своих карт
+    if (HOOKS.collect && !S.sim && paid.length) await HOOKS.collect(S, { kind: 'roll', r, ev: paid, a: a.i });
     for (let k = 0; k < N; k++) {
       const q = S.players[(a.i + k) % N];
       const trig = q.plots.filter(pl => pl.kind === 'dice' && pl.nums && pl.nums.includes(r));
@@ -3968,6 +4076,67 @@ const Net = (() => {
 })();
 if (typeof module !== 'undefined') module.exports = Net;
 
+// Звуки стола без файлов: кубик, монеты, карты — синтез через Web Audio.
+// Sfx.unlock() — на первом касании (iOS не даёт играть звук без жеста), Sfx.set(false) — выключить.
+const Sfx = (() => {
+  let ctx = null, on = true, master = null;
+  function ac() {
+    if (!on) return null;
+    if (!ctx) {
+      const C = typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext);
+      if (!C) return null;
+      try { ctx = new C(); master = ctx.createGain(); master.gain.value = 0.55; master.connect(ctx.destination); } catch (e) { ctx = null; return null; }
+    }
+    if (ctx.state === 'suspended') { try { ctx.resume(); } catch (e) { /* ignore */ } }
+    return ctx;
+  }
+  let nbuf = null;
+  function noiseBuf(c) {
+    if (nbuf) return nbuf;
+    nbuf = c.createBuffer(1, c.sampleRate * 0.5, c.sampleRate);
+    const d = nbuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return nbuf;
+  }
+  // короткий щелчок шума через полосовой фильтр — удар кубика о стол, шорох карты
+  function burst(t, dur, freq, q, gain) {
+    const c = ctx, s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = noiseBuf(c); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(master); s.start(t, Math.random() * 0.3); s.stop(t + dur + 0.02);
+  }
+  function tone(t, freq, dur, gain, type = 'sine') {
+    const c = ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
+  }
+  return {
+    set(v) { on = !!v; if (!on && ctx && ctx.state === 'running') { try { ctx.suspend(); } catch (e) { /* ignore */ } } },
+    get on() { return on; },
+    unlock() { ac(); },
+    // кубик катится по сукну: несколько ударов, всё тише и чаще
+    dice(n = 1) {
+      if (!ac()) return; const t0 = ctx.currentTime + 0.01;
+      const hits = [0, 0.16, 0.29, 0.39, 0.47, 0.53, 0.58];
+      for (let k = 0; k < n; k++) hits.forEach((h, i) => burst(t0 + h + k * 0.035 + Math.random() * 0.02, 0.05, 1500 + Math.random() * 900, 2.2, 0.5 * Math.pow(0.72, i)));
+    },
+    // монета: два металлических призвука
+    coin(k = 0) {
+      if (!ac()) return; const t = ctx.currentTime + 0.01 + k * 0.06;
+      const f = 2400 + Math.random() * 300;
+      tone(t, f, 0.16, 0.12, 'triangle'); tone(t, f * 1.5, 0.12, 0.06, 'sine'); burst(t, 0.03, 6000, 1, 0.08);
+    },
+    // карта легла на стол
+    card() { if (!ac()) return; const t = ctx.currentTime + 0.01; burst(t, 0.12, 2600, 0.7, 0.18); burst(t + 0.05, 0.08, 900, 1, 0.12); },
+    // новый ход: мягкий колокольчик
+    chime() { if (!ac()) return; const t = ctx.currentTime + 0.01; tone(t, 660, 0.5, 0.07); tone(t + 0.09, 990, 0.6, 0.05); },
+    // осада, захват: глухой удар
+    thud() { if (!ac()) return; const t = ctx.currentTime + 0.01; tone(t, 110, 0.35, 0.25); burst(t, 0.15, 300, 1, 0.2); },
+  };
+})();
+if (typeof module !== 'undefined') module.exports = Sfx;
+
 // ===================== ИНТЕРФЕЙС =====================
 (() => {
   const D = DATA, E = Engine, R = D.RULES;
@@ -3996,7 +4165,7 @@ if (typeof module !== 'undefined') module.exports = Net;
   let nextReq = null;   // ждём «Дальше» после хода соперника
   let pauseBots = true; // пауза после хода соперника (меню)
   // соперники: тип места (бот / человек на этом устройстве / игрок по сети) и Дом ('random' — случайный)
-  let setup = { house: 'deer', seats: [{ type: 'bot', house: 'random' }, { type: 'bot', house: 'random' }], mods: D.PRESETS.basic.modules.slice(), skill: 'normal' };
+  let setup = { house: 'deer', seats: [{ type: 'bot', house: 'random' }, { type: 'bot', house: 'random' }], mods: D.PRESETS.basic.modules.slice(), skill: 'normal', seating: 'pass' };
   let NETG = null;      // партия по сети: { role: 'host' | 'guest', … }
   let coverReq = null;  // игра на одном устройстве: «передайте устройство» { p, why, res }
   let evCur = null;     // у гостя: чей ход шёл, когда случилось событие (события приходят пачкой)
@@ -4007,7 +4176,12 @@ if (typeof module !== 'undefined') module.exports = Net;
   let view = 'home';    // экран без партии: 'home' — главное меню, 'setup' — новая партия
   let lastView = null;  // для перехода между экранами
   let prevTab = null;   // смена вкладки — показать её содержимое
-  let theme = 'system'; // оформление: как в системе / светлое / тёмное
+  let theme = 'table'; // оформление: стол (сукно) / как в системе / светлое / тёмное
+  let sound = true;       // звуки стола
+  let manualCoins = true; // монеты с карт забирают руками
+  let shakeRoll = false;  // бросать кубик встряхиванием устройства
+  let lastN = 1;          // сколько кубиков бросали прошлый раз
+  let handOpen = false;   // «лицом к лицу»: рука открыта, пока игрок сам не скроет
   // ссылки на учебник и каталог; отдельная сборка (index.html для GitHub) задаёт свои через window.PRETENDENTY_LINKS (пустые — кнопок нет)
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
@@ -4029,7 +4203,7 @@ if (typeof module !== 'undefined') module.exports = Net;
   const hostTheme = document.documentElement.getAttribute('data-theme');
   function applyTheme() {
     const r = document.documentElement;
-    if (theme === 'light' || theme === 'dark') r.setAttribute('data-theme', theme);
+    if (theme === 'light' || theme === 'dark' || theme === 'table') r.setAttribute('data-theme', theme);
     else if (hostTheme) r.setAttribute('data-theme', hostTheme);
     else r.removeAttribute('data-theme');
   }
@@ -4084,11 +4258,11 @@ if (typeof module !== 'undefined') module.exports = Net;
 
   // ---------- настройки ----------
   function loadPrefs() {
-    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) setup.mods = x.mods.filter(k => MODK.includes(k)); if (x.pause === false) pauseBots = false; if (E.SKILL_NAMES && E.SKILL_NAMES[x.skill]) setup.skill = x.skill; if (['system', 'light', 'dark'].includes(x.theme)) theme = x.theme; } } catch (e) { /* хранилище недоступно */ }
+    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) setup.mods = x.mods.filter(k => MODK.includes(k)); if (x.pause === false) pauseBots = false; if (E.SKILL_NAMES && E.SKILL_NAMES[x.skill]) setup.skill = x.skill; if (['system', 'light', 'dark', 'table'].includes(x.theme) && x.tbl) theme = x.theme; if (x.sound === false) sound = false; if (x.coins === false) manualCoins = false; if (x.seating === 'face') setup.seating = 'face'; } } catch (e) { /* хранилище недоступно */ }
     fixSetup();
     try { const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (g && g.S) savedGame = g; } catch (e) { /* нет сохранения */ }
   }
-  function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ house: setup.house, opps: setup.seats.length, seats: setup.seats, speed, mods: setup.mods, skill: setup.skill, pause: pauseBots, theme })); } catch (e) { /* ignore */ } }
+  function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ house: setup.house, opps: setup.seats.length, seats: setup.seats, speed, mods: setup.mods, skill: setup.skill, pause: pauseBots, theme, tbl: 1, sound, coins: manualCoins, seating: setup.seating })); } catch (e) { /* ignore */ } }
   function saveSafe() {
     if (!S || guest()) return; // гость партию не хранит — она у хозяина
     lastSafe = JSON.stringify(S);
@@ -4124,6 +4298,15 @@ if (typeof module !== 'undefined') module.exports = Net;
       }
       return askHuman(p, q);
     },
+    async collect(s, d) {
+      if (s !== S) throw new Stale();
+      await throwDone();
+      if (s !== S) throw new Stale();
+      // одно устройство, «передаём»: доход начала хода забирает сам игрок — сначала отдать ему устройство
+      if (d.kind === 'dawn' && hotseat() && d.p !== ME && myCoins().some(c => c.to === d.p)) { await handTo(S.players[d.p], 'turn'); if (s !== S) throw new Stale(); }
+      await coinsSettled(s);
+      if (s !== S) throw new Stale();
+    },
     async humanTurn(s, p) {
       if (s !== S) throw new Stale();
       if (seatOf(p) === 'remote') return hostTurn(p);
@@ -4133,7 +4316,32 @@ if (typeof module !== 'undefined') module.exports = Net;
     },
   });
   // «Передайте устройство»: экран закрывает стол, пока нужный игрок не нажмёт кнопку
-  function handTo(p, why, q) { return new Promise(res => { coverReq = { p: p.i, why, q: q || null, res }; schedule(); }); }
+  function handTo(p, why, q) {
+    // «лицом к лицу»: устройство не передают — стол поворачивается к тому, чья очередь
+    if (faceMode()) {
+      const was = ME; ME = p.i; handOpen = false;
+      if (was !== ME) { tab = 'hand'; prevTab = null; closeAllSheets(); closeAllPages(); applyFace(); faceBanner(p, why, q); schedule(); return wait(reduceMotion() ? 0 : 900); }
+      schedule(); return Promise.resolve();
+    }
+    return new Promise(res => { coverReq = { p: p.i, why, q: q || null, res }; schedule(); });
+  }
+  const faceMode = () => !!S && setup.seating === 'face' && !WATCH && hotseat() && S.players.filter(isLocal).length === 2;
+  const faceTop = () => { const l = S.players.filter(isLocal); return l.length > 1 ? l[1].i : -1; };
+  function applyFace() {
+    const f = faceMode();
+    document.body.classList.toggle('face', f);
+    document.body.classList.toggle('flipped', f && ME === faceTop());
+  }
+  function faceBanner(p, why, q) {
+    const el = document.createElement('div'); el.className = 'facebanner';
+    const t = why === 'ask' ? (q && q.type === 'bribe' ? 'Шпион у ваших ворот' : 'Ваше решение') : why === 'back' ? 'Ход продолжается' : 'Ваш ход';
+    el.innerHTML = `<img src="${IMG(`icons/h_${p.house}.svg`)}" alt=""><b>${esc(H(p).name)}</b><span>${t}</span>`;
+    document.body.appendChild(el); if (sound) Sfx.chime();
+    setTimeout(() => el.remove(), 1700);
+  }
+  // прокрутка: обычно окно, а «лицом к лицу» прокручивается сам стол (окно повернуть нельзя)
+  const SC = () => (document.body.classList.contains('face') ? app : window);
+
 
   const REC_NOTES = ['siege', 'win', 'fail', 'bribe', 'steal', 'trash', 'title', 'extra'];
   function onEvent(type, d) {
@@ -4147,10 +4355,12 @@ if (typeof module !== 'undefined') module.exports = Net;
         if (!isLocal(S.players[d.p])) lastRec = null;
         break;
       case 'endturn': if (turnRec && turnRec.p === d.p) lastRec = turnRec; freshHand.add(d.p); break; // рука взята заново — откроем все её карты
-      case 'dawn': if (rec) rec.dawn = d; break;
-      case 'play': if (rec && d.p === rec.p) { if (d.plot) rec.plotsSet++; else rec.plays.push(d); } break;
-      case 'buy': if (rec && d.p === rec.p) rec.buys.push(d); break;
+      case 'dawn': if (rec) rec.dawn = d; if (d.gain > 0) addCoins([{ to: d.p, from: null, amt: d.gain, src: (d.src || []).join(', '), id: null, kind: 'dawn' }]); break;
+      case 'play': if (rec && d.p === rec.p) { if (d.plot) rec.plotsSet++; else rec.plays.push(d); } if (sound) Sfx.card(); break;
+      case 'buy': if (rec && d.p === rec.p) rec.buys.push(d); if (sound) Sfx.card(); break;
       case 'dice':
+        diceSeq++;
+        if (!d.final && !d.adj) { const key = `${S.round}:${d.p}`; if (throwKey !== key) { throwKey = key; startThrow(d.n || d.vals.length, oppEl(d.p), null); } }
         diceView = d;
         if (d.final) rollView = { a: d.p, r: d.total, vals: d.vals, n: d.n, adj: d.adj || 0, ev: [], plots: [] };
         if (!d.final && !rolling) { rolling = true; setTimeout(() => { rolling = false; schedule(); }, 520); }
@@ -4158,6 +4368,7 @@ if (typeof module !== 'undefined') module.exports = Net;
       case 'income': {
         if (!rollView || rollView.a !== d.a) rollView = { a: d.a, r: d.r, vals: [d.r], n: 1, adj: 0, ev: [], plots: [] };
         rollView.ev = d.ev;
+        addCoins(d.ev.filter(x => x.amt > 0).map(x => ({ to: x.to, from: x.from != null ? x.from : null, amt: x.amt, src: x.src, id: x.id || null, kind: 'roll' })));
         if (rec && rec.p === d.a) rec.roll = rollView;
         if (ME === null) break;
         const paidEv = d.ev.filter(x => x.amt > 0);
@@ -4174,6 +4385,7 @@ if (typeof module !== 'undefined') module.exports = Net;
         break;
       case 'siege': {
         const a = S.players[d.a], t = S.players[d.t];
+        if (sound) Sfx.thud();
         if (d.t === ME) tutQueue('siege-me');
         if (d.t === ME) toast(`⚔️ ${pname(a)} осаждают вас: атака ${d.A} против обороны ${d.D}. ${d.win ? (d.got ? `Вы потеряли владение «${esc(D.ESTATES[d.got].name)}»` : `Вы потеряли ${d.gold}🪙`) : 'Вы отбились'}`, 4600);
         else if (d.a === ME) toast(`⚔️ Осада ${esc(E.shortG(t))}: атака ${d.A} против обороны ${d.D}. ${d.win ? (d.got ? `Вы забрали «${esc(D.ESTATES[d.got].name)}»` : `Забрать нечего, +${d.gold}🪙`) : 'Не вышло'}`, 4000);
@@ -4199,10 +4411,164 @@ if (typeof module !== 'undefined') module.exports = Net;
     schedule();
   }
 
+
+  // ---------- стол: кубик рукой и монеты рукой ----------
+  const pipsHtml = (v) => Array.from({ length: 9 }, (_, k) => `<i class="${PIPS[v].includes(k) ? 'on' : ''}"></i>`).join('');
+  const oppEl = (i) => (i === viewIdx() ? document.querySelector('.mine .gold') : document.querySelector(`.opp[data-i="${i}"]`));
+  let diceSeq = 0, throwKey = null, throwP = null, flick = null, lastShake = 0;
+  const throwDone = () => throwP || Promise.resolve();
+  // «лицом к лицу» стол повёрнут на 180°: координаты экрана переводим в координаты повёрнутой страницы
+  const flipped = () => document.body.classList.contains('flipped');
+  const ctr = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, h: r.height, top: r.top, bottom: r.bottom }; };
+  const toPage = (pt) => (flipped() ? { x: innerWidth - pt.x, y: innerHeight - pt.y } : pt);
+  document.addEventListener('pointerdown', (e) => {
+    if (sound) Sfx.unlock();
+    const d = e.target.closest && e.target.closest('.tdie-w');
+    if (d) flick = { x: e.clientX, y: e.clientY, t: performance.now(), el: d, vx: 0, vy: 0 };
+  }, { passive: true, capture: true });
+  document.addEventListener('pointerup', (e) => {
+    if (!flick) return;
+    const dt = Math.max(16, performance.now() - flick.t);
+    flick.vx = (e.clientX - flick.x) / dt; flick.vy = (e.clientY - flick.y) / dt;
+  }, { passive: true, capture: true });
+  // бросок: кубик летит из-под пальца (или от соперника) на середину стола, отскакивает и ложится
+  function startThrow(n, fromEl, fl) {
+    n = Math.max(1, Math.min(2, n || 1));
+    if (sound) Sfx.dice(n);
+    if (reduceMotion() || !document.body.animate) { throwP = null; return; }
+    const seq0 = diceSeq;
+    const W = innerWidth, Hh = innerHeight;
+    const tgt = document.querySelector('.table .dice');
+    let t = tgt ? ctr(tgt) : null;
+    if (!t || !t.w || t.bottom < 70 || t.top > Hh - 170) t = { x: W / 2, y: Hh * 0.42 };
+    const s0 = fromEl && fromEl.getBoundingClientRect().width ? ctr(fromEl) : { x: W / 2, y: 60 };
+    const S0 = toPage(s0), T = toPage(t);
+    let vx = fl ? fl.vx : 0, vy = fl ? fl.vy : 0; if (flipped()) { vx = -vx; vy = -vy; }
+    const sp = Math.min(3, Math.hypot(vx, vy));
+    const layer = document.createElement('div'); layer.className = 'throwlayer'; document.body.appendChild(layer);
+    const dice = [];
+    for (let k = 0; k < n; k++) {
+      const d = document.createElement('div'); d.className = 'die fly'; d.innerHTML = pipsHtml(1 + Math.floor(Math.random() * 6));
+      d.style.left = (S0.x - 26) + 'px'; d.style.top = (S0.y - 26) + 'px';
+      layer.appendChild(d);
+      const ex = T.x + (k - (n - 1) / 2) * 66 + (Math.random() - 0.5) * 28 - S0.x, ey = T.y + (Math.random() - 0.5) * 22 - S0.y;
+      const ox = vx * 60 * (0.6 + sp / 3), oy = vy * 60 * (0.6 + sp / 3);
+      const r = () => (Math.random() < 0.5 ? -1 : 1) * (200 + Math.random() * 260);
+      const r1 = r(), r2 = r1 + r() * 0.6, r3 = Math.round((r2 + r() * 0.3) / 90) * 90;
+      d.animate([
+        { transform: 'translate(0px,0px) rotate(0deg) scale(1)', offset: 0 },
+        { transform: `translate(${ex * 0.45 + ox}px,${ey * 0.45 + oy - 70}px) rotate(${r1}deg) scale(1.35)`, offset: 0.38 },
+        { transform: `translate(${ex + ox * 0.25}px,${ey + oy * 0.25}px) rotate(${r2}deg) scale(1)`, offset: 0.66 },
+        { transform: `translate(${ex - ox * 0.08}px,${ey - oy * 0.08 - 14}px) rotate(${(r2 + r3) / 2}deg) scale(1.06)`, offset: 0.82 },
+        { transform: `translate(${ex}px,${ey}px) rotate(${r3}deg) scale(1)`, offset: 1 },
+      ], { duration: 980, easing: 'cubic-bezier(.25,.7,.35,1)', fill: 'forwards' });
+      dice.push(d);
+    }
+    // пока кубик в воздухе, грани мелькают
+    const tick = setInterval(() => { for (const d of dice) d.innerHTML = pipsHtml(1 + Math.floor(Math.random() * 6)); }, 85);
+    throwP = new Promise(res => {
+      setTimeout(async () => {
+        clearInterval(tick);
+        // число знает движок: ждём его (у гостя по сети — чуть дольше)
+        for (let w = 0; w < 40 && diceSeq === seq0; w++) await wait(60);
+        const vals = diceView && diceView.vals ? diceView.vals : [];
+        dice.forEach((d, k) => { d.innerHTML = pipsHtml(vals[k] || vals[0] || 1); d.classList.add('landed'); });
+        await wait(520);
+        layer.classList.add('out');
+        await wait(260);
+        layer.remove(); throwP = null; res(); schedule();
+      }, 980);
+    });
+  }
+  // встряхнуть устройство — бросок (на iPhone и iPad нужно разрешение, его спрашивают в настройках)
+  window.addEventListener('devicemotion', (e) => {
+    if (!shakeRoll || !S || !isMyTurn() || busy || myCoins().length) return;
+    const a = e.accelerationIncludingGravity || e.acceleration; if (!a) return;
+    const m = Math.hypot(a.x || 0, a.y || 0, a.z || 0);
+    if (m < 24 || performance.now() - lastShake < 1500) return;
+    lastShake = performance.now();
+    const b = document.querySelector(`.tdie-w[data-n="${lastN}"]`) || document.querySelector('.tdie-w');
+    if (b && !b.disabled) b.click();
+  });
+
+  // монеты: сработавшие карты кладут золото на стол — игрок забирает его касанием. На экране золото игрока
+  // растёт, только когда монеты забраны; движок ждёт, пока игроки за этим устройством заберут свои
+  let coinQ = [], coinSeq = 0, coinAllAt = 0;
+  const coinWaiters = [];
+  const manualFor = (i) => manualCoins && !!S && !!S.players[i] && !WATCH && !S.players[i].isBot && isLocal(S.players[i]);
+  const pendIn = (i) => coinQ.reduce((a, c) => a + (!c.done && c.to === i ? c.amt : 0), 0);
+  const pendOut = (i) => coinQ.reduce((a, c) => a + (!c.done && c.from === i ? c.amt : 0), 0);
+  const shownGold = (q) => Math.max(0, q.gold - pendIn(q.i) + pendOut(q.i));
+  const myCoins = () => coinQ.filter(c => !c.done && !c.auto);
+  function addCoins(items) {
+    if (!items.length || !S) return;
+    const t = performance.now();
+    let na = 0;
+    for (const x of items) {
+      const c = { k: ++coinSeq, ...x, auto: !manualFor(x.to), done: false };
+      coinQ.push(c);
+      if (c.auto) { const d = reduceMotion() ? 30 : Math.max(80, (520 + na++ * 240) * (S.players[S.cur] && S.players[S.cur].isBot ? SPEED[speed] : 0.7)); setTimeout(() => takeCoin(c.k), d); }
+    }
+    if (myCoins().length) { coinAllAt = t + 6000; setTimeout(schedule, 6100); }
+    schedule();
+  }
+  function takeCoin(k) {
+    const c = coinQ.find(x => x.k === k);
+    if (!c || c.done) return;
+    const src = document.querySelector(`[data-coin="${k}"]`) || (c.from != null ? oppEl(c.from) : document.querySelector('.table .dice'));
+    const dst = oppEl(c.to);
+    flyCoins(src, dst, c.amt);
+    c.done = true;
+    if (sound) Sfx.coin();
+    if (!coinQ.some(x => !x.done)) coinQ = [];
+    for (const w of coinWaiters.splice(0)) w();
+    schedule();
+  }
+  function coinsSettled(s) {
+    return new Promise(res => {
+      const chk = () => { if (s !== S || !coinQ.some(c => !c.done)) res(); else coinWaiters.push(chk); };
+      chk();
+    });
+  }
+  function flyCoins(fromEl, toEl, n) {
+    if (!fromEl || !toEl || reduceMotion() || !document.body.animate) return;
+    const a0 = ctr(fromEl), b0 = ctr(toEl);
+    if (!a0.w || !b0.w) return;
+    const a = toPage(a0), b = toPage(b0);
+    for (let i = 0; i < Math.min(n, 5); i++) {
+      const el = document.createElement('div'); el.className = 'flycoin';
+      el.style.left = (a.x - 12) + 'px'; el.style.top = (a.y - 12) + 'px';
+      document.body.appendChild(el);
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const an = el.animate([
+        { transform: 'translate(0,0) scale(.9)', opacity: 1 },
+        { transform: `translate(${dx * 0.5}px,${dy * 0.5 - 46}px) scale(1.2)`, opacity: 1, offset: 0.5 },
+        { transform: `translate(${dx}px,${dy}px) scale(.7)`, opacity: 0.3 },
+      ], { duration: 560, delay: i * 80, easing: 'cubic-bezier(.3,.6,.4,1)', fill: 'both' });
+      an.onfinish = () => el.remove();
+      if (i && sound) setTimeout(() => Sfx.coin(i), i * 80);
+    }
+  }
+  function coinTray() {
+    const list = myCoins();
+    const by = new Map(); for (const c of list) { if (!by.has(c.to)) by.set(c.to, []); by.get(c.to).push(c); }
+    const many = by.size > 1 || [...by.keys()].some(i => i !== ME);
+    const grp = [...by.entries()].map(([i, cs]) => {
+      const q = S.players[i], rot = faceMode() && i !== ME ? ' rot' : '';
+      return `<div class="cg${rot}">${many ? `<span class="cg-h"><img src="${IMG(`icons/h_${q.house}.svg`)}" alt="">${esc(H(q).short)}</span>` : ''}${cs.map(c => {
+        const nm = c.kind === 'dawn' ? 'доход хода' : c.id && D.ESTATES[c.id] ? D.ESTATES[c.id].name : c.src;
+        const art = c.id && D.ESTATES[c.id] ? `<img class="cb-art" src="${IMG(`art/${c.id}-s.svg`)}" alt="">` : `<span class="cb-art sun">${gico('gold')}</span>`;
+        return `<button class="coinbtn" data-act="coin" data-k="${c.k}" data-coin="${c.k}" aria-label="Забрать ${c.amt} — ${esc(nm)}">${art}<span class="cb-n">+${c.amt}<i class="cb-c"></i></span><span class="cb-s">${esc(nm)}${c.from != null ? ` · у ${esc(E.shortG(S.players[c.from]))}` : ''}</span></button>`;
+      }).join('')}</div>`;
+    }).join('');
+    const all = performance.now() > coinAllAt ? '<button class="btn small ghost" data-act="coin-all">Забрать всё</button>' : '';
+    return `<div class="tray"><div class="tray-h"><b>${list.length > 1 ? 'Заберите монеты' : 'Заберите монету'}</b><span class="muted">коснитесь каждой — золото уйдёт в казну</span>${all}</div><div class="tray-r">${grp}</div></div>`;
+  }
+
   // ---------- вопросы человеку ----------
   function askHuman(p, q) {
     switch (q.type) {
-      case 'adjust': return new Promise(res => { adjustReq = { q, res }; schedule(); });
+      case 'adjust': return throwDone().then(() => new Promise(res => { adjustReq = { q, res }; schedule(); }));
       case 'target': return askTarget(p, q);
       case 'capture': return askCapture(p, q);
       case 'bribe': return askBribe(p, q);
@@ -4589,7 +4955,7 @@ if (typeof module !== 'undefined') module.exports = Net;
   };
   const ONCE = [
     ['welcome', (p, my) => my && S.tut.turns === 1 && !p.turn.rolled && !p.inPlay.length && { title: 'Обучающая партия', text: `Вы играете за ${esc(gen(p))} против ${esc(gen(oppOf(p)))}. Цель — первым собрать ${goalLine()}. ${E.goal(S) === R.ownRegalia ? 'Правила базовые: без лордов, замыслов, сезонов, осад и шпионажа — их можно включить потом в настройках партии. ' : ''}Каждый ход: карты из руки → бросок кубика → доход → одно действие → конец хода. Я подскажу на каждом шаге.`, btn: 'Начнём' }],
-    ['dice2', (p, my) => my && !p.turn.rolled && E.mods(S, p).dice2 && { title: 'Теперь можно бросать 2 кубика', text: `С двумя выпадает 2–12, чаще всего 7, и срабатывают владения на 7–12. С одним — только 1–6. Сейчас ваш бросок в среднем принесёт: 1 кубик ≈ ${f1(evRoll(p, 1))}🪙, 2 кубика ≈ ${f1(evRoll(p, 2))}🪙 (с учётом чужих Набегов). Выбирайте кнопкой внизу.`, focus: 'roll' }],
+    ['dice2', (p, my) => my && !p.turn.rolled && E.mods(S, p).dice2 && { title: 'Теперь можно бросать 2 кубика', text: `С двумя выпадает 2–12, чаще всего 7, и срабатывают владения на 7–12. С одним — только 1–6. Сейчас ваш бросок в среднем принесёт: 1 кубик ≈ ${f1(evRoll(p, 1))}🪙, 2 кубика ≈ ${f1(evRoll(p, 2))}🪙 (с учётом чужих Набегов). Внизу два кубика: смахните один или оба.`, focus: 'roll' }],
     ['banner1', (p) => E.regCount(p) >= 1 && { title: 'Первое знамя!', text: `Каждое следующее знамя дороже на ${R.rise}🪙. На вкладке «Знамёна» видно, каких значков 📜 ⚔️ 🔗 не хватает: они красные. Без нужных значков знамя не взять: их дают владения, вассалы, лорды и карты двора «до конца хода».` }],
     ['plot', (p) => p.plots.length > 0 && { title: 'Замысел отложен', text: `⏳ сработает в начале вашего следующего хода, 🎲 — когда на любом броске выпадет его число. Одновременно можно держать ${E.plotSlots(S, p)} замысла.` }],
     ['attack', (p, my) => my && p.hand.some(id => D.COURT[id].fx.some(op => op[0] === 'siege' || op[0] === 'spy')) && { title: 'Карта нападения', text: 'Осада: ⚔️ этого хода + бонус карты + кубик против ⚔️ и 🧱 стен соперника + его кубик; победа — его владение ценой до 4🪙. Шпионаж: ваши 🔗 + бонус + кубик против его 🔗 + кубик. Перед выбором цели игра покажет шанс успеха.' }],
@@ -4601,7 +4967,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     const T = S.tut;
     if (!my) { const o = S.players[S.cur]; return S.cur !== ME && T.turns <= 2 ? { id: 'opp', title: 'Ход соперника', text: `Сейчас ходят ${esc(H(o).short)}. На их броске срабатывают ваши 🟦 Земли (Пашня на 1). Ваши 🟩 Ремёсла и 🟪 Твердыни работают только на вашем броске, а 🟥 Набеги — только на чужом.${E.mods(S, o).redOwn ? ` У ${esc(H(o).short)} особое свойство Дома: их Набеги срабатывают и на их собственном броске, но тогда золото идёт из банка, а не от вас.` : ''} Следите за сообщениями внизу.` } : null; }
     if (!p.turn.rolled && p.hand.length && !p.inPlay.length) return { id: 'play', step: '1/4', title: 'Карты из руки', text: `Сыграйте карты: каждая даёт эффект сразу. «Подать» — +1🪙.${modOn('plots') && p.hand.some(id => D.COURT[id].plot) ? ' Карту с ⏳ или 🎲 можно не играть, а отложить замыслом: эффект будет сильнее, но позже.' : ''} Нажмите «Сыграть» у карты или «Сыграть все».`, focus: 'hand' };
-    if (!p.turn.rolled) return { id: 'roll', step: '2/4', title: 'Бросок', text: `Бросьте кубик кнопкой внизу. Выпавшее число запускает владения у всех игроков: ваши и соперника.${E.mods(S, p).dice2 ? '' : ' Пока у вас 1 кубик: числа 1–6.'}`, focus: 'roll' };
+    if (!p.turn.rolled) return { id: 'roll', step: '2/4', title: 'Бросок', text: `Смахните кубик внизу пальцем — или просто нажмите на него. Выпавшее число запускает владения у всех игроков: ваши и соперника. Сработавшие карты кладут монеты на стол — заберите их касанием.${E.mods(S, p).dice2 ? '' : ' Пока у вас 1 кубик: числа 1–6.'}`, focus: 'roll' };
     const left = E.buysLeft(S, p);
     if (left > 0) {
       const li = T.lastInc;
@@ -4666,6 +5032,7 @@ if (typeof module !== 'undefined') module.exports = Net;
       window.scrollTo(0, 0);
     }
     document.body.dataset.view = v;
+    applyFace();
     if (v !== 'join' && v !== 'lobby') { lastAppHtml = null; lastBarHtml = null; }
     renderCover();
     if (!S) { tabEl.hidden = true; if (view === 'setup') renderSetup(); else if (view === 'join') renderJoin(); else if (view === 'lobby' && NETG) renderLobby(); else renderHome(); return; }
@@ -4675,11 +5042,12 @@ if (typeof module !== 'undefined') module.exports = Net;
     // всплывающие изменения золота у всех игроков; близкие по времени складываются
     const now = performance.now();
     for (const q of S.players) {
-      if (goldSeen[q.i] != null && goldSeen[q.i] !== q.gold) {
-        const dd = q.gold - goldSeen[q.i], pp = pops[q.i];
+      const sg = shownGold(q);
+      if (goldSeen[q.i] != null && goldSeen[q.i] !== sg) {
+        const dd = sg - goldSeen[q.i], pp = pops[q.i];
         pops[q.i] = pp && now - pp.t < 1400 ? { d: pp.d + dd, t: now } : { d: dd, t: now };
       }
-      goldSeen[q.i] = q.gold;
+      goldSeen[q.i] = sg;
     }
     const hint = coachHint(p);
     const swapped = prevTab !== null && prevTab !== tab;
@@ -4734,6 +5102,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     const bottom = barEl.hidden ? window.innerHeight : barEl.getBoundingClientRect().top;
     const r = el.getBoundingClientRect();
     if (r.top >= hh + 4 && r.bottom <= bottom - 4) return;
+    if (document.body.classList.contains('face')) { el.scrollIntoView({ block: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' }); return; }
     window.scrollBy({ top: r.top - hh - 8, behavior: reduceMotion() ? 'auto' : 'smooth' });
   }
   // после смены вкладки — прокрутить к её содержимому (сводка игрока остаётся видна)
@@ -4744,6 +5113,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     if (!mine) return;
     const top = app.querySelector('.top');
     const y = mine.getBoundingClientRect().top - (top ? top.getBoundingClientRect().height : 0) - 8;
+    if (document.body.classList.contains('face')) { mine.scrollIntoView({ block: 'start', behavior: reduceMotion() ? 'auto' : 'smooth' }); return; }
     if (Math.abs(y) > 24) window.scrollBy({ top: y, behavior: reduceMotion() ? 'auto' : 'smooth' });
   }
 
@@ -4764,9 +5134,9 @@ if (typeof module !== 'undefined') module.exports = Net;
     return `<div class="opps">${list.map(q => {
       const pr = E.prod(S, q);
       const ts = Object.keys(S.titles).filter(t => S.titles[t] === q.i).map(t => D.TITLES[t].icon).join('');
-      return `<button class="opp ${act === q.i ? 'active' : ''}" data-act="opp" data-i="${q.i}">
+      return `<button class="opp ${act === q.i ? 'active' : ''}${faceMode() && isLocal(q) && q.i !== ME ? ' facing' : ''}" data-act="opp" data-i="${q.i}">
         <span class="on"><img class="ocr" src="${IMG(`icons/h_${q.house}.svg`)}" alt=""><span class="onm">${esc(H(q).short)}</span><span class="crown">🚩${E.regCount(q)}/${E.goal(S)}</span></span>
-        <span class="st"><span class="og">🪙${q.gold}${popHtml(q.i)}</span><span>📜${pr.sci}</span><span>⚔️${pr.war}</span><span>🔗${pr.int}</span></span>
+        <span class="st"><span class="og">🪙${shownGold(q)}${popHtml(q.i)}</span><span>📜${pr.sci}</span><span>⚔️${pr.war}</span><span>🔗${pr.int}</span></span>
         <span class="tt">${ts || '&nbsp;'}${q.plots.length ? ` 🎭${q.plots.length}` : ''}${q.away ? ' 🤖' : peerOff(q) ? ' <span class="off">нет связи</span>' : ''}</span></button>`;
     }).join('')}</div>`;
   }
@@ -4915,7 +5285,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     const ts = Object.keys(S.titles).filter(k => S.titles[k] === p.i).map(k => `<span class="pill or">${D.TITLES[k].icon} ${D.TITLES[k].name}</span>`).join('');
     const pop = popHtml(p.i, 'gold-pop');
     const who = WATCH ? `<span class="pill">Смотрим: ${pname(p)}</span>` : hotseat() ? `<span class="pill">${pname(p)}</span>` : '';
-    return `<div class="mine"><div class="gold"><img class="mcr" src="${IMG(`icons/h_${p.house}.svg`)}" alt="${esc(H(p).name)}"><span>${p.gold}</span><small>🪙</small>${pop}</div>
+    return `<div class="mine"><div class="gold"><img class="mcr" src="${IMG(`icons/h_${p.house}.svg`)}" alt="${esc(H(p).name)}"><span>${shownGold(p)}</span><small>🪙</small>${pop}</div>
       <div class="res"><span>📜 ${pr.sci}${t('sci')}</span><span>⚔️ ${pr.war}${t('war')}</span><span>🔗 ${pr.int}${t('int')}</span>${modOn('sieges') ? `<span>🧱 ${E.walls(S, p)}</span>` : ''}</div>
       <div class="meta">${who}<span class="pill or">🚩 ${p.regalia.length}/${R.ownRegalia} вассалов${needL() ? ` · ${greatOfP(p, 'lords')}/${needL()} лордов` : ''}${needF() ? ` · ${greatOfP(p, 'foreign')}/${needF()} великих лордов` : ''}</span>${ts}${p.plots.length ? `<span class="pill">🎭 замыслов ${p.plots.length}/${E.plotSlots(S, p)}</span>` : ''}</div></div>`;
   }
@@ -4935,6 +5305,10 @@ if (typeof module !== 'undefined') module.exports = Net;
       return `<p class="note">Карты ${esc(H(p).gen)} скрыты: сейчас ходят ${pname(S.players[S.cur])}. Каждый видит свою руку и замыслы только в свой ход.</p>
         <p class="muted" style="margin:0;font-size:13px">В руке ${D.cards(p.hand.length)}${modOn('plots') ? ` · замыслов ${p.plots.length}/${slots}` : ''}.</p>`;
     }
+    if (faceMode() && S.winner === null && !handOpen) {
+      return `<div class="handcover"><div class="hc-backs">${p.hand.map(() => `<img class="hc-b" src="${backSrc('court')}" alt="">`).join('')}</div><button class="btn primary" data-act="hand-open">Открыть мои карты</button><span class="muted">${D.cards(p.hand.length)} в руке. Соперник сидит напротив — откройте, когда будете готовы.</span></div>`;
+    }
+    if (faceMode() && handOpen) out += `<div class="sec-h"><h3>Ваша рука</h3><button class="btn small ghost" data-act="hand-close">Прикрыть карты</button></div>`;
     if (WATCH) out += `<p class="note">Режим наблюдения: показаны карты того, кто сейчас ходит.</p>`;
     else if (!my) out += `<p class="note">${nextReq && lastRec ? `Ход ${esc(E.shortG(S.players[lastRec.p]))} окончен — нажмите «Дальше».` : S.cur === ME ? 'Ваш ход начинается…' : `Сейчас ходят ${pname(S.players[S.cur])}.`} Ваши карты станут доступны в ваш ход.</p>`;
     else if (!p.turn.rolled && p.hand.some(id => D.COURT[id].fx.some(op => op[0] === 'reroll' || op[0] === 'shift'))) out += `<p class="note">Карты с переброской или сдвигом кубика работают, только если сыграть их до броска.</p>`;
@@ -5038,6 +5412,7 @@ if (typeof module !== 'undefined') module.exports = Net;
   }
   function barHtml(p) {
     if (S.winner !== null) return `<button class="btn" data-act="results">Итоги</button><button class="btn primary" data-act="new">Новая партия</button>`;
+    if (myCoins().length) return coinTray();
     // гость без связи с хозяином: ходить нельзя — ход всё равно не дойдёт
     if (guest() && hostLost()) return `<div class="status"><b>Нет связи с хозяином партии</b><span class="muted">${NETG.hostGone === 'pause' ? 'хозяин вышел в меню — партия продолжится, когда он вернётся' : 'ждём, переподключаемся…'}</span></div>`;
     // хозяин ждёт решения игрока по сети (например, откупаться ли от шпиона)
@@ -5076,7 +5451,8 @@ if (typeof module !== 'undefined') module.exports = Net;
     if (isMyTurn()) {
       if (!p.turn.rolled) {
         const two = E.mods(S, p).dice2;
-        return `<button class="btn primary" data-act="roll" data-n="1" ${busy ? 'disabled' : ''}>Бросить 🎲</button>${two ? `<button class="btn primary" data-act="roll" data-n="2" ${busy ? 'disabled' : ''}>Бросить 🎲🎲</button>` : ''}`;
+        const tray = (n) => `<button class="tdie-w" data-act="roll" data-n="${n}" ${busy ? 'disabled' : ''} aria-label="Бросить ${n === 2 ? 'два кубика' : 'кубик'}">${Array.from({ length: n }, (_, k) => `<span class="tdie">${pipsHtml(k ? 3 : 5)}</span>`).join('')}<small>${n === 2 ? '2 кубика' : two ? '1 кубик' : 'бросить'}</small></button>`;
+        return `<div class="status"><b>Бросьте кубик</b><span class="muted">смахните его пальцем${shakeRoll ? ' или встряхните устройство' : ''}</span></div>${tray(1)}${two ? tray(2) : ''}`;
       }
       const left = E.buysLeft(S, p);
       return `<div class="status"><b>Действий: ${left}</b><span class="muted">покупка или знамя</span></div><button class="btn primary" data-act="end" ${busy ? 'disabled' : ''}>Завершить ход</button>`;
@@ -5157,6 +5533,7 @@ if (typeof module !== 'undefined') module.exports = Net;
         <div class="sec-h"><h2 class="lbl">Соперники · ${setup.seats.length}</h2><span class="seat-n"><button class="btn small" data-act="seat-del" aria-label="Убрать игрока" ${setup.seats.length > 1 ? '' : 'disabled'}>−</button><button class="btn small" data-act="seat-add" aria-label="Добавить игрока" ${setup.seats.length < Math.min(av.length - 1, R.maxPlayers - 1) ? '' : 'disabled'}>+</button></span></div>
         <div class="seats">${setup.seats.map((s, k) => seatEditor(s, k, av)).join('')}</div>
         <p class="muted seatnote"><b>Человек</b> играет на этом же устройстве: передаёте его по очереди, карты каждого скрыты от остальных. <b>По сети</b> — со своего телефона по коду комнаты${NETOK ? '' : ' (только в отдельной версии игры — файл index.html)'}.</p>
+        ${setup.seats.filter(x => x.type === 'local').length === 1 ? `<h2 class="lbl">Как сидите</h2><div class="seg wide" role="radiogroup" aria-label="Как сидите">${[['pass', 'Передаём устройство'], ['face', 'Лицом к лицу']].map(([k, l]) => `<button role="radio" aria-checked="${setup.seating === k}" class="${setup.seating === k ? 'on' : ''}" data-act="seating" data-k="${k}">${l}</button>`).join('')}</div><p class="muted seatnote">${setup.seating === 'face' ? 'Планшет лежит между вами. В начале каждого хода стол поворачивается к тому, кто ходит; свои карты открываете сами.' : 'Телефон или планшет передаёте по очереди; перед каждым ходом экран закрывается.'}</p>` : ''}
         ${setup.seats.some(x => x.type === 'bot') ? `<h2 class="lbl">Сила ботов</h2><div class="seg wide skill" role="radiogroup" aria-label="Сила ботов">${Object.entries(E.SKILL_NAMES).map(([k, n]) => `<button role="radio" aria-checked="${setup.skill === k}" class="${setup.skill === k ? 'on' : ''}" data-act="skill" data-k="${k}">${n}</button>`).join('')}</div><p class="pdesc">${SKILL_DESC[setup.skill]}</p>` : ''}
         <p class="goalnote">Цель — первым собрать ${goalLine()}.</p>
         <button class="link" data-act="watch">Смотреть партию ботов</button>
@@ -5179,6 +5556,7 @@ if (typeof module !== 'undefined') module.exports = Net;
   function resetTable() {
     endTurnResolve = null; adjustReq = null; busy = false; diceView = null; paused = false; coverReq = null;
     rollView = null; turnRec = null; lastRec = null; nextReq = null;
+    coinQ = []; coinWaiters.splice(0); throwKey = null; handOpen = false;
     for (const k in goldSeen) delete goldSeen[k];
     for (const k in pops) delete pops[k];
   }
@@ -5480,7 +5858,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     const hit = hitsOf(rollView);
     const u = E.unionsOf(q);
     const body = `<p class="muted" style="margin:0">${H(q).about}</p><p class="note">${H(q).ability}</p>
-      <dl class="kv"><dt>Золото</dt><dd>${q.gold}🪙</dd><dt>Значки</dt><dd>📜 ${pr.sci} · ⚔️ ${pr.war} · 🔗 ${pr.int}${modOn('sieges') ? ` · 🧱 ${E.walls(S, q)}` : ''}</dd><dt>Карты</dt><dd>в руке ${q.hand.length}, всего ${q.deck.length + q.discard.length + q.hand.length + q.inPlay.length}</dd>${modOn('plots') ? `<dt>Замыслы</dt><dd>${q.plots.length ? (q.i === ME && !WATCH ? q.plots.map(pl => pl.kind === 'dice' ? `🎲 на ${pl.nums.join(', ')}` : '⏳').join(', ') : `${q.plots.length} рубашкой вверх — какие, не видно`) : 'нет'}</dd>` : ''}${modOn('unions') ? `<dt>Союзы</dt><dd>${['N', 'S', 'E', 'W'].filter(k => u[k]).map(k => `${D.PROV[k].icon} ${D.PROV[k].name}${u[k] > 1 ? ' ×' + u[k] : ''}`).join(', ') || 'нет'}</dd>` : ''}</dl>
+      <dl class="kv"><dt>Золото</dt><dd>${shownGold(q)}🪙</dd><dt>Значки</dt><dd>📜 ${pr.sci} · ⚔️ ${pr.war} · 🔗 ${pr.int}${modOn('sieges') ? ` · 🧱 ${E.walls(S, q)}` : ''}</dd><dt>Карты</dt><dd>в руке ${q.hand.length}, всего ${q.deck.length + q.discard.length + q.hand.length + q.inPlay.length}</dd>${modOn('plots') ? `<dt>Замыслы</dt><dd>${q.plots.length ? (q.i === ME && !WATCH ? q.plots.map(pl => pl.kind === 'dice' ? `🎲 на ${pl.nums.join(', ')}` : '⏳').join(', ') : `${q.plots.length} рубашкой вверх — какие, не видно`) : 'нет'}</dd>` : ''}${modOn('unions') ? `<dt>Союзы</dt><dd>${['N', 'S', 'E', 'W'].filter(k => u[k]).map(k => `${D.PROV[k].icon} ${D.PROV[k].name}${u[k] > 1 ? ' ×' + u[k] : ''}`).join(', ') || 'нет'}</dd>` : ''}</dl>
       <div class="sec-h"><h3>Знамёна ${E.regCount(q)}/${E.goal(S)}</h3></div><div class="pgrid mini">${own.map(r => { const b = q.regalia.includes(r.id); return pcard('vassal', r.id, { o: q.i, st: b ? 'built' : '', cls: b ? 'built' : 'dim', badge: b ? '<span class="pcb own">🚩</span>' : '' }); }).join('')}${q.great.map(id => pcard('lord', id, { o: q.i, st: 'built', cls: 'built', badge: '<span class="pcb own">🚩</span>' })).join('')}</div>
       ${titlesOf(q.i).length ? `<div class="sec-h"><h3>Титулы</h3></div><div class="pgrid mini">${titlesOf(q.i).map(t => titleCard(t)).join('')}</div>` : ''}
       <div class="sec-h"><h3>Владения</h3><span>${q.estates.length}</span></div><div class="pgrid mini">${estStacks(q.estates, hit).map(g => stackCard(g, q.i)).join('')}</div>
@@ -5533,7 +5911,11 @@ if (typeof module !== 'undefined') module.exports = Net;
     const seg = (key, cur, opts) => `<div class="seg wide" role="radiogroup">${opts.map(([v, l]) => `<button role="radio" aria-checked="${cur === v}" class="${cur === v ? 'on' : ''}" data-set="${key}" data-v="${v}">${l}</button>`).join('')}</div>`;
     const sw = (key, on, title, sub) => `<button class="mod set ${on ? 'on' : ''}" data-set="${key}" role="switch" aria-checked="${on}"><span class="sw" aria-hidden="true"></span><span><b>${title}</b><span class="muted">${sub}</span></span></button>`;
     return `<div class="settings">
-      <h2 class="lbl">Оформление</h2>${seg('theme', theme, [['system', 'Как в системе'], ['light', 'Светлое'], ['dark', 'Тёмное']])}
+      <h2 class="lbl">Оформление</h2>${seg('theme', theme, [['table', 'Стол'], ['system', 'Как в системе'], ['light', 'Светлое'], ['dark', 'Тёмное']])}
+      <h2 class="lbl">Как за столом</h2>
+      <div class="group">${sw('coins', manualCoins, 'Монеты — руками', manualCoins ? 'после броска заберите золото со своих карт касанием' : 'золото приходит само')}
+      ${sw('sound', sound, 'Звуки стола', 'кубик, монеты, карты')}
+      ${sw('shake', shakeRoll, 'Бросать встряхиванием', 'потрясите телефон или планшет, чтобы бросить кубик')}</div>
       <h2 class="lbl">Соперники-боты</h2>
       <div class="set-row"><span>Скорость ходов</span>${seg('speed', speed, [['slow', 'Медленно'], ['normal', 'Обычно'], ['fast', 'Быстро']])}</div>
       <div class="group">${sw('pause', pauseBots, 'Пауза после хода соперника', pauseBots ? 'сводка хода и кнопка «Дальше»' : 'боты ходят подряд, без остановки')}</div>
@@ -5554,6 +5936,15 @@ if (typeof module !== 'undefined') module.exports = Net;
       const b = e.target.closest('[data-set]'); if (!b) return;
       const k = b.dataset.set, v = b.dataset.v;
       if (k === 'theme') { theme = v; applyTheme(); }
+      else if (k === 'coins') { manualCoins = !manualCoins; if (!manualCoins) for (const c of myCoins()) takeCoin(c.k, true); }
+      else if (k === 'sound') { sound = !sound; Sfx.set(sound); if (sound) { Sfx.unlock(); Sfx.coin(); } }
+      else if (k === 'shake') {
+        if (shakeRoll) shakeRoll = false;
+        else if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+          DeviceMotionEvent.requestPermission().then(r => { shakeRoll = r === 'granted'; if (!shakeRoll) toast('Без разрешения на датчики движения бросать встряхиванием нельзя'); savePrefs(); pg.body.innerHTML = settingsHtml(); schedule(); }).catch(() => toast('Устройство не дало доступ к датчикам движения'));
+        } else if (typeof DeviceMotionEvent !== 'undefined') shakeRoll = true;
+        else toast('На этом устройстве нет датчиков движения');
+      }
       else if (k === 'speed') speed = v;
       else if (k === 'pause') { pauseBots = !pauseBots; if (!pauseBots && nextReq) { const r = nextReq; nextReq = null; r.res(); } }
       else if (k === 'tut' && S && S.tut) { S.tut.off = !S.tut.off; saveSafe(); }
@@ -6085,6 +6476,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     switch (a) {
       case 'pick': if (houseOk(el.dataset.h)) { setup.house = el.dataset.h; fixSetup(); savePrefs(); schedule(); } break;
       case 'skill': setup.skill = el.dataset.k; savePrefs(); schedule(); break;
+      case 'seating': setup.seating = el.dataset.k === 'face' ? 'face' : 'pass'; savePrefs(); schedule(); break;
       case 'preset': setup.mods = D.PRESETS[el.dataset.k].modules.slice(); fixSetup(); savePrefs(); schedule(); break;
       case 'mod': { const k = el.dataset.k; setup.mods = setupOn(k) ? setup.mods.filter(x => x !== k) : MODK.filter(x => x === k || setupOn(x)); fixSetup(); savePrefs(); schedule(); break; }
       case 'seat-type': { const k = +el.dataset.k; if (setup.seats[k]) { setup.seats[k].type = el.dataset.v; fixSetup(); savePrefs(); schedule(); } break; }
@@ -6109,7 +6501,7 @@ if (typeof module !== 'undefined') module.exports = Net;
         view = wasHost ? 'setup' : 'home'; schedule(); break;
       }
       case 'net-bot': netBot(+el.dataset.i); break;
-      case 'cover-ok': if (coverReq) { const c = coverReq; coverReq = null; ME = c.p; tab = 'hand'; prevTab = null; closeAllSheets(); closeAllPages(); toastRoot.innerHTML = ''; window.scrollTo(0, 0); c.res(); schedule(); } break;
+      case 'cover-ok': if (coverReq) { const c = coverReq; coverReq = null; ME = c.p; tab = 'hand'; prevTab = null; closeAllSheets(); closeAllPages(); toastRoot.innerHTML = ''; SC().scrollTo(0, 0); c.res(); schedule(); } break;
       case 'tut-ok': if (S && S.tut) { const id = el.dataset.id; if (!S.tut.seen.includes(id)) S.tut.seen.push(id); S.tut.q = S.tut.q.filter(x => x.id !== id); saveSafe(); schedule(); } break;
       case 'tut-off': if (S && S.tut) { S.tut.off = true; saveSafe(); toast('Подсказки выключены. Включить снова можно в меню ☰.', 3600); schedule(); } break;
       case 'continue': if (savedGame) { closeAllPages(); resumeGame(savedGame); } break;
@@ -6132,7 +6524,11 @@ if (typeof module !== 'undefined') module.exports = Net;
       case 'setup': view = 'setup'; schedule(); break;
       case 'settings': showSettings(); break;
       case 'next': if (nextReq) { const r = nextReq; nextReq = null; r.res(); schedule(); } break;
-      case 'roll': if (isMyTurn()) { if (guest()) netDo('roll', { n: +el.dataset.n }); else guarded(() => E.roll(S, p, +el.dataset.n)); } break;
+      case 'roll': if (isMyTurn() && !busy && !(guest() && NETG.pending)) { const n = +el.dataset.n; lastN = n; throwKey = `${S.round}:${S.cur}`; startThrow(n, el, flick && flick.el === el ? flick : null); if (guest()) netDo('roll', { n }); else guarded(() => E.roll(S, p, n)); } break;
+      case 'coin': takeCoin(+el.dataset.k); break;
+      case 'coin-all': for (const c of myCoins()) takeCoin(c.k); break;
+      case 'hand-open': handOpen = true; schedule(); break;
+      case 'hand-close': handOpen = false; schedule(); break;
       case 'adj': if (adjustReq) { const r = adjustReq; adjustReq = null; const d = +el.dataset.d; const k = r.q.shifts.reduce((best, mag, i) => (mag >= Math.abs(d) && (best < 0 || mag < r.q.shifts[best]) ? i : best), -1); r.res({ a: 'shift', k, d }); schedule(); } break;
       case 'adj-reroll': if (adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'reroll' }); schedule(); } break;
       case 'adj-harbor': if (adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'harbor' }); schedule(); } break;
@@ -6171,6 +6567,7 @@ if (typeof module !== 'undefined') module.exports = Net;
   }
   function boot(data) {
     loadPrefs();
+    Sfx.set(sound);
     applyTheme();
     splash();
     if (data && data.save) { savedGame = { S: data.save, ME: data.ME, WATCH: data.WATCH }; resumeGame(savedGame); return; }
