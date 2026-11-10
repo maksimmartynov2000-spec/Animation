@@ -1142,6 +1142,8 @@ function ASSET_URL(p) {
     courtToHand: () => ({ i: 'card', c: 'купленная карта двора — сразу в руку' }),
     unionSize: (n) => ({ i: 'provN', c: `союз — из ${n} владений провинции` }),
     unionNoSym: () => null,
+    unionFast: (n, m) => ({ i: 'provN', c: `первые ${n} союза — из 2 владений, дальше — из ${(m && m.unionLate) || 3}` }),
+    unionLate: null,
     unionBounty: (n) => ({ v: `+${n}`, i: 'gold', c: 'сразу за каждый новый союз' }),
     seasonBonus: (n) => ({ v: `+${n}`, i: 'gold', c: 'в начале каждого нового сезона' }),
     freeCheap: (n) => ({ i: 'action', c: `раз в ход карта двора до ${n}🪙 — без траты действия` }),
@@ -1150,11 +1152,11 @@ function ASSET_URL(p) {
   };
   const ORDER = ['dice2', 'buys', 'hand', 'reroll', 'shift', 'regCheap', 'symBuy', 'tradeCheap', 'blueBonus', 'greenBonus', 'winter', 'redBonus', 'raidShield', 'redOwn', 'siege', 'defense', 'walls', 'spy', 'guard', 'stealBonus',
     'warCry', 'startGold', 'tithe', 'buyToll', 'interest', 'symIncome_sci', 'symIncome_war', 'symIncome_int', 'redIncome', 'unionGold', 'tribute', 'symFee_sci', 'symFee_int', 'symFee_war', 'siegeWinGold',
-    'plotSlots', 'plotSpread', 'plotGold', 'timedPlotBonus', 'plotProtect', 'harbor', 'extraTurn', 'captureImmune', 'envyImmune', 'marketDiscount', 'landOthers', 'landOwn', 'courtCheap', 'courtToHand', 'unionSize', 'unionNoSym', 'unionBounty', 'seasonDouble', 'seasonBonus', 'freeCheap'];
+    'plotSlots', 'plotSpread', 'plotGold', 'timedPlotBonus', 'plotProtect', 'harbor', 'extraTurn', 'captureImmune', 'envyImmune', 'marketDiscount', 'landOthers', 'landOwn', 'courtCheap', 'courtToHand', 'unionSize', 'unionFast', 'unionNoSym', 'unionBounty', 'seasonDouble', 'seasonBonus', 'freeCheap'];
   // какой модуль нужен способности, чтобы она работала (остальные работают всегда)
   const MOD_NEEDS = { siege: 'sieges', defense: 'sieges', walls: 'sieges', siegeWinGold: 'sieges', captureImmune: 'sieges',
     spy: 'spy', guard: 'spy', stealBonus: 'spy', plotSlots: 'plots', plotGold: 'plots', timedPlotBonus: 'plots', plotProtect: 'plots', plotSpread: 'plots',
-    unionGold: 'unions', envyImmune: 'balance', unionSize: 'unions', unionNoSym: 'unions', unionBounty: 'unions', seasonDouble: 'seasons', seasonBonus: 'seasons' };
+    unionGold: 'unions', envyImmune: 'balance', unionSize: 'unions', unionFast: 'unions', unionNoSym: 'unions', unionBounty: 'unions', seasonDouble: 'seasons', seasonBonus: 'seasons' };
   // разделить способности на действующие и выключенные модулями: on(k) — включён ли модуль k
   function splitMods(m, on) {
     const act = {}, off = {}, offK = [];
@@ -1167,7 +1169,7 @@ function ASSET_URL(p) {
     if (ps.length === 1) out.push({ v: `+${prod[ps[0]]}`, i: ps[0], c: 'постоянно' });
     else if (ps.length > 1) out.push({ v: '+', i: ps.flatMap(s => Array(prod[s]).fill(s)), c: 'постоянно' });
     const keys = Object.keys(m || {}).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
-    for (const k of keys) { if (!m[k]) continue; const x = MOD[k] ? MOD[k](m[k]) : { c: k }; if (x) out.push(x); }
+    for (const k of keys) { if (!m[k]) continue; const x = MOD[k] ? MOD[k](m[k], m) : k in MOD ? null : { c: k }; if (x) out.push(x); }
     return out;
   }
   // титулы и союзы провинций — те же числа, что в движке (Engine.mods / prod / walls / startOfTurn)
@@ -1489,16 +1491,16 @@ const DATA = (() => {
     bear: {
       name: 'Дом Медведя', short: 'Медведи', gen: 'Медведей', dat: 'Медведям', sigil: '🐻', path: 'Земли',
       about: 'Лесные бароны Севера: пашни, пасеки, охотничьи угодья. Герб — бурый медведь.',
-      ability: '🟦 Земли приносят +2🪙 на вашем броске и +1🪙 на чужом.',
-      mods: { landOwn: 2, landOthers: 1 }, gold: 4,
-      deck: ['collector', 'mercenary', 'bearhoard'], estates: ['pasture'],
+      ability: '🟦 Каждая ваша Земля приносит на 1🪙 больше — на любом броске.',
+      mods: { blueBonus: 1 }, gold: -2,
+      deck: ['collector', 'mercenary', 'bearhoard'], estates: ['pasture', 'field'],
       regalia: [
         reg('trail', 'Ивар Тропа', 'проводник', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
         reg('apiary', 'Хельга Бортница', 'хозяйка пасек', 6, null, null, { sci: 1, war: 1 }, 'Даёт 📜 и ⚔️.'),
         reg('lodge', 'Освин Ловчий', 'старший егерь', 9, { war: 1 }, { hand: 1 }, { int: 1 }, 'Даёт 🔗. +1 карта в руку.'),
         reg('voivode', 'Бран из Дома Медведя', 'воевода Севера', 12, { war: 2, sci: 1 }, null, { war: 2 }, 'Даёт ⚔️⚔️.'),
         reg('mill', 'Сигрид Жернова', 'хозяйка мельниц', 15, { war: 2, sci: 2 }, { buys: 1 }, null, '+1 действие за ход.'),
-        reg('bearhall', 'Уна из Дома Медведя', 'хозяйка медвежьего чертога', 18, { war: 3, sci: 2 }, { landOthers: 1, startGold: 1 }, null, '🟦 Земли приносят +1🪙 и на чужих бросках. +1🪙 в начале хода.'),
+        reg('bearhall', 'Уна из Дома Медведя', 'хозяйка медвежьего чертога', 18, { war: 3, sci: 2 }, { blueBonus: 1, startGold: 1 }, null, '🟦 Земли приносят +1🪙. +1🪙 в начале хода.'),
       ],
     },
     lion: {
@@ -1519,9 +1521,9 @@ const DATA = (() => {
     eagle: {
       name: 'Дом Орла', short: 'Орлы', gen: 'Орлов', dat: 'Орлам', sigil: '🦅', path: 'Провинции',
       about: 'Наместники и гонцы: держат связь между провинциями. Герб — серый орёл.',
-      ability: 'За каждый новый союз провинций сразу +2🪙 (сверх обычного бонуса союза).',
-      mods: { unionBounty: 2 }, gold: 0,
-      deck: ['collector', 'scribe', 'eagleeye'], estates: ['pasture', 'runestone'],
+      ability: 'Быстрые союзы: ваши первые 2 союза — из 2 владений провинции, все следующие — из 4.',
+      mods: { unionFast: 2, unionLate: 4 }, gold: 0,
+      deck: ['collector', 'scribe', 'eagleeye'], estates: ['pasture', 'shop'],
       regalia: [
         reg('rider', 'Дан Быстрокрыл', 'конный гонец', 4, null, { dice2: 1 }, null, 'Можно бросать 2 кубика.'),
         reg('maps', 'Мира Странница', 'составительница карт', 6, null, null, { sci: 1, int: 1 }, 'Даёт 📜 и 🔗.'),
@@ -1560,7 +1562,7 @@ const DATA = (() => {
     chronicle: { name: 'Ансельм Мудрый', role: 'королевский летописец', cost: 16, req: { sci: 3, int: 1 }, prod: {}, mods: { hand: 1 }, text: '+1 карта в руку.' },
     banner: { name: 'Леопольд Миротворец', role: 'королевский посол', cost: 15, req: { unions: 2 }, prod: {}, mods: { regCheap: 2 }, text: 'Нужно 2 союза провинций. Каждое знамя на 2🪙 дешевле.' },
     egg: { name: 'Ульф Бесстрашный', role: 'укротитель виверн', cost: 15, req: { war: 3, sci: 1 }, prod: {}, mods: { extraTurn: 1 }, text: 'Дубль на 2 кубиках — дополнительный ход.' },
-    heart: { name: 'Робер Лесной', role: 'хранитель лесов', cost: 13, req: { sci: 2, int: 1 }, prod: {}, mods: { captureImmune: 1, walls: 3 }, text: 'Ваши владения нельзя захватить. 🧱 Стены +3.' },
+    heart: { name: 'Робер Лесной', role: 'хранитель лесов', cost: 13, req: { sci: 2, int: 1 }, prod: {}, mods: { walls: 6 }, text: '🧱 Стены +6.' },
     key: { name: 'Мартин Скупой', role: 'ключник короля', cost: 14, req: { int: 3, war: 1 }, prod: {}, mods: { courtCheap: 2 }, text: 'Карты двора на рынке вам на 2🪙 дешевле.' },
     seal: { name: 'Изольда Властная', role: 'вдовствующая королева', cost: 16, req: { sci: 1, war: 2, int: 1 }, prod: {}, mods: { shift: 1 }, text: 'Раз в ход можно сдвинуть бросок на ±1.' },
     bell: { name: 'Бертран Рыжий', role: 'капитан наёмников', cost: 13, req: { war: 3, int: 1 }, prod: {}, mods: { redBonus: 1, spy: 1 }, text: '🟥 Набеги забирают +1🪙. Шпионаж +1.' },
@@ -1576,7 +1578,7 @@ const DATA = (() => {
     condottiere: { set: 'foreign', name: 'Кондотьер Лука', cost: 16, req: { war: 3, int: 1 }, prod: {}, mods: { siege: 2, siegeWinGold: 2 }, take: [['gold', 3]], text: 'Осады +2. +2🪙 за каждую победу в осаде. Сразу +3🪙.' },
     envoy2: { set: 'foreign', name: 'Соглядатай Вильгельм', cost: 16, req: { int: 3, sci: 1 }, prod: {}, mods: { spy: 1, guard: 3, stealBonus: 1 }, take: [['gold', 3]], text: 'Шпионаж +1, стража +3. Каждая кража на 1🪙 больше. Сразу +3🪙.' },
     oracle: { set: 'foreign', name: 'Пророчица Кассия', cost: 16, req: { sci: 2, int: 1 }, prod: {}, mods: { plotSpread: 1, timedPlotBonus: 2 }, take: [['draw', 2]], text: '🎲-замыслы срабатывают и на соседних числах. Каждый ⏳-замысел +2🪙. Сразу возьмите 2 карты.' },
-    hetman: { set: 'foreign', name: 'Лорд-протектор Эдуард', cost: 16, req: { unions: 2 }, prod: {}, mods: { tribute: 1, regCheap: 1 }, take: [['gold', 3]], text: 'Нужно 2 союза провинций. В начале хода +1🪙 у каждого, у кого ⚔️ меньше. Каждое знамя на 1🪙 дешевле. Сразу +3🪙.' },
+    hetman: { set: 'foreign', name: 'Лорд-протектор Эдуард', cost: 16, req: { unions: 2 }, prod: {}, mods: { tribute: 1, captureImmune: 1 }, take: [['gold', 3]], text: 'Нужно 2 союза провинций. В начале хода +1🪙 у каждого, у кого ⚔️ меньше. Ваши владения нельзя захватить. Сразу +3🪙.' },
   };
 
   const SEASONS = [
@@ -1850,8 +1852,8 @@ if (typeof module !== 'undefined') module.exports = DATA;
     }
     const x = D.PROV[id];
     const ests = Object.entries(D.ESTATES).filter(([, d]) => d.p === id).map(([, d]) => `${D.ETYPE[d.t].mark} ${d.name}`).join(', ');
-    return { key: `p_${id}`, c: PROVC[id], icon: x.icon, name: x.name, type: 'Провинция', pre: '<span class="pc-req"><span class="pc-k">Союз</span>3 разных владения провинции</span>',
-      fx: chips(FX.union(id).concat([{ c: 'и эти владения нельзя захватить' }])), post: ests, left: mtag('unions') };
+    return { key: `p_${id}`, c: PROVC[id], icon: x.icon, name: x.name, type: 'Провинция', pre: '<span class="pc-req"><span class="pc-k">Союз</span>3 владения провинции, одинаковые тоже</span>',
+      fx: chips(FX.union(id)), post: ests, left: mtag('unions') };
   }
   function misc(kind, id, o = {}) {
     const sp = spec(kind, id, o);
@@ -2279,7 +2281,7 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
     }
     if (key === 'unions') {
       const prov = Object.keys(D.PROV).map(k => [k, D.PROV[k]]);
-      const eagle = D.HOUSES.eagle, eb = (eagle.mods || {}).unionBounty || 0, es = (eagle.mods || {}).unionSize || 2;
+      const eagle = D.HOUSES.eagle;
       gist = 'Почти каждое владение принадлежит одной из четырёх провинций — её значок в углу карты. Каждые 3 владения одной провинции — союз с бонусом этой провинции.';
       adds = ['Новых карт нет: провинции уже напечатаны на владениях.'];
       rules = [
@@ -2289,12 +2291,12 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
         'Значки союзов — как значки на столе: для вассалов, титулов, осады и стражи.',
       ];
       exs = [
-        ex('Союзы Юга', 'У вас Лавка, Порт и две Заставы — 4 владения Юга: один союз, +1🪙 в начале каждого хода. Купили Притон и Винный погреб — 6 владений Юга: два союза, +2🪙.'),
-        ex(`${eagle.sigil} Союзы Орла`, `Орлу для союза хватает ${es} владений. Бонусов у его союзов нет, зато за каждый новый союз — сразу +${eb}🪙. Пастбище и Рунный камень на старте — уже союз Севера (без награды). Купил Рудник и Лагерь наёмников — второй союз Севера: +${eb}🪙. Если союз распадётся и соберётся снова, награды нет: она только за союзы сверх прежнего максимума.`),
+        ex('Союзы Юга', 'У вас Лавка, Пристань и две Заставы — 4 владения Юга: один союз, +1🪙 в начале каждого хода. Купили Притон и Винный погреб — 6 владений Юга: два союза, +2🪙.'),
+        ex(`${eagle.sigil} Союзы Орла`, `${eagle.ability} На старте у Орла Пастбище (Север) и Лавка (Юг). Купили Рудник — союз Севера, купили Пристань — союз Юга: оба быстрых союза готовы. Дальше каждый союз — из ${(eagle.mods || {}).unionLate || 4} владений одной провинции. Потеряли владение — союзы пересчитываются по тому, что осталось.`),
       ];
       tips = [prov.map(([k, p]) => `${p.icon} ${p.name}: ${Object.keys(D.ESTATES).filter(id => D.ESTATES[id].p === k).map(id => D.ESTATES[id].name).join(', ')}`).join('<br>')];
-      with_ = ['С «Великими лордами»: появляется «Леопольд Миротворец» — для него нужно 2 союза.'];
-      bal = 'С одним модулем «Союзы» Орёл слабее остальных Домов (по симуляциям) — лучше играть его вместе с «Великими лордами».';
+      with_ = ['С «Лордами»: Леопольду Миротворцу нужно 2 союза. С «Великими лордами»: Лорду-протектору Эдуарду тоже нужно 2 союза.'];
+      bal = 'По симуляциям Орёл с быстрыми союзами близок к среднему, но в полной игре на четверых немного сильнее остальных.';
     }
     if (key === 'sieges') {
       const sb = C.siegeband, wp = C.wolfpack, wall = D.ESTATES.wall;
@@ -2463,13 +2465,36 @@ const Engine = (() => {
   }
   // союз провинции: каждые 3 владения одной провинции (любые, можно одинаковые) — один союз; бонусы копятся
   // u.S — сколько союзов Юга (0, 1, 2…), u.counts.S — сколько владений Юга
-  function unionsOf(p) {
+  function unionsOf(p, extra) {
     const c = { N: 0, S: 0, E: 0, W: 0 };
     for (const e of p.estates) { const d = ES(e); if (d.p) c[d.p]++; }
-    const k = (D.HOUSES[p.house].mods || {}).unionSize || 3; // Дом Орла — 2
-    const cap = (D.HOUSES[p.house].mods || {}).unionCap || Infinity; // Орлы: не больше одного союза в провинции
+    if (extra) c[extra]++;
+    const hm = D.HOUSES[p.house].mods || {};
+    const k = hm.unionSize || 3;
+    const cap = hm.unionCap || Infinity;
+    if (hm.unionFast) {
+      // Орлы: первые N союзов (всего, в любых провинциях) — из 2 владений, остальные — из unionLate (по умолчанию 3)
+      const late = hm.unionLate || 3, P = ['N', 'S', 'E', 'W'];
+      const g = (x, j) => j + Math.floor((x - 2 * j) / late);
+      let best = null;
+      const go = (i, left, acc) => {
+        if (i === P.length) { const t = P.reduce((a, q) => a + acc[q], 0); const used = P.reduce((a, q) => a + acc['j' + q], 0); if (!best || t > best.t || (t === best.t && used < best.used)) best = { t, used, ...acc }; return; }
+        const q = P[i];
+        for (let j = 0; j <= left && 2 * j <= c[q]; j++) go(i + 1, left - j, { ...acc, [q]: g(c[q], j), ['j' + q]: j });
+      };
+      go(0, hm.unionFast, {});
+      return { N: best.N, S: best.S, E: best.E, W: best.W, counts: c, size: 2, late, fast: hm.unionFast, fastLeft: hm.unionFast - best.used };
+    }
     const f = (x) => Math.min(cap, Math.floor(x / k));
     return { N: f(c.N), S: f(c.S), E: f(c.E), W: f(c.W), counts: c, size: k };
+  }
+  const PROV_EST = {}; for (const id in D.ESTATES) { const pv = D.ESTATES[id].p; if (pv && !PROV_EST[pv]) PROV_EST[pv] = id; }
+  // сколько ещё владений провинции q нужно до следующего союза (Infinity — больше союзов в ней не будет)
+  function unionNeed(p, q) {
+    const base = unionsOf(p); const tot = (u) => u.N + u.S + u.E + u.W; const t0 = tot(base);
+    const fake = { house: p.house, estates: p.estates.slice() };
+    for (let d = 1; d <= 6; d++) { fake.estates.push({ id: PROV_EST[q] }); if (tot(unionsOf(fake)) > t0) return d; }
+    return Infinity;
   }
   const unionCount = (p) => { const u = unionsOf(p); return u.N + u.S + u.E + u.W; };
   // Дом Орла: за каждый новый союз — сразу золото (один раз за союз; потерянный и собранный снова не считается)
@@ -3410,12 +3435,12 @@ const Engine = (() => {
       if (d.sym) val += 1.2 + this.symNeed(S, p, d.sym) * 0.9 * symWorth(S, p);
       if (d.p && on(S, 'unions')) {
         // шаг к следующему союзу этой провинции; Юг даёт +1🪙 каждый ход, остальные — значок (⚔️/📜/🔗)
-        const sz = unionsOf(p).size, k = p.estates.filter(e => ES(e).p === d.p).length % sz;
+        const need = unionNeed(p, d.p);
         const US = { N: 'war', E: 'sci', W: 'int' };
         const hm = D.HOUSES[p.house].mods || {};
         const base = hm.unionNoSym ? 0 : (d.p === 'S' ? T * 0.9 : 1.2 + this.symNeed(S, p, US[d.p]) * 0.9 * symWorth(S, p));
         const uv = base + (m.unionGold ? T * m.unionGold * 0.9 : 0) + (hm.unionBounty || 0);
-        val += k === sz - 1 ? uv : k === sz - 2 ? uv * 0.3 : uv * 0.1;
+        val += need === 1 ? uv : need === 2 ? uv * 0.3 : uv * 0.1;
       }
       if (d.walls && on(S, 'sieges')) {
         // угроза осады: насколько соперники сильнее нашей обороны
@@ -3761,7 +3786,7 @@ const Engine = (() => {
 
   return {
     D, R, on, needGreat, needSet, greatOf, lordRow, goal, goalText, cardOn, houseOn, seasonText, setHooks, newGame, runTurn, startOfTurn, play, roll, buy, build, endTurn,
-    SKILL, SKILL_NAMES, SCORE_W, mods, prod, sym, walls, unionsOf, unionCount, regCount, regCost, regDef, marketPrice, buysLeft, tradePrice, basicLeft,
+    SKILL, SKILL_NAMES, SCORE_W, mods, prod, sym, walls, unionsOf, unionNeed, unionCount, regCount, regCost, regDef, marketPrice, buysLeft, tradePrice, basicLeft,
     nmG, shortG, canOwnEstate, plotSlots, handSize, siegeOdds, spyInfo, capturable, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
   };
 })();
@@ -4245,7 +4270,7 @@ if (typeof module !== 'undefined') module.exports = Net;
     const x = [];
     if (d.sym) x.push(`${D.SYM[d.sym]} +1`);
     if (d.walls && d.t !== 'wall' && modOn('sieges')) x.push(`🧱 +${d.walls}`);
-    if (d.p && modOn('unions')) { const u = E.unionsOf(p), k = u.counts[d.p] + 1; x.push(`${D.PROV[d.p].icon} ${D.PROV[d.p].name}: станет ${k}${k % u.size === 0 ? ' — союз!' : ''}`); }
+    if (d.p && modOn('unions')) { const u = E.unionsOf(p), k = u.counts[d.p] + 1, nd = E.unionNeed(p, d.p); x.push(`${D.PROV[d.p].icon} ${D.PROV[d.p].name}: станет ${k}${nd === 1 ? ' — союз!' : ''}`); }
     const own = p.estates.filter(e => e.id === d.id).length;
     if (own) x.push(`у вас уже ${own}`);
     return t + (x.length ? ` · ${x.join(' · ')}` : '');
@@ -4555,7 +4580,7 @@ if (typeof module !== 'undefined') module.exports = Net;
   const f1 = (x) => (Math.round(x * 10) / 10).toString().replace('.', ',');
   const EVENT_HINTS = {
     'hold-hit': (p, d) => ({ title: 'Соперник забрал ваше золото', text: `${esc(d.src)}: −${d.amt}🪙. 🟪 Твердыня срабатывает на броске своего владельца и забирает золото у каждого соперника. Защититься нельзя, поэтому лишнее золото лучше тратить в свой ход.` }),
-    'siege-me': () => ({ title: 'Вас осадили', text: `Защита от осады — ваши ⚔️ на столе и 🧱 стены (у всех ${R.baseWalls} от замка; Каменная стена даёт +${D.ESTATES.wall.walls}) плюс кубик. Если у вас больше 📜, чем у нападающего, вы бросаете 2 кубика и берёте лучший. Владения из союза провинции захватить нельзя.` }),
+    'siege-me': () => ({ title: 'Вас осадили', text: `Защита от осады — ваши ⚔️ на столе и 🧱 стены (у всех ${R.baseWalls} от замка; Каменная стена даёт +${D.ESTATES.wall.walls}) плюс кубик. Если у вас больше 📜, чем у нападающего, вы бросаете 2 кубика и берёте лучший.` }),
     'spy-me': () => ({ title: 'К вам подослали шпиона', text: 'Стража — это ваши 🔗 плюс кубик против 🔗 шпиона, бонуса его карты и его кубика. Если шпион победил, можно откупиться: 2🪙 за каждое очко разницы.' }),
     season: (p, d) => { const se = D.SEASONS[d.idx]; return { title: `Новый сезон: ${se.icon} ${se.name}`, text: `${seasonTxt(se)} Сезон действует на всех и меняется каждые ${R.seasonLen} круга.` }; },
     envy: () => ({ title: 'Зависть', text: `Вы единственный лидер по знамёнам, поэтому в начале хода платите 1🪙 за каждое знамя отрыва от второго места (не больше ${R.envyMax}🪙).` }),
@@ -4989,9 +5014,9 @@ if (typeof module !== 'undefined') module.exports = Net;
   function landsPanel(p) {
     const u = E.unionsOf(p);
     let out = '';
-    if (modOn('unions')) out += `<div class="sec-h"><h3>Союзы провинций</h3><span>каждые ${u.size} владения провинции</span></div><div class="unions">${['N', 'S', 'E', 'W'].map(k => {
-      const pv = D.PROV[k], c = u.counts[k], left = u.size - (c % u.size);
-      return `<div class="union ${u[k] ? 'done' : ''}"><b>${pv.icon} ${pv.name}: ${u[k] ? `союз${u[k] > 1 ? ` ×${u[k]}` : ''}` : `${c}/${u.size}`}</b><br><span class="muted">${u[k] ? `сейчас ${pv.union.replace(/\+1/, '+' + u[k])}` : pv.union}; ещё ${left} ${D.plural(left, 'владение', 'владения', 'владений')} до ${u[k] ? 'следующего' : 'союза'}</span></div>`;
+    if (modOn('unions')) out += `<div class="sec-h"><h3>Союзы провинций</h3><span>${u.fast ? `первые ${u.fast} — из 2 владений, дальше — из ${u.late}${u.fastLeft ? ` (быстрых осталось ${u.fastLeft})` : ''}` : `каждые ${u.size} владения провинции`}</span></div><div class="unions">${['N', 'S', 'E', 'W'].map(k => {
+      const pv = D.PROV[k], c = u.counts[k], left = E.unionNeed(p, k);
+      return `<div class="union ${u[k] ? 'done' : ''}"><b>${pv.icon} ${pv.name}: ${u[k] ? `союз${u[k] > 1 ? ` ×${u[k]}` : ''}` : `${c}/${c + left}`}</b><br><span class="muted">${u[k] ? `сейчас ${pv.union.replace(/\+1/, '+' + u[k])}` : pv.union}; ещё ${left} ${D.plural(left, 'владение', 'владения', 'владений')} до ${u[k] ? 'следующего' : 'союза'}</span></div>`;
     }).join('')}</div>`;
     const mt = titlesOf(p.i);
     if (mt.length) out += `<div class="sec-h"><h3>Ваши титулы</h3><span>лежат у вас, пока вы лучший</span></div><div class="pgrid lands">${mt.map(t => pslot(titleCard(t), `<span class="pmeta">${esc(D.TITLES[t].cond)}</span>`)).join('')}</div>`;
