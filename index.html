@@ -1571,7 +1571,7 @@ const DATA = (() => {
 
     // ---------- модуль «Придворные»: карту с блоком «При дворе» можно не сыграть, а посадить на место при дворе ----------
     // seat — постоянное свойство, пока карта сидит при дворе: { mods, prod }; stext — то же словами
-    keeper: { name: 'Ключник', role: 'merchant', cost: 3, fx: [['gold', 3]], seat: { mods: { interest: 2 } }, stext: 'В начале хода +1🪙 за каждые 10🪙 у вас, но не больше +2🪙.' },
+    keeper: { name: 'Ключник', role: 'merchant', cost: 3, fx: [['gold', 3]], seat: { mods: { interest: 99 } }, stext: 'В начале хода +1🪙 за каждые 10🪙 у вас.' },
     fairwarden: { name: 'Ярмарочный староста', role: 'merchant', cost: 3, fx: [['gold', 2], ['draw', 1]], seat: { mods: { marketDiscount: 1 } }, stext: 'Рынок вам на 1🪙 дешевле.' },
     taxfarmer: { name: 'Откупщик', role: 'merchant', cost: 5, fx: [['goldPerCraft', 1, 99]], seat: { mods: { craftIncome: 1 } }, stext: 'В начале хода +1🪙 за каждые 2 ваших 🟩 Ремесла.' },
     tutor: { name: 'Наставник принца', role: 'scholar', cost: 3, fx: [['temp', 'sci', 1], ['gold', 2]], seat: { mods: { allyScholar: 1 } }, stext: 'Ваши карты Учёных всегда играются со свитой.' },
