@@ -1215,7 +1215,7 @@ function ASSET_URL(p) {
     if (d.guard) perm.push({ v: `+${d.guard}`, i: 'int', c: 'стража' });
     if (d.mods) perm.push(...mods(d.mods));
     if (d.fixed) perm.push({ c: 'захватить нельзя; разрушить — только Тараном' });
-    if (d.bad) perm.push({ c: 'подбрасывают сопернику нападением (+2) при покупке' });
+    if (d.bad) perm.push({ c: 'сразу подбросьте сопернику: нападение +2. Провал — владение из игры', buy: true });
     return { trig, main, perm };
   }
 
@@ -1250,7 +1250,7 @@ function ASSET_URL(p) {
         case 'forage': return { v: `+${b}`, i: 'gold', c: `у самого богатого, у кого ${SYM[a]} меньше` };
         case 'siege': return { v: `+${a}`, i: 'siege', c: 'захват: владение до 4🪙, придёт в руинах' };
         case 'raze': return { v: `+${a}`, i: 'raze', c: `разрушение: владение ${b >= 99 ? 'любой цены' : `до ${b}🪙`} — из игры${c === 'wall' ? ' (и Стену)' : c === 'nowalls' ? '; стены цели не в счёт' : ''}` };
-        case 'plant': return { v: `+${a}`, i: 'spy', c: 'подсунуть сопернику: удача — в его сброс, провал — из игры' };
+        case 'plant': return { v: `+${a}`, i: 'spy', c: 'сыграйте — подсуньте сопернику: удача — карта в его сброс, провал — из игры' };
         case 'trashGold': return { v: `до ${a}`, i: 'trash', c: `${plural(a, 'карты', 'карт', 'карт')} из руки — из игры, +${b}🪙 за каждую` };
         case 'spy': return { v: `+${a}`, i: 'spy', c: `шпионаж: ${spyCap(b, c)}` };
         case 'trash': return { v: `до ${a}`, i: 'trash', c: `${plural(a, 'карты', 'карт', 'карт')} из руки — из игры навсегда` };
@@ -1473,7 +1473,7 @@ function ASSET_URL(p) {
     if (on('plots')) rules.push(`<div class="rule">${ico('plot')}<span><b>Замысел:</b> ⏳ — в начале след. хода, 🎲 — на одном из 2 чисел. До ${R.plotSlots}.</span></div>`);
     if (on('sieges')) rules.push(`<div class="rule">${ico('siege')}<span><b>Нападение:</b> ⚔️ + число + 🎲 &gt; его ⚔️ + 🧱 + 🎲 (база ${R.baseWalls}🧱). Захват — владение в руинах; 💥 — разрушено.</span></div>`);
     if (on('spy')) rules.push(`<div class="rule">${ico('spy')}<span><b>Шпионаж:</b> 🔗 + число + 🎲 &gt; его 🔗 + стража + 🎲 (база ${R.baseGuard}).</span></div>`);
-    if (on('faith')) rules.push(`<div class="rule">${ico('faith')}<span><b>Вера:</b> ступени при 🕯${R.faithStage2} и 🕯${R.faithStage3}; обряд раз в ход; обет; единоверцы не нападают.</span></div>`);
+    if (on('faith')) rules.push(`<div class="rule">${ico('faith')}<span><b>Вера:</b> ступени при 🕯${R.faithStage2} и 🕯${R.faithStage3}; обряд раз в ход; обет — пока вы в вере, купленное раньше остаётся; единоверцы не нападают.</span></div>`);
     return `<div class="aid back">
       <div class="ah"><span>Памятка</span><b>Знамёна${on('sieges') || on('spy') ? ' и бой' : ''}</b></div>
       <div class="sy"><b>Значки</b> не тратятся. Сыгранные карты дают их на ход.</div>
@@ -1659,10 +1659,10 @@ const DATA = (() => {
 
     // ---------- плохие карты: их покупают, чтобы подсунуть сопернику; у того в руке они вредят ----------
     // bad — что делает карта, пока лежит в руке у владельца (см. badText)
-    debt: { name: 'Долговая расписка', role: null, cost: 1, bad: 'debt', fx: [['plant', 1]], copies: 1, badText: 'В руке в начале вашего хода: −2🪙.' },
-    impostor: { name: 'Самозванец', role: null, cost: 1, bad: 'impostor', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: свита ваших карт не срабатывает.' },
+    debt: { name: 'Долговая расписка', role: null, cost: 1, bad: 'debt', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: −2🪙 в начале хода.' },
+    impostor: { name: 'Самозванец', role: null, cost: 1, bad: 'impostor', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: ваша свита не срабатывает.' },
     letter: { name: 'Подмётное письмо', role: null, cost: 1, bad: 'letter', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: ваши нападения и шпионы слабее на 2.' },
-    rumor: { name: 'Дурной слух', role: null, cost: 1, bad: 'rumor', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: всё на рынке вам на 1🪙 дороже.' },
+    rumor: { name: 'Дурной слух', role: null, cost: 1, bad: 'rumor', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: рынок вам на 1🪙 дороже.' },
     cursedrelic: { name: 'Проклятая реликвия', role: null, cost: 2, bad: 'relic', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: благо вашей веры не действует.' },
 
     // ---------- Жрецы (направление «Вера»): свечи 🕯 до конца хода, подаяния, очищение колоды ----------
@@ -2151,7 +2151,7 @@ if (typeof module !== 'undefined') module.exports = DATA;
   const MOD_CARDS = ['sets', ...D.MODULE_KEYS];
   const PROV = { N: 'Север', S: 'Юг', E: 'Восток', W: 'Запад' };
   // плотные карты: мелкий текст эффектов ужат, чтобы влезло с запасом 3% (считает cards/fit.js)
-  const FIT = {"e:wall":0.92,"e:secretoffice":0.88,"e:plaguehouse":0.93,"e:banditpost":0.93,"e:poststation":0.96,"c:usurer":0.99,"c:changer":0.99,"c:astrologer":0.96,"c:foragers":0.86,"c:pickpocket":0.99,"c:briber":0.99,"c:whisper":0.82,"c:pr_star":0.99,"c:favorite":0.97,"c:schemer":0.99,"c:bearhoard":0.99,"c:eagleeye":0.9,"h:deer":0.88,"h:owl":0.91,"h:wolf":0.92,"h:rose":0.92,"h:serpent":0.88,"h:moon":0.91,"h:lion":0.71,"h:eagle":0.69,"b:martin":0.74,"b:leopold":0.75,"b:alberich":0.79,"b:robert":0.8,"b:edgar":0.85,"b:irmina":0.91,"b:warden":0.98,"b:heir_wolf":0.88,"b:heir_serpent":0.97,"b:heir_moon":0.93,"b:heir_lion":0.82,"b:heir_sun":0.94,"b:enrico":0.75,"b:matilda":0.89,"b:cassia":0.91,"b:edward":0.75,"b:aelin":0.94,"b:oberon":0.86,"f:grain":0.84,"f:bounty":0.88,"f:star":0.79,"f:seer":0.8,"f:flame":0.84,"f:blade":0.93,"f:shade":0.85,"f:circle":0.85,"f:cathedral":0.92,"f:ash":0.78,"f:harvest":0.84,"f:mercy":0.85,"p:N":0.81,"p:S":0.8,"p:E":0.8,"p:W":0.8,"m:faith":0.71,"m:plots":0.95,"m:seats":0.94,"m:sieges":0.84,"m:spy":0.78};
+  const FIT = {"e:wall":0.92,"e:secretoffice":0.88,"e:plaguehouse":0.93,"e:banditpost":0.93,"e:poststation":0.96,"c:usurer":0.99,"c:changer":0.99,"c:astrologer":0.96,"c:foragers":0.86,"c:pickpocket":0.99,"c:briber":0.99,"c:whisper":0.82,"c:pr_star":0.99,"c:favorite":0.97,"c:schemer":0.99,"c:bearhoard":0.99,"c:eagleeye":0.9,"h:owl":0.91,"h:wolf":0.92,"h:rose":0.92,"h:serpent":0.88,"h:moon":0.91,"h:lion":0.71,"h:eagle":0.69,"b:martin":0.74,"b:leopold":0.75,"b:alberich":0.79,"b:robert":0.8,"b:edgar":0.85,"b:irmina":0.91,"b:warden":0.98,"b:heir_wolf":0.88,"b:heir_serpent":0.97,"b:heir_moon":0.93,"b:heir_lion":0.82,"b:heir_sun":0.94,"b:enrico":0.75,"b:matilda":0.89,"b:cassia":0.91,"b:edward":0.75,"b:aelin":0.94,"b:oberon":0.86,"f:grain":0.84,"f:bounty":0.88,"f:star":0.79,"f:seer":0.8,"f:flame":0.84,"f:blade":0.93,"f:shade":0.85,"f:circle":0.85,"f:cathedral":0.92,"f:ash":0.78,"f:harvest":0.84,"f:mercy":0.85,"p:N":0.81,"p:S":0.8,"p:E":0.8,"p:W":0.8,"m:faith":0.71,"m:plots":0.95,"m:seats":0.94,"m:sieges":0.84,"m:spy":0.78};
   const fit = (key) => (FIT[key] ? ` style="--k:${FIT[key]}"` : '');
 
   const mtagOf = (need) => { if (!need) return ''; const ks = String(need).split(/[|&]/).filter(k => D.MODULES[k]); if (!ks.length) return ''; return `<span class="pc-mtag">${ks.map(k => `${D.MODULES[k].icon} ${D.MODULES[k].short}`).join(String(need).includes('&') ? ' + ' : ' / ')}</span>`; };
@@ -2170,7 +2170,8 @@ if (typeof module !== 'undefined') module.exports = DATA;
     const fsz = num.length <= 3 ? 5.2 : num.length === 4 ? 4.6 : 4.0; // «11–12» должно влезть в щит
     const shield = num ? `<div class="pc-shield${num.length >= 4 ? ' pc-wide' : ''}"><span style="font-size:${u(fsz)}">${num}</span></div>` : `<div class="pc-shield"><span class="pc-sic">${ico('wall')}</span></div>`;
     const prov = d.p ? `<span class="pc-pv">·</span>${ico('prov' + d.p)}${PROV[d.p]}` : '';
-    const perm = f.perm.length ? `<div class="pc-perm"><span class="pc-lbl">Постоянно</span>${chips(f.perm)}</div>` : '';
+    const onBuy = f.perm.filter(x => x.buy), keep = f.perm.filter(x => !x.buy);
+    const perm = (keep.length ? `<div class="pc-perm"><span class="pc-lbl">Постоянно</span>${chips(keep)}</div>` : '') + (onBuy.length ? `<div class="pc-perm"><span class="pc-lbl">При покупке</span>${chips(onBuy)}</div>` : '');
     const need = D.NEEDS.estate[id];
     const left = o.start ? startTag(o.start) : d.house ? startTag(d.house) : need ? mtagOf(need) : d.basic ? '<span class="pc-basic">всегда в продаже</span>' : d.t === 'hold' ? `<span class="pc-basic">твердыня · ×${d.copies || 1}</span>` : `<span class="pc-basic">×${d.copies || 3} в колоде</span>`;
     return iconize(root('pc-est', T.c, T.dark, o, `
@@ -2193,14 +2194,14 @@ if (typeof module !== 'undefined') module.exports = DATA;
     const tag = c.plot && f.plot ? `<div class="pc-corner">${c.plot === 'dice' ? `${ico('dice')}${pnT}` : `${ico('plot')}замысел`}</div>` : '';
     const has = (k) => (c.fx || []).some(op => op[0] === k);
     const atk = has('siege') ? 'захват' : has('raze') ? 'разрушение' : has('plant') ? 'подсунуть' : has('spy') ? 'шпионаж' : null;
-    const type = (c.bad ? 'Плохая карта' : c.start ? 'Стартовая · без роли' : c.sig ? `Фамильная · ${R.label}` : c.faith ? `${R.label} · ${D.FAITHS[c.faith].name}` : R.label) + (atk ? `<span class="pc-atk">Нападение: ${atk}</span>` : '');
+    const type = (c.bad ? 'Беда' : c.start ? 'Стартовая · без роли' : c.sig ? `Фамильная · ${R.label}` : c.faith ? `${R.label} · ${D.FAITHS[c.faith].name}` : R.label) + (atk ? `<span class="pc-atk">Нападение: ${atk}</span>` : '');
     const play = f.play.length === 1 && f.play[0].i === 'gold' ? [Object.assign({}, f.play[0], { big: true })] : f.play;
     const blocks = [];
     if (f.ally) blocks.push(`<div class="pc-blk${o.allyOn ? ' pc-on' : ''}"><span class="pc-lbl">Свита<br>после ${ico(ROLE_ICO[c.role])}</span>${chips(f.ally)}</div>`);
     if (f.seat && on(o, 'seats')) blocks.push(`<div class="pc-blk pc-seat${o.seatOn ? ' pc-on' : ''}"><span class="pc-lbl">При дворе<br>${ico('seat')}</span>${chips(f.seat)}</div>`);
     if (f.plot) blocks.push(`<div class="pc-blk"><span class="pc-lbl">${f.plot.kind === 'dice' ? `Замысел<br>${ico('dice')} <b>${pnT}</b>` : `Замысел<br>${ico('plot')} след. ход`}</span>${chips(f.plot.chips)}</div>`);
     if (c.faith && c.ffx && on(o, 'faith')) blocks.push(`<div class="pc-blk pc-faith${o.faithOn ? ' pc-on' : ''}"><span class="pc-lbl">Вере<br>${D.FAITHS[c.faith].icon} ${D.FAITHS[c.faith].name}</span>${chips(FX.fx(c.ffx))}</div>`);
-    if (c.bad) blocks.push(`<div class="pc-blk pc-bad"><span class="pc-lbl">У того,<br>в чьей руке</span><span class="pc-fxs"><span class="pc-fx pc-txt"><span class="pc-fx-c">${c.badText}</span></span></span></div>`);
+    if (c.bad) blocks.push(`<div class="pc-blk pc-bad"><span class="pc-lbl">Кому<br>подсунули</span><span class="pc-fxs"><span class="pc-fx pc-txt"><span class="pc-fx-c">${c.badText}</span></span></span></div>`);
     const sigH = c.sig && houseOfSig(id);
     const mtag = mtagOf(D.NEEDS.court[id] || (sigH && D.NEEDS.house[sigH]));
     const left = o.start ? startTag(o.start) : sigH ? startTag(sigH, '') : mtag ? mtag : c.start ? `<span class="pc-basic">×${D.RULES.startTax} у каждого</span>` : `<span class="pc-basic">×${c.copies || 2} в колоде</span>`;
@@ -2649,7 +2650,7 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
       out.push(`${H.sigil} <b>${H.name}</b>: карта Дома${st ? `, стартовое владение ${q(D.ESTATES[st].name)}` : ''}, Наследник ${q(D.BAN[H.heir].name)}${sig ? `, фамильная карта ${q(D.COURT[sig].name)}` : ''}.`);
     });
     if (court.length) out.push(`Карты двора: ${court.map(id => q(D.COURT[id].name)).join(', ')}.`);
-    if (bad.length) out.push(`Плохие карты: ${bad.map(id => q(D.COURT[id].name)).join(', ')}.`);
+    if (bad.length) out.push(`Беды: ${bad.map(id => q(D.COURT[id].name)).join(', ')}.`);
     if (est.length) out.push(`Владения: ${est.map(id => q(D.ESTATES[id].name)).join(', ')}.`);
     for (const t of ['v', 'l', 'g']) {
       const xs = bans.filter(id => D.BAN[id].tier === t);
@@ -2713,7 +2714,7 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
         `<b>Принять</b> — в свой ход, бесплатно и без траты действия, если у вас (на столе и с сыгранных карт) ${D.SYM.faith.repeat(R.faithNeed)} и ${R.faithDir} значка направления веры. «Чистой» вере нужны только ${D.SYM.faith.repeat(R.faithPure)}. Вера родного направления Дома — на 1🕯 проще (Медведю и Солнцу — любая).`,
         `<b>Ступени.</b> Благо I действует сразу. Когда у вас 🕯${R.faithStage2} — добавляется II, при 🕯${R.faithStage3} — ещё и III. Считаются 🕯 на столе и сыгранные в этот ход.`,
         '<b>Обряд</b> — один в ход (у Дома Солнца с двумя верами — тоже один, любой из двух): цена и эффект напечатаны на карте веры.',
-        '<b>Обет</b> — запрет веры. Пока вера ваша, нарушить его нельзя.',
+        '<b>Обет</b> — запрет веры. Действует, только пока вы в этой вере. Купленное и нанятое раньше остаётся и работает — нельзя только новое. Отреклись — обет снят.',
         '<b>Жрец веры</b> — карта двора: всем даёт свой эффект, а последователю этой веры — ещё и строку «Вере».',
         'У игрока одна вера (Дом Солнца — до двух). Единоверцы не могут нападать друг на друга.',
         `Отречься — ${R.renounceCost}🪙. Новую веру можно принять со следующего хода.`,
@@ -2805,14 +2806,14 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
       ];
     }
     if (key === 'spy') {
-      gist = 'Кража золота и карт, переманивание вассалов, срыв планов и плохие карты.';
+      gist = 'Кража золота и карт, переманивание вассалов, срыв планов и беды.';
       adds = ['Стража начинает защищать от шпионов.'];
       rules = [
         'Шпиона подсылает только карта с пометкой «Шпионаж».',
         `<b>Атака:</b> ваши 🔗 + число на карте + 🎲. <b>Оборона:</b> его 🔗 + стража + 🎲. У каждого стража ${R.baseGuard}. Больше — успех, поровну — шпиона поймали.`,
         'Что делает шпион — написано на карте: украсть золото, забрать или сжечь карты из сброса, переманить вассала, отвлечь лорда, поднять смуту против великого лорда.',
-        '<b>Плохие карты</b> (Долговая расписка, Самозванец, Подмётное письмо, Слух…) покупают на рынке и подсовывают шпионом +1. Удача — карта уходит в сброс соперника и мешает ему, пока в руке. Провал — из игры.',
-        'Избавиться от плохой карты: Отставка — уберите её из игры вместо хода в сброс.',
+        '<b>Беды</b> (Долговая расписка, Самозванец, Подмётное письмо, Слух…) покупают на рынке и разыгрывают: это шпион +1 против стражи соперника. Удача — карта уходит в его сброс и мешает ему, пока в руке. Провал — из игры. Беда вредит только тому, кому её подсунули: у покупателя в руке она безвредна.',
+        'Избавиться от беды: подсуньте её дальше тем же способом или уберите Отставкой.',
         on && !on('faith') ? '' : 'С «Верой»: у единоверцев шпионить нельзя.',
       ];
       exs = [ex('Кража', `У вас 🔗3. Карманник (+1): 3 + 1 + 🎲4 = 8. У соперника 🔗1 и стража ${R.baseGuard}: 1 + ${R.baseGuard} + 🎲3 = 6. Успех — вы крадёте 2🪙.`)];
@@ -2943,7 +2944,9 @@ const Engine = (() => {
   const houseOn = (S, h) => cardOn(S, 'house', h);
   // вера действует, если включён модуль и в руке нет «Проклятой реликвии»
   const faithsOf = (S, p) => (on(S, 'faith') ? (p.faiths || []) : []);
-  const faithActive = (S, p) => !(p.hand || []).includes('cursedrelic');
+  // беда (плохая карта двора) вредит, только если её подсунули: у покупателя в руке она безвредна
+  const isCursed = (p, id) => (p.hand || []).includes(id) && (p.cursed || []).includes(id);
+  const faithActive = (S, p) => !isCursed(p, 'cursedrelic');
   // ступень веры: I — всегда, II — при 🕯3, III — при 🕯5 (на столе и на ход)
   const faithCandles = (S, p) => prod(S, p).faith + ((p.temp && p.temp.faith) || 0);
   const faithStage = (S, p) => { const c = faithCandles(S, p); return 1 + (c >= (R.faithStage2 || 3) ? 1 : 0) + (c >= (R.faithStage3 || 5) ? 1 : 0); };
@@ -3053,7 +3056,7 @@ const Engine = (() => {
     opts.players.forEach((po, i) => {
       const H = D.HOUSES[po.house];
       const p = {
-        i, house: po.house, name: po.name || H.short, isBot: !!po.isBot, persona: po.persona || 'base', skill: po.skill || 'normal', gold: R.startGold + (H.gold || 0),
+        i, house: po.house, name: po.name || H.short, isBot: !!po.isBot, persona: po.persona || 'base', skill: po.skill || 'normal', cursed: [], gold: R.startGold + (H.gold || 0),
         estates: [], vassals: [], lords: [], greats: [], heir: null, faiths: [], deck: [], hand: [], discard: [], inPlay: [], plots: [], seats: [], trashed: [],
         temp: emptySyms(), turn: freshTurn(), useen: {},
         stats: { stolen: 0, sieges: 0, captured: 0, lost: 0, rollInc: 0, raidInc: 0, cardGold: 0, startInc: 0, siegeWins: 0, upkeep: 0, released: 0, retired: 0, destroyed: 0 },
@@ -3162,7 +3165,7 @@ const Engine = (() => {
     // обет «Десятина» (Собор Единого): 1🪙 — в банк
     { const tf = faithBan(S, p, 'tithe'); if (tf) { const v = Math.min(1, p.gold); if (v) { p.gold -= v; log(S, `${nm(p)}: десятина «${D.FAITHS[tf].name}» — −${v}🪙`, p.i, 'faith'); } } }
     // «Долговая расписка» в руке: −2🪙
-    { const n = p.hand.filter(x => x === 'debt').length; if (n) { const v = Math.min(2 * n, p.gold); p.gold -= v; log(S, `${nm(p)}: долговая расписка — −${v}🪙`, p.i, 'envy'); } }
+    { const n = isCursed(p, 'debt') ? 1 : 0; if (n) { const v = Math.min(2 * n, p.gold); p.gold -= v; log(S, `${nm(p)}: долговая расписка — −${v}🪙`, p.i, 'envy'); } }
     const m = mods(S, p);
     const counts = S.players.map(regCount);
     const max = Math.max(...counts);
@@ -3312,7 +3315,7 @@ const Engine = (() => {
   const sameFaith = (S, a, t) => faithsOf(S, a).some(f => faithsOf(S, t).includes(f));
   const targetsOf = (S, a) => opps(S, a).filter(o => !sameFaith(S, a, o));
   // «Подмётное письмо» в руке: ваши нападения слабее на 2
-  const letterPen = (p) => 2 * (p.hand || []).filter(x => x === 'letter').length;
+  const letterPen = (p) => (isCursed(p, 'letter') ? 2 : 0);
   function siegeOdds(S, a, t, bonus) {
     const A = sym(S, a, 'war') + bonus + (mods(S, a).siege || 0) - letterPen(a);
     const Dv = sym(S, t, 'war') + walls(S, t) + (mods(S, t).defense || 0) + (mods(S, t).shield || 0);
@@ -3438,7 +3441,7 @@ const Engine = (() => {
     const ar = d6(S), gr = d6(S), At = info.A + ar, Gt = info.G + gr;
     const ok = At > Gt;
     log(S, `🗝 Подсунуть: ${nm(a)} → ${nmG(t)}, шпион ${info.A}+${ar}🎲 = ${At}, стража ${info.G}+${gr}🎲 = ${Gt}: ${ok ? `«${D.COURT[id].name}» в их сбросе` : 'провал, карта уходит из игры'}`, a.i, ok ? 'steal' : 'fail');
-    if (ok) { if (pile) pile.splice(pile.indexOf(id), 1); t.discard.push(id); } else drop();
+    if (ok) { if (pile) pile.splice(pile.indexOf(id), 1); t.discard.push(id); t.cursed = [...(t.cursed || []).filter(x => x !== id), id]; a.cursed = (a.cursed || []).filter(x => x !== id); } else drop();
     emit(S, 'spy', { a: a.i, t: t.i, ok, plant: id, ar, gr, A: At, G: Gt });
   }
   // подбросить плохое владение: нападение (+2) против ⚔️ и стен; удача — оно у соперника, провал — из игры
@@ -3827,7 +3830,7 @@ const Engine = (() => {
     p.inPlay.push(id);
     const before = c.role ? (p.turn.roles[c.role] || 0) : 0;
     // Самозванец в руке: свита не срабатывает
-    const noAlly = p.hand.includes('impostor');
+    const noAlly = isCursed(p, 'impostor');
     const ally = !noAlly && !!(c.role && (before >= 1 || (c.role === 'scholar' && m.allyScholar)));
     const big = !noAlly && !!(c.role && before >= 2);
     if (c.role) p.turn.roles[c.role] = before + 1;
@@ -4011,7 +4014,7 @@ const Engine = (() => {
   function marketPrice(S, p, base, court = false) {
     const m = mods(S, p);
     // общее правило: скидки складываются, но цена на рынке не бывает ниже 1🪙
-    const rumor = (p.hand || []).filter(x => x === 'rumor').length; // «Дурной слух» в руке: рынок дороже
+    const rumor = isCursed(p, 'rumor') ? 1 : 0; // «Дурной слух» в руке: рынок дороже
     return Math.max(1, base - (m.marketDiscount || 0) - (court ? (m.courtCheap || 0) : 0) - p.turn.discount + rumor);
   }
   const buysLeft = (S, p) => 1 + p.turn.buys + (mods(S, p).buys || 0) - p.turn.buysUsed;
@@ -5206,7 +5209,7 @@ const Engine = (() => {
   return {
     D, R, on, needOf, goal, goalText, meetsGoal, cardOn, houseOn, setHooks, newGame, runTurn, startOfTurn, play, roll, buy, hire, build, retire, fetchCard, endTurn, adoptFaith, renounceFaith, canAdopt, faithReq, faithMax,
     SKILL, SKILL_NAMES, SCORE_W, mods, prod, sym, walls, unionsOf, unionNeed, unionCount, regCount, banCost, hireBlock, faithBan, faithsOf, tierList, rowOf, allBans, upkeepOf, marketPrice, buysLeft, basicLeft,
-    nmG, shortG, canOwnEstate, plotSlots, seatMax, fairLimit, fairOf, rite, riteBlock, faithStage, faithCandles, oathBuy, oathPlay, canSeat, seatFromDiscard, unseatOptions, handSize, siegeOdds, razeOdds, spyInfo, capturable, destroyable, targetsOf, sameFaith, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
+    nmG, shortG, canOwnEstate, plotSlots, seatMax, fairLimit, fairOf, isCursed, rite, riteBlock, faithStage, faithCandles, oathBuy, oathPlay, canSeat, seatFromDiscard, unseatOptions, handSize, siegeOdds, razeOdds, spyInfo, capturable, destroyable, targetsOf, sameFaith, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
   };
 })();
 if (typeof module !== 'undefined') module.exports = Engine;
@@ -6984,8 +6987,9 @@ if (typeof module !== 'undefined') module.exports = Music;
     else if (!my) out += `<p class="note">${nextReq && lastRec ? `Ход ${esc(E.shortG(S.players[lastRec.p]))} окончен — нажмите «Дальше».` : S.cur === ME ? 'Ваш ход начинается…' : `Сейчас ходят ${pname(S.players[S.cur])}.`} Ваши карты станут доступны в ваш ход.</p>`;
     else if (!p.turn.rolled && p.hand.some(id => D.COURT[id].fx.some(op => op[0] === 'reroll'))) out += `<p class="note">Карты с переброской кубиков работают, только если сыграть их до броска.</p>`;
     if (my && !WATCH) {
-      const bad = p.hand.filter(id => D.COURT[id].bad);
-      if (bad.length) out += `<p class="note warn">У вас в руке ${bad.map(id => `«${esc(D.COURT[id].name)}»`).join(', ')}: ${bad.map(id => esc(D.COURT[id].badText.replace(/\.$/, '').toLowerCase())).join('; ')}. Подсуньте её дальше или уберите отставкой.</p>`;
+      const bad = p.hand.filter(id => D.COURT[id].bad && E.isCursed(p, id)), mine = p.hand.filter(id => D.COURT[id].bad && !E.isCursed(p, id));
+      if (bad.length) out += `<p class="note warn">Вам подсунули ${bad.map(id => `«${esc(D.COURT[id].name)}»`).join(', ')}: ${bad.map(id => esc(D.COURT[id].badText.replace(/\.$/, '').replace(/^Пока в руке:\s*/, ''))).join('; ')}. Подсуньте дальше или уберите Отставкой.</p>`;
+      if (mine.length) out += `<p class="note">${mine.map(id => `«${esc(D.COURT[id].name)}»`).join(', ')} — ваша беда для соперника: вам она не вредит. Сыграйте, чтобы подсунуть.</p>`;
       const nr = E.faithBan(S, p, 'no_retire');
       out += `<p class="muted" style="margin:0 0 6px;font-size:13px">${nr ? `Отставка запрещена обетом «${esc(D.FAITHS[nr].name)}».` : p.turn.retired ? 'Отставка в этот ход уже была.' : 'Отставка: раз в ход уберите из игры одну карту руки — и сразу возьмите новую из колоды.'}</p>`;
       if (modOn('faith') && (p.faiths || []).length) out += `<div class="rites">${p.faiths.map(f => { const F = D.FAITHS[f], rw = E.riteBlock(S, p, f); const cost = D.riteCostText(F.rite.cost); return `<button class="btn small ${rw ? '' : 'primary'}" data-act="rite" data-id="${f}" ${rw || busy || adjustReq ? 'disabled' : ''} title="${esc(cost)}">${F.icon} Обряд «${esc(F.rite.name)}»${rw ? ` · ${esc(rw)}` : ''}</button>`; }).join('')}</div>`;
