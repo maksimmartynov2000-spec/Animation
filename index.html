@@ -527,6 +527,9 @@ h2.lbl { font-family: var(--font-body); font-weight: 700; margin: 0; }
 @keyframes pageIn { from { transform: translateX(100%); } }
 @keyframes pageOut { to { transform: translateX(100%); } }
 body.paged { overflow: hidden; }
+.modf { display: grid; gap: 6px; margin: 0 0 10px; }
+.modf .chip { font-weight: 600; }
+.modf .chip.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .catalog .catseg { position: sticky; top: -14px; z-index: 2; margin-top: -14px; padding: 10px 0 8px; background: var(--bg); }
 
 /* листы снизу: выезжают и уезжают */
@@ -6468,10 +6471,10 @@ if (typeof module !== 'undefined') module.exports = Music;
   PCards.setup({ src: (k) => IMG(`icons/i_${k}.svg`), art: (k, id) => IMG(k === 'e' || k === 'c' || k === 'f' ? ((typeof ART !== 'undefined' && ART[id]) || `art/${id}.svg`) : `art/${k}_${id}.svg`) });
   if (!document.getElementById('pcards-css')) { const st = document.createElement('style'); st.id = 'pcards-css'; st.textContent = PCards.CSS; document.head.appendChild(st); }
   const pcCache = new Map();
-  function pcHtml(kind, id, allyOn, seatOn) {
-    const key = `${kind}|${id}|${allyOn ? 1 : 0}|${seatOn ? 1 : 0}|${MODK.filter(modOn).join()}`;
+  function pcHtml(kind, id, allyOn, seatOn, full) {
+    const key = `${kind}|${id}|${allyOn ? 1 : 0}|${seatOn ? 1 : 0}|${full ? '*' : MODK.filter(modOn).join()}`;
     let h = pcCache.get(key);
-    if (!h) { h = PCards.card(kind, id, { mod: modOn, allyOn, seatOn }); pcCache.set(key, h); }
+    if (!h) { h = PCards.card(kind, id, { mod: full ? () => true : modOn, allyOn, seatOn }); pcCache.set(key, h); }
     return h;
   }
   const pcName = (kind, id) => kind === 'estate' ? D.ESTATES[id].name : kind === 'court' ? D.COURT[id].name : kind === 'module' ? (D.MODULES[id] ? D.MODULES[id].name : 'Наборы правил') : kind === 'house' ? D.HOUSES[id].name
@@ -6489,7 +6492,7 @@ if (typeof module !== 'undefined') module.exports = Music;
       else attrs += ` data-id="${id}"${act === 'zoom' ? ` data-kind="${kind}"` : ''}`;
       if (o.o != null) attrs += ` data-o="${o.o}"`;
     }
-    const html = PCards.wrap(kind, pcHtml(kind, id, o.allyOn, o.seatOn) + (o.badge || ''), attrs, `web${o.big ? ' big' : ''}${o.cls ? ' ' + o.cls : ''}`);
+    const html = PCards.wrap(kind, pcHtml(kind, id, o.allyOn, o.seatOn, o.full) + (o.badge || ''), attrs, `web${o.big ? ' big' : ''}${o.cls ? ' ' + o.cls : ''}`);
     return o.flip ? flipWrap(o.flip, kind === 'ban' ? BAN_BACK[D.BAN[id].tier] : kind, html) : html;
   }
   // ---------- переворот: новая карта на рынке и карта, пришедшая в руку, открываются с рубашки ----------
@@ -7623,7 +7626,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     const sh = openSheet({ title: 'Меню', body: `<div class="optlist">
       <button class="opt" data-m="aid"><span class="big">${gico('plot')}</span><span><b>Памятка</b><br><span class="muted">ход, доход по броску, значки</span></span><span class="r">›</span></button>
       <button class="opt" data-m="rules"><span class="big">${gico('econ')}</span><span><b>Правила</b></span><span class="r">›</span></button>
-      <button class="opt" data-m="catalog"><span class="big">${gico('card')}</span><span><b>Все карты</b><br><span class="muted">владения, двор, Дома${modOn('lords') ? ', лорды' : ''}</span></span><span class="r">›</span></button>
+      <button class="opt" data-m="catalog"><span class="big">${gico('card')}</span><span><b>Все карты</b><br><span class="muted">весь набор: владения, двор, Дома, знамёна, веры и стол</span></span><span class="r">›</span></button>
       <button class="opt" data-m="log"><span class="big">🗒</span><span><b>Журнал партии</b></span><span class="r">›</span></button>
       <button class="opt" data-m="settings"><span class="big gear">⚙︎</span><span><b>Настройки</b><br><span class="muted">тема, скорость ботов, пауза${S && S.tut ? ', подсказки' : ''}</span></span><span class="r">›</span></button>
       ${LINKS.tutorial ? `<a class="opt" href="${LINKS.tutorial}" target="_blank" rel="noopener"><span class="big">${gico('dawn')}</span><span><b>Учебник</b><br><span class="muted">правила по шагам, живые примеры</span></span><span class="r">↗</span></a>` : ''}
@@ -7751,43 +7754,102 @@ if (typeof module !== 'undefined') module.exports = Music;
     const st = modOn(k) ? `Модуль включён ${S ? 'в этой партии' : 'в выбранном наборе'}.` : `Модуль выключен ${S ? 'в этой партии' : 'в выбранном наборе'} — эти правила сейчас не действуют.`;
     openPage({ title: `${pg.icon} ${pg.name}`, body: `<div class="rules"><p class="note">${st}</p>${pg.html}</div>` });
   }
+  // «Все карты»: весь набор, как в печати. Фильтр по модулям — как набор партии: основа + отмеченные модули.
+  // catSel: null — весь набор (карты выключенных в партии модулей помечены), Set — показать только такой набор
+  let catSel = null;
   function showCatalog(which = 'estates') {
-    const world = modOn('faith') || modOn('unions');
-    const segs = [['estates', 'Владения'], ['court', 'Двор'], ['houses', 'Дома'], ['bans', 'Знамёна'], ...(world ? [['world', [modOn('faith') && 'Веры', modOn('unions') && 'союзы'].filter(Boolean).join(', ').replace(/^./, c => c.toUpperCase())]] : [])];
-    const allOn = MODK.every(modOn);
-    const head = allOn ? '' : `<p class="note">Показаны карты этой ${S ? 'партии' : 'настройки'}: без ${modList(MODK.filter(k => !modOn(k)))}.</p>`;
+    const segs = [['estates', 'Владения'], ['court', 'Двор'], ['houses', 'Дома'], ['bans', 'Знамёна'], ['table', 'Стол']];
+    const where = S ? 'в этой партии' : 'в выбранном наборе';
+    const courtiers = new Set(Object.values(D.HOUSES).flatMap(h => [h.courtier, h.courtier2]).filter(Boolean));
+    // что нужно карте: список условий в записи NEEDS ('a|b' — любой, 'a&b' — оба); пустой — карта есть в любой партии
+    const reqs = (kind, id) => {
+      const r = [];
+      const k = kind === 'faith' ? 'faith' : kind === 'prov' ? 'unions' : kind === 'rule' ? 'balance' : kind === 'module' ? (id === 'sets' ? '' : id) : needOf(kind, id);
+      if (k) r.push(k);
+      if (kind === 'ban') { const b = D.BAN[id]; if (b.heir || b.tier === 'l') r.push('lords'); if (b.tier === 'g') r.push('great'); }
+      if (kind === 'court' && courtiers.has(id)) r.push('seats');
+      return r;
+    };
+    const metIn = (k, has) => k.split('|').some(x => x.split('&').every(has));
+    const okIn = (kind, id, has) => reqs(kind, id).every(k => metIn(k, has));
+    const show = (kind, id) => !catSel || okIn(kind, id, (m) => catSel.has(m));
+    const offOf = (kind, id) => [...new Set(reqs(kind, id).filter(k => !metIn(k, modOn)).flatMap(k => k.split('|')[0].split('&').filter(x => !modOn(x))))];
+    const offTxt = (ks) => `${ks.length > 1 ? 'модули' : 'модуль'} ${modList(ks)} ${ks.length > 1 ? 'выключены' : 'выключен'} ${where}`;
+    const off = (kind, id) => { if (catSel) return ''; const ks = offOf(kind, id); return ks.length ? `<span class="miss">${offTxt(ks)}</span>` : ''; };
+    const slot = (kind, id, ...meta) => { const m = [...meta, off(kind, id)].filter(Boolean); return pslot(pcard(kind, id, { full: true }), m.length ? `<span class="pmeta">${m.join('')}</span>` : ''); };
+    const grid = (xs) => `<div class="pgrid">${xs.join('')}</div>`;
+    const sec = (title, sub) => `<div class="sec-h"><h3>${title}</h3><span>${sub}</span></div>`;
+    const cnt = (n) => `${n} ${D.plural(n, 'карта', 'карты', 'карт')}`;
+    const empty = '<p class="muted">В этом наборе таких карт нет.</p>';
+    const famOf = (x) => [x.deck[x.deck.length - 1], x.courtier, x.courtier2].filter(Boolean);
+    const L = {
+      estates: () => Object.keys(D.ESTATES).filter(id => !D.ESTATES[id].house && show('estate', id)).sort((a, b) => (D.ESTATES[a].n[0] || 99) - (D.ESTATES[b].n[0] || 99)),
+      court: () => {
+        const order = { null: 0, merchant: 1, scholar: 2, knight: 3, spy: 4, priest: 5 };
+        const ids = Object.keys(D.COURT).filter(id => !D.COURT[id].sig && !D.COURT[id].start && show('court', id));
+        ids.sort((a, b) => (D.COURT[a].bad ? 9 : order[D.COURT[a].role]) - (D.COURT[b].bad ? 9 : order[D.COURT[b].role]) || D.COURT[a].cost - D.COURT[b].cost);
+        return [...Object.keys(D.COURT).filter(id => D.COURT[id].start), ...ids];
+      },
+      houses: () => Object.keys(D.HOUSES).filter(h => show('house', h)),
+      houseCards: (h) => { const x = D.HOUSES[h]; return [['house', h], ...x.estates.filter(id => D.ESTATES[id].house).map(id => ['estate', id]), ...famOf(x).map(id => ['court', id]), ['ban', x.heir]].filter(([k, id]) => show(k, id)); },
+      bans: (t) => Object.keys(D.BAN).filter(id => D.BAN[id].tier === t && !D.BAN[id].heir && show('ban', id)).sort((a, b) => SYMS5.indexOf(D.BAN[a].dir) - SYMS5.indexOf(D.BAN[b].dir) || D.BAN[a].cost - D.BAN[b].cost),
+      table: () => [...Object.keys(D.FAITHS).map(f => ['faith', f]), ...Object.keys(D.PROV).map(k => ['prov', k]), ...['envy', 'support'].map(r => ['rule', r]), ...PCards.MOD_CARDS.map(m => ['module', m])].filter(([k, id]) => show(k, id)),
+    };
+    const count = () => L.estates().length + L.court().length + ['v', 'l', 'g'].reduce((a, t) => a + L.bans(t).length, 0) + L.houses().reduce((a, h) => a + L.houseCards(h).length, 0) + L.table().length + 1;
+    const TOTAL = (() => { const s = catSel; catSel = null; const n = count(); catSel = s; return n; })();
+    const isGame = (s) => s && MODK.every(k => s.has(k) === !!modOn(k));
+    const head = () => {
+      const chip = (attr, label, on) => `<button class="chip${on ? ' on' : ''}" ${attr}>${label}</button>`;
+      const presets = chip('data-cf="all"', 'Весь набор', !catSel) + chip('data-cf="game"', S ? 'Эта партия' : 'Выбранный набор', isGame(catSel)) + chip('data-cf="base"', 'Основа', catSel && !catSel.size);
+      const mods = MODK.map(k => chip(`data-cm="${k}"`, `${D.MODULES[k].icon} ${D.MODULES[k].short || D.MODULES[k].name}`, catSel && catSel.has(k))).join('');
+      const offMods = MODK.filter(k => !modOn(k));
+      const note = !catSel ? `Все ${TOTAL} разных карт игры — как в печатном наборе.${offMods.length ? ` Карты модулей, выключенных ${where}, помечены красным.` : ''}`
+        : `Набор: основа${catSel.size ? ' + ' + MODK.filter(k => catSel.has(k)).map(k => D.MODULES[k].short || D.MODULES[k].name).join(', ') : ''} — ${count()} из ${TOTAL} карт. Отметьте модули, чтобы добавить их карты.`;
+      return `<div class="modf"><div class="chips">${presets}</div><div class="chips">${mods}</div></div><p class="note">${note}</p>`;
+    };
     const content = (w) => {
       if (w === 'estates') {
-        const ids = Object.keys(D.ESTATES).filter(id => cardOk('estate', id) && !D.ESTATES[id].house).sort((a, b) => (D.ESTATES[a].n[0] || 99) - (D.ESTATES[b].n[0] || 99));
-        return `<p class="note">Пашня и Пекарня${cardOk('estate', 'wall') ? ', Каменная стена' : ''} — всегда в продаже, пока есть в запасе (${R.basicStock.field}, ${R.basicStock.bakery}${cardOk('estate', 'wall') ? ` и ${R.basicStock.wall}` : ''} карт на всех). Остальные владения — по 3 копии в колоде (плохие — по 2), в ряду рынка ${R.estateRow}. Твердыни — по 2 копии, отдельным рядом. Стартовые владения Домов — во вкладке «Дома».</p><div class="pgrid">${ids.map(id => pcard('estate', id)).join('')}</div>`;
+        const ids = L.estates();
+        return `<p class="note">Пашня, Пекарня и Каменная стена — всегда в продаже, пока есть в запасе (${R.basicStock.field}, ${R.basicStock.bakery} и ${R.basicStock.wall} карт на всех). Остальные владения — по 3 копии в колоде (плохие — по 2), в ряду рынка ${R.estateRow}. Твердыни — по 2 копии, отдельным рядом. Стартовые владения Домов — во вкладке «Дома».</p>${sec('Владения', cnt(ids.length))}${ids.length ? grid(ids.map(id => slot('estate', id))) : empty}`;
       }
       if (w === 'court') {
-        const ids = Object.keys(D.COURT).filter(id => !D.COURT[id].sig && !D.COURT[id].start && cardOk('court', id));
-        const order = { null: 0, merchant: 1, scholar: 2, knight: 3, spy: 4, priest: 5 };
-        ids.sort((a, b) => (D.COURT[a].bad ? 9 : order[D.COURT[a].role]) - (D.COURT[b].bad ? 9 : order[D.COURT[b].role]) || D.COURT[a].cost - D.COURT[b].cost);
-        return `<p class="note">Карты двора — по 2 копии в колоде (некоторые — по 1), в ряду рынка ${R.courtRow}. «Подать» есть только в стартовых колодах (${R.startTax} шт. у каждого).</p><div class="pgrid">${ids.map(id => pslot(pcard('court', id), (D.COURT[id].copies || 2) === 1 ? '<span class="pmeta">1 копия</span>' : '')).join('')}</div>`;
+        const ids = L.court();
+        return `<p class="note">Карты двора — по 2 копии в колоде (некоторые — по 1), в ряду рынка ${R.courtRow}. «Подать» — только в стартовых колодах. Фамильные карты Домов — во вкладке «Дома».</p>${sec('Двор', cnt(ids.length))}${grid(ids.map(id => D.COURT[id].start ? slot('court', id, `<span>стартовая: ${R.startTax} у каждого</span>`) : slot('court', id, (D.COURT[id].copies || 2) === 1 ? '<span>1 копия</span>' : '')))}`;
       }
       if (w === 'houses') {
-        return Object.keys(D.HOUSES).filter(h => { const k = needOf('house', h); return needMet(k); }).map(h => { const x = D.HOUSES[h]; const fam = [x.deck[x.deck.length - 1], ...(modOn('seats') ? [x.courtier, x.courtier2] : [])]; return `<div class="sec-h"><h3>${x.sigil} ${x.name}</h3><span>${D.SYM[x.dir]} ${D.DIRS[x.dir].name}</span></div><p class="muted" style="margin:0">${x.about}</p><p class="note">${x.ability}</p>
-          <p style="margin:0;font-size:14px"><b>Старт:</b> ${R.startGold + (x.gold || 0)}🪙; Пашня, Пекарня, ${x.estates.map(id => D.ESTATES[id].name).join(', ')}; колода — ${R.startTax}× Подать, ${Object.entries(x.deck.reduce((m, id) => (m[id] = (m[id] || 0) + 1, m), {})).map(([id, n]) => (n > 1 ? n + '× ' : '') + D.COURT[id].name).join(', ')}.${modOn('faith') ? ` <b>Вера:</b> ${x.dir === 'faith' ? 'любая' : `любая ${D.SYM[x.dir]}`} — на 1🕯 проще.` : ''}</p>
-          <div class="pgrid">${pcard('house', h)}${x.estates.filter(id => D.ESTATES[id].house).map(id => pcard('estate', id)).join('')}${fam.map(id => pcard('court', id)).join('')}${modOn('lords') ? pcard('ban', x.heir) : ''}</div>`; }).join('');
+        const hs = L.houses();
+        return hs.length ? hs.map(h => {
+          const x = D.HOUSES[h], hk = catSel ? [] : offOf('house', h);
+          return `${sec(`${x.sigil} ${x.name}`, `${D.SYM[x.dir]} ${D.DIRS[x.dir].name}`)}${hk.length ? `<p class="pmeta" style="text-align:left"><span class="miss">${offTxt(hk)}</span></p>` : ''}<p class="muted" style="margin:0">${x.about}</p><p class="note">${x.ability}</p>
+          <p style="margin:0;font-size:14px"><b>Старт:</b> ${R.startGold + (x.gold || 0)}🪙; Пашня, Пекарня, ${x.estates.map(id => D.ESTATES[id].name).join(', ')}; колода — ${R.startTax}× Подать, ${Object.entries(x.deck.reduce((m, id) => (m[id] = (m[id] || 0) + 1, m), {})).map(([id, n]) => (n > 1 ? n + '× ' : '') + D.COURT[id].name).join(', ')}.${!catSel || catSel.has('faith') ? ` <b>Вера:</b> ${x.dir === 'faith' ? 'любая' : `любая ${D.SYM[x.dir]}`} — на 1🕯 проще.` : ''}</p>
+          ${grid(L.houseCards(h).map(([k, id]) => k === 'ban' ? slot(k, id, '<span>Наследник</span>') : slot(k, id)))}`;
+        }).join('') : empty;
       }
       if (w === 'bans') {
-        const ls = (t) => Object.keys(D.BAN).filter(id => D.BAN[id].tier === t && !D.BAN[id].heir && cardOk('ban', id)).sort((a, b) => SYMS5.indexOf(D.BAN[a].dir) - SYMS5.indexOf(D.BAN[b].dir) || D.BAN[a].cost - D.BAN[b].cost);
-        const blk = (t, title, row) => ls(t).length ? `<div class="sec-h"><h3>${title}</h3><span>${ls(t).length} карт, в ряду ${row}</span></div><div class="pgrid">${ls(t).map(id => pcard('ban', id)).join('')}</div>` : '';
-        return `<p class="note">Каждое знамя — в одном экземпляре: кто первым нанял, у того и остаётся; на его место выходит следующее из колоды. Скидка — за значки направления карты, надбавка — за сильные знамёна, которые уже у вас.</p>${blk('v', 'Вассалы', R.vRow)}${modOn('lords') ? blk('l', 'Лорды', R.lRow) : ''}${modOn('great') ? blk('g', 'Великие лорды', R.gRow) : ''}`;
+        const blk = (t, title, row) => { const ids = L.bans(t); return ids.length ? `${sec(title, `${cnt(ids.length)}, в ряду ${row}`)}${grid(ids.map(id => slot('ban', id)))}` : ''; };
+        const body = `${blk('v', 'Вассалы', R.vRow)}${blk('l', 'Лорды', R.lRow)}${blk('g', 'Великие лорды', R.gRow)}`;
+        return `<p class="note">Каждое знамя — в одном экземпляре: кто первым нанял, у того и остаётся; на его место выходит следующее из колоды. Скидка — за значки направления карты, надбавка — за сильные знамёна, которые уже у вас. Наследники — во вкладке «Дома».</p>${body || empty}`;
       }
-      let out = '';
-      if (modOn('faith')) out += `<div class="sec-h"><h3>Веры</h3><span>12 вер, в партии — 4 случайные</span></div><div class="pgrid">${Object.keys(D.FAITHS).map(f => pcard('faith', f)).join('')}</div>`;
-      if (modOn('unions')) out += `<div class="sec-h"><h3>Провинции</h3><span>союз — каждые 3 владения</span></div><div class="pgrid">${Object.keys(D.PROV).map(k => pcard('prov', k)).join('')}</div>`;
-      return out;
+      const T = L.table(), part = (kind) => T.filter(x => x[0] === kind).map(x => x[1]);
+      const blk = (kind, title, sub) => { const ids = part(kind); return ids.length ? `${sec(title, sub(ids.length))}${grid(ids.map(id => slot(kind, id)))}` : ''; };
+      return `<p class="note">Карты общего стола в колоды не замешиваются.</p>`
+        + blk('faith', 'Веры', (n) => `${cnt(n)}, в партии — ${R.faithInGame || 4} случайные`)
+        + blk('prov', 'Провинции', () => 'союз — каждые 3 владения')
+        + blk('rule', 'Зависть и поддержка', cnt)
+        + blk('module', 'Карты модулей', cnt)
+        + `${sec('Памятка игрока', '1 на игрока')}<button class="btn" data-act="aid" style="width:100%">Открыть памятку</button>`;
     };
     if (!segs.some(x => x[0] === which)) which = 'estates';
-    const pg = openPage({ title: 'Все карты', cls: 'catalog', body: `${head}<div class="seg catseg">${segs.map(([k, l]) => `<button data-seg="${k}" class="${k === which ? 'on' : ''}">${l}</button>`).join('')}</div><div class="catbody">${content(which)}</div>` });
+    const pg = openPage({ title: 'Все карты', cls: 'catalog', body: `<div class="cathead">${head()}</div><div class="seg catseg">${segs.map(([k, l]) => `<button data-seg="${k}" class="${k === which ? 'on' : ''}">${l}</button>`).join('')}</div><div class="catbody">${content(which)}</div>` });
+    const redraw = () => { pg.el.querySelector('.cathead').innerHTML = head(); pg.el.querySelector('.catbody').innerHTML = content(which); };
     pg.el.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-seg]'); if (!b) return;
+      const f = e.target.closest('[data-cf]'), m = e.target.closest('[data-cm]'), b = e.target.closest('[data-seg]');
+      if (f) { const v = f.dataset.cf; catSel = v === 'all' ? null : v === 'base' ? new Set() : new Set(MODK.filter(modOn)); redraw(); return; }
+      if (m) { const k = m.dataset.cm; catSel = new Set(catSel || []); if (catSel.has(k)) catSel.delete(k); else catSel.add(k); redraw(); return; }
+      if (!b) return;
+      which = b.dataset.seg;
       pg.el.querySelectorAll('[data-seg]').forEach(x => x.classList.toggle('on', x === b));
-      pg.el.querySelector('.catbody').innerHTML = content(b.dataset.seg);
+      pg.el.querySelector('.catbody').innerHTML = content(which);
       pg.body.scrollTop = 0;
     });
   }
