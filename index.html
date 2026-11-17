@@ -1507,18 +1507,18 @@ function ASSET_URL(p) {
     const basic = ['Пашня', 'Пекарня'].concat(on('sieges') ? ['Каменная стена'] : []);
     const rules = [
       [ico('tag'), `<b>Рынок:</b> ${R.estateRow} владения, ${R.courtRow} карты двора, ${R.holdRow} 🟪 Твердыни. Купили — откройте следующую; карта двора — в ваш сброс.`],
-      [ico('reroll'), `<b>Новый круг:</b> из каждого ряда (и знамён тоже), где за круг ничего не взяли, крайнюю карту — под низ колоды.`],
+      [ico('reroll'), `<b>Новый круг:</b> из ряда (рынка или знамён), где за круг ничего не взяли, крайнюю карту — под низ колоды.${R.catchupGap && (on === ALL || !on('balance')) ? ` Если у лидера ${R.catchupFrom}+ знамён, отстающие в этом круге могут нанять ещё по вассалу${on === ALL ? ' (без «Баланса»)' : ''}.` : ''}`],
       [ico('land'), `<b>Всегда в продаже</b> (пока есть в запасе): ${basic.join(', ')}.`],
-      [ico('hold'), `<b>Твердыни:</b> у игрока — по одной каждого вида; копий каждой — по числу игроков.`],
-      [ico('banner'), `<b>Знамя:</b> цена − 1🪙 за каждый ваш значок его направления (до ${caps}). <b>Надбавка</b> — пока знамя у вас, следующие дороже.${on('great') ? ' <b>Содержание</b> — плата в начале хода; нечем платить — знамя под низ колоды.' : ''}`],
-      [ico('crown'), `<b>Цель:</b> ${goal.join(' + ')}. Собрали — круг доигрывается до конца.`],
+      [ico('hold'), `<b>Твердыни:</b> каждая — по одной у игрока; копий — по числу игроков.`],
+      [ico('banner'), `<b>Знамя:</b> цена − 1🪙 за каждый ваш значок его направления (до ${caps}). <b>Надбавка</b> — пока знамя у вас, следующие дороже.${on('great') ? ' <b>Содержание</b> — плата в начале хода; нечем — знамя под низ колоды.' : ''}`],
+      [ico('crown'), `<b>Цель:</b> ${goal.join(' + ')}. Собрали — доиграйте круг.`],
       [ico('war'), `<b>Значки</b> не тратятся; с сыгранных карт — до конца хода.`],
     ];
 
-    if (on('sieges') || on('spy')) rules.push([ico(on('sieges') ? 'siege' : 'spy'), `<b>${on('sieges') && on('spy') ? 'Нападение и шпионаж' : on('sieges') ? 'Нападение' : 'Шпионаж'}:</b> число на карте прибавьте к своим ${on('sieges') && on('spy') ? '⚔️ (у шпиона — к 🔗)' : on('sieges') ? '⚔️' : '🔗'} — только в этом нападении. Каждый ещё бросает по 🎲; у кого больше — тот победил, поровну — устоял защитник.`]);
+    if (on('sieges') || on('spy')) rules.push([ico(on('sieges') ? 'siege' : 'spy'), `<b>${on('sieges') && on('spy') ? 'Нападение и шпионаж' : on('sieges') ? 'Нападение' : 'Шпионаж'}:</b> число на карте прибавьте к своим ${on('sieges') && on('spy') ? '⚔️ (у шпиона — к 🔗)' : on('sieges') ? '⚔️' : '🔗'} — только в этом нападении. Каждый ещё бросает 🎲: у кого больше — победил, поровну — устоял защитник.`]);
     return `<div class="aid back">
       ${head(1, 'Рынок и знамёна')}
-      ${rules.map(([i, t]) => `<div class="rule">${i}<span>${t}</span></div>`).join('\n      ')}
+      ${rules.filter(Boolean).map(([i, t]) => `<div class="rule">${i}<span>${t}</span></div>`).join('\n      ')}
     </div>`;
   }
 
@@ -1532,7 +1532,7 @@ function ASSET_URL(p) {
         it('sci', 'Свитки', 'Наука'),
         it('war', 'Мечи', on('sieges') ? 'Война, нападение' : 'Война'),
         it('int', 'Связи', on('spy') ? 'Интриги, шпионаж' : 'Интриги'),
-        on('faith') ? it('faith', 'Свечи', 'Вера') : '',
+        it('faith', 'Свечи', 'Вера'),
         on('sieges') ? it('wall', 'Стены', 'от нападений') : '',
         on('spy') ? it('guard', 'Стража', 'от шпионов') : '',
       ]],
@@ -1631,7 +1631,8 @@ const DATA = (() => {
     interestStep: 10,     // проценты (Монетный двор, Ключник): +1🪙 за каждые 10🪙 в казне
     savingsStep: 10,      // сбережения (Бенедикт Ланс, Якоб): +1🪙 за каждые 10🪙, без потолка
     siegeLoot: 4,         // захватом можно взять владение ценой до 4🪙
-    seatGold: 0,          // добавка тем, кто ходит не первым
+    seatGold: 1,          // добавка тем, кто ходит не первым
+    catchupGap: 1, catchupHireOnly: true, catchupFrom: 6, catchupTier: 'v', catchupOff: 'balance', // догоняющий наём: если в начале круга у лидера 6+ знамён, кто отстаёт — в этом круге может нанять ещё одного вассала; с «Балансом» вместо него Зависть и Поддержка
     unionGold: 3, unionFirst: 2, unionSyms: 2,  // союз: +3🪙 сразу, первый в провинции за столом ещё +2🪙; 2 значка провинции
     faithNeed: 2, faithDir: 2, faithPure: 3, faithInGame: 4, faithStage2: 3, faithStage3: 5, renounceCost: 3, // вера: 🕯🕯 + 2 значка своего направления («чистая» — 🕯🕯🕯); в партии 4 веры; отречение −3🪙
     basicStock: { field: 7, bakery: 7, wall: 10 }, // печатная версия: запас базовых владений в коробке
@@ -1917,7 +1918,7 @@ const DATA = (() => {
       name: 'Дом Орла', short: 'Орлы', gen: 'Орлов', dat: 'Орлам', sigil: '🦅', path: 'Провинции', dir: 'int',
       about: 'Наместники и гонцы: держат связь между провинциями. Герб — серый орёл.',
       ability: 'Быстрые союзы: союз — из 2 владений провинции, а не из 3. Новый союз — ещё +2🪙, в начале хода +1🪙 за каждый ваш союз.',
-      mods: { unionSize: 2, unionBounty: 2, unionGold: 1 }, gold: 12,
+      mods: { unionSize: 2, unionBounty: 2, unionGold: 1 }, gold: 13,
       deck: ['collector', 'scribe', 'eagleeye'], estates: ['poststation'], heir: 'heir_eagle', courtier: 'envoyfam', courtier2: 'inspector',
     },
     sun: {
@@ -2923,6 +2924,7 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
     if (key === 'balance') {
       gist = 'Лидеру мешают, отстающим помогают — партия дольше остаётся напряжённой.';
       adds = ['Две карты-напоминания: «Зависть» и «Народная поддержка».'];
+      if (R.catchupGap) adds.push('Догоняющий наём из основы с этим модулем не действует: его заменяют Зависть и Поддержка.');
       rules = [
         '<b>Зависть.</b> В начале вашего хода, если вы единственный лидер по знамёнам, заплатите в банк 1🪙 за каждое знамя отрыва от второго.',
         `<b>Народная поддержка.</b> В начале вашего хода, если вы отстаёте от лидера на ${R.supportGap} знамени и больше, получите ${R.supportGold}🪙.`,
@@ -3329,6 +3331,12 @@ const Engine = (() => {
       const sv = R.supportPer ? R.supportGold * (max - counts[p.i]) : R.supportGold;
       p.gold += sv; supportGot = sv;
       log(S, `${nm(p)} получили Народную поддержку: +${sv}🪙 (отстают от лидера на ${D.banners(max - counts[p.i])})`, p.i, 'support');
+    }
+    // догоняющий наём: если в начале круга у лидера R.catchupFrom+ знамён, кто отстаёт от него (на R.catchupGap и больше), в этом круге может нанять ещё одного вассала (R.catchupTier)
+    if (S.catchup && S.catchup[p.i] && !(R.catchupOnce && p.catchupSpent >= R.catchupOnce)) {
+      if (R.catchupHireOnly) p.turn.catchupHire = 1; else p.turn.buys += 1;
+      p.turn.catchup = true;
+      log(S, `${nm(p)} отстают от лидера на ${D.banners(S.catchup[p.i])} — в этот ход могут нанять ещё одного вассала (догоняющий наём)`, p.i, 'catchup');
     }
     let g = 0; const src = [];
     const est = (t) => p.estates.filter(e => !e.ruined && ES(e).t === t).length;
@@ -4315,12 +4323,13 @@ const Engine = (() => {
   async function hire(S, p, id) {
     if (S.winner !== null || S.players[S.cur] !== p) return { ok: false, why: 'Сейчас не ваш ход' };
     if (!p.turn.rolled) return { ok: false, why: 'Сначала бросьте кубики' };
-    if (!hireFree(S, p) && buysLeft(S, p) <= 0) return { ok: false, why: R.splitActions ? 'Знамя в этот ход уже нанято' : 'Действия на этот ход закончились' };
+    const catchupH = !hireFree(S, p) && buysLeft(S, p) <= 0 && (p.turn.catchupHire || 0) > 0 && (!R.catchupTier || D.BAN[id].tier === R.catchupTier); // отстающему — ещё один найм
+    if (!hireFree(S, p) && !catchupH && buysLeft(S, p) <= 0) return { ok: false, why: R.splitActions ? 'Знамя в этот ход уже нанято' : 'Действия на этот ход закончились' };
     const why = hireBlock(S, p, id);
     if (why) return { ok: false, why };
     const b = D.BAN[id], c = banCost(S, p, id);
     if (p.gold < c.total) return { ok: false, why: `Нужно ${c.total}🪙` };
-    p.gold -= c.total; p.turn.built = true; if (hireFree(S, p)) p.turn.hireUsed = true; else p.turn.buysUsed++; p.turn.regDiscount = 0;
+    p.gold -= c.total; p.turn.built = true; if (hireFree(S, p)) p.turn.hireUsed = true; else if (catchupH) { p.turn.catchupHire--; p.catchupSpent = (p.catchupSpent || 0) + 1; } else p.turn.buysUsed++; p.turn.regDiscount = 0;
     tierList(p, b.tier).push(id);
     if (b.heir) p.heir = null;
     else { const row = rowOf(S, b.tier); row.splice(row.indexOf(id), 1); (S.rowHired = S.rowHired || {})[b.tier] = true; refill(S); }
@@ -4376,6 +4385,11 @@ const Engine = (() => {
         // ряды, из которых за круг ничего не взяли, обновит первый игрок в начале своего хода (refreshRows)
         S.refreshDue = staleRows(S);
         S.rowHired = {};
+        S.catchup = null;
+        if (R.catchupGap && !(R.catchupOff && on(S, R.catchupOff))) { // с модулем «Баланс» вместо этого — Зависть и Поддержка
+          const cs = S.players.map(regCount), mx = Math.max(...cs);
+          if (mx >= (R.catchupFrom || 0)) S.catchup = Object.fromEntries(S.players.filter(q => mx - cs[q.i] >= R.catchupGap).map(q => [q.i, mx - cs[q.i]]));
+        }
       }
     }
     S.turnNo++;
@@ -5144,6 +5158,10 @@ const Engine = (() => {
           if (idx >= 0 && canSeat(S, bid) && this.seatGain(S, p, bid) > 1) await seat(S, p, idx); else if (idx >= 0 && !D.COURT[bid].fx.some(op => op[0] === 'reroll')) { await play(S, p, idx); if (S.winner !== null) return; }
         }
       }
+      if ((p.turn.catchupHire || 0) > 0 && buysLeft(S, p) <= 0 && S.winner === null) {
+        const aff = this.regOptions(S, p).filter(o => o.cost.total <= p.gold && (!R.catchupTier || D.BAN[o.id].tier === R.catchupTier));
+        if (aff.length) { const pick = this.pickBuild(S, p, aff); const r = await hire(S, p, pick.id); await pause(S, 'build'); if (S.winner !== null) return; }
+      }
       if (extraOn(S) && S.winner === null && buysLeft(S, p) <= 0 && canBuyAction(S, p) && p.skill !== 'novice') {
         const X = R.extraAction;
         const aff = R.extraMarketOnly ? [] : this.regOptions(S, p).filter(o => o.cost.total + X <= p.gold);
@@ -5438,7 +5456,7 @@ const Engine = (() => {
   return {
     D, R, on, needOf, goal, goalText, meetsGoal, cardOn, houseOn, setHooks, newGame, runTurn, startOfTurn, play, roll, buy, hire, build, retire, fetchCard, endTurn, adoptFaith, renounceFaith, canAdopt, faithReq, faithMax,
     SKILL, SKILL_NAMES, SCORE_W, mods, prod, sym, walls, unionsOf, unionNeed, unionCount, regCount, banCost, hireBlock, faithBan, faithsOf, tierList, rowOf, allBans, upkeepOf, marketPrice, buysLeft, basicLeft,
-    _t: { applyFx: (...a) => applyFx(...a), resolveRoll: (...a) => resolveRoll(...a), payUpkeep: (...a) => payUpkeep(...a), doSpy: (...a) => doSpy(...a), refreshRows }, // для тестов
+    _t: { applyFx: (...a) => applyFx(...a), resolveRoll: (...a) => resolveRoll(...a), payUpkeep: (...a) => payUpkeep(...a), doSpy: (...a) => doSpy(...a), refreshRows, startOfTurn: (...a) => startOfTurn(...a) }, // для тестов
     nmG, shortG, canOwnEstate, plotSlots, seatMax, fairLimit, fairOf, isCursed, rite, riteBlock, faithStage, faithCandles, oathBuy, oathPlay, canSeat, seatFromDiscard, unseatOptions, handSize, siegeOdds, razeOdds, spyInfo, capturable, destroyable, targetsOf, sameFaith, truce, buyAction, canBuyAction, extraOn, behindLeader, hireFree, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
   };
 })();
@@ -6182,7 +6200,8 @@ if (typeof module !== 'undefined') module.exports = Music;
       case 'retire': if (sound) Sfx.card(); break;
       case 'union': if (d.p === ME) toast(`🏔 Новый союз провинций: +${d.gold}🪙`, 2600); break;
       case 'log':
-        if (d.pi === ME && (d.kind === 'envy' || d.kind === 'support')) tutQueue(d.kind);
+        if (d.pi === ME && (d.kind === 'envy' || d.kind === 'support' || d.kind === 'catchup')) tutQueue(d.kind);
+        if (d.pi === ME && d.kind === 'catchup') toast('Догоняющий наём: в этот ход можно нанять ещё одного вассала', 3200);
         if (rec && !d.edit && REC_NOTES.includes(d.kind)) rec.notes.push(d.text.trim());
         break;
     }
@@ -6823,7 +6842,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     if (!built && !taken && p) {
       const pc = banPriceHtml(p, id), c = pc.c;
       const block = E.hireBlock(S, p, id);
-      const why = block ? (/больше не нужно/.test(block) ? 'уже хватает' : /вера/i.test(block) ? 'запрет веры' : block) : !p.turn.rolled ? 'после броска' : E.buysLeft(S, p) <= 0 ? 'действий нет' : p.gold < c.total ? `нужно ${c.total}🪙` : '';
+      const why = block ? (/больше не нужно/.test(block) ? 'уже хватает' : /вера/i.test(block) ? 'запрет веры' : block) : !p.turn.rolled ? 'после броска' : E.buysLeft(S, p) <= 0 && !(p.turn.catchupHire > 0 && (!R.catchupTier || b.tier === R.catchupTier)) ? 'действий нет' : p.gold < c.total ? `нужно ${c.total}🪙` : '';
       below = `<div class="pmeta"><span>${pc.txt}</span>${b.upkeep ? `<span class="muted">содержание ${b.upkeep}🪙 в ход</span>` : ''}</div>${my ? `<button class="btn small ${why ? '' : 'primary'}" data-act="hire" data-id="${id}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : `Нанять · ${c.total}🪙`}</button>` : ''}`;
     }
     const o = owner != null ? owner : p ? p.i : null;
@@ -6874,6 +6893,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     'siege-me': () => ({ title: 'На вас напали', text: `Нападение (захват или разрушение): ⚔️ соперника и число с его карты против ваших ⚔️ и 🧱, каждый ещё бросает по кубику. У кого больше — тот победил, поровну — вы отбились. У каждого ${R.baseWalls}🧱 от замка; Каменная стена даёт +${D.ESTATES.wall.walls}. Захваченное владение приходит к сопернику в руинах, разрушенное уходит из игры.` }),
     'spy-me': () => ({ title: 'К вам подослали шпиона', text: `Шпионаж идёт как нападение, только на 🔗: 🔗 соперника + число на его карте + кубик против ваших 🔗 + стражи + кубика. У каждого стража ${R.baseGuard} от замка. От вымогательства можно откупиться — заплатить цену владения.` }),
     envy: () => ({ title: 'Зависть', text: `Вы единственный лидер по знамёнам, поэтому в начале хода платите в банк 1🪙 за каждое знамя отрыва от второго места.` }),
+    catchup: () => ({ title: 'Догоняющий наём', text: `У лидера уже ${R.catchupFrom}+ знамён, а у вас меньше. Поэтому в этот ход вы можете нанять ещё одного вассала — сверх обычного действия (платите как обычно). Так проверяют в начале каждого круга.` }),
     support: () => ({ title: 'Народная поддержка', text: `Вы отстаёте от лидера на ${R.supportGap}+ знамени, поэтому в начале хода получаете +${R.supportGold}🪙.` }),
     finish: (p, d) => ({ title: d.p === ME ? `У вас ${D.banners(E.goal(S))}!` : `У ${esc(H(S.players[d.p]).short)} ${D.banners(E.goal(S))}`, text: `Круг доигрывается до конца, чтобы у всех было поровну ходов. Побеждает тот, у кого цель выполнена в конце круга; если таких несколько — у кого больше золота.` }),
   };
@@ -7427,7 +7447,8 @@ if (typeof module !== 'undefined') module.exports = Music;
       const left = E.buysLeft(S, p);
       const fair = (S.courtRow.length && E.fairOf(S, p, 'court', S.courtRow[0])) || (S.estateRow.length && E.fairOf(S, p, 'estate', S.estateRow[0]));
       const xa = left <= 0 && E.extraOn(S) && !p.turn.extraBought ? `<button class="btn ghost small" data-act="xaction" ${busy || !E.canBuyAction(S, p) ? 'disabled' : ''}>+1 действие · ${R.extraAction}🪙</button>` : '';
-      return `<div class="status"><b>Действий: ${left}${fair ? ' + Ярмарка' : ''}</b><span class="muted">${fair ? 'Ярмарка — покупка без действия' : 'покупка или наём'}</span></div>${xa}<button class="btn primary" data-act="end" ${busy ? 'disabled' : ''}>Завершить ход</button>`;
+      const cu = p.turn.catchupHire > 0;
+      return `<div class="status"><b>Действий: ${left}${cu ? ' + вассал' : ''}${fair ? ' + Ярмарка' : ''}</b><span class="muted">${cu ? 'догоняющий наём — ещё один вассал' : fair ? 'Ярмарка — покупка без действия' : 'покупка или наём'}</span></div>${xa}<button class="btn primary" data-act="end" ${busy ? 'disabled' : ''}>Завершить ход</button>`;
     }
     const cur = S.players[S.cur];
     if (guest()) {
@@ -7977,7 +7998,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     b += `<p class="note">Сначала — основа игры. Модули добавляют по одной механике, у каждого своя страница с примерами. ${where} ${cur.length ? `включены: ${modList(cur)}` : 'модули выключены'}.</p>`;
     b += `<h3>Цель</h3><p>Первым собрать ${goalLine()}. Когда кто-то выполнил цель, круг доигрывается до конца — у всех поровну ходов. Побеждает тот, у кого цель выполнена в конце круга; если таких несколько — у кого больше золота.</p>`;
     b += `<h3>Подготовка</h3><ul>
-      <li>За престол борются 2–${R.maxPlayers} Дома. У каждого: Пашня, Пекарня и своё стартовое владение Дома; стартовое золото (${Math.min(...golds)}–${Math.max(...golds)}🪙, указано на карте Дома); колода — ${R.startTax}× Подать и 3 карты Дома, в руке ${R.hand}.${on('lords') ? ' Наследник Дома лежит рядом с картой Дома.' : ''}</li>
+      <li>За престол борются 2–${R.maxPlayers} Дома. У каждого: Пашня, Пекарня и своё стартовое владение Дома; стартовое золото (${Math.min(...golds)}–${Math.max(...golds)}🪙, указано на карте Дома${R.seatGold ? `; кто ходит не первым — ещё +${R.seatGold}🪙` : ''}); колода — ${R.startTax}× Подать и 3 карты Дома, в руке ${R.hand}.${on('lords') ? ' Наследник Дома лежит рядом с картой Дома.' : ''}</li>
       <li>Рынок: открыты ${R.estateRow} владения и ${R.courtRow} карты двора. Знамёна: ряд из ${R.vRow} вассалов${on('lords') ? `, ${R.lRow} лордов` : ''}${on('great') ? `, ${R.gRow} великих лордов` : ''} — каждый из своей колоды.</li></ul>`;
     b += `<h3>Ход</h3><ol>
       ${on('great') ? '<li><b>Содержание:</b> первым делом заплатите за великих лордов. Не хватает — лишние уходят под низ своей колоды.</li>' : ''}
@@ -7996,7 +8017,8 @@ if (typeof module !== 'undefined') module.exports = Music;
       <li><b>Цена — только золото.</b> Каждый ваш значок направления карты — скидка 1🪙: у вассала не больше ${R.discCap.v}, у лорда ${R.discCap.l}, у великого лорда ${R.discCap.g}.</li>
       <li><b>Надбавка.</b> У сильных знамён напечатана надбавка: пока они у вас, ваши следующие знамёна дороже.</li>
       <li><b>Вассалы</b> помогают зарабатывать. ${on('lords') ? '<b>Лорды</b> дороже и меняют правила лично для вас; каждый даёт ещё место при дворе. Наследник Дома — ваш личный лорд.' : ''}${on('great') ? ' <b>Великие лорды</b> — власть над столом и награда при найме, но содержание каждый ход.' : ''}</li>
-      <li>Любой ряд (рынка и знамён), из которого за круг ничего не взяли, в начале нового круга обновляется: крайняя карта уходит под низ колоды.</li></ul>`;
+      <li>Любой ряд (рынка и знамён), из которого за круг ничего не взяли, в начале нового круга обновляется: крайняя карта уходит под низ колоды.</li>${R.catchupGap ? `
+      <li><b>Догоняющий наём.</b> Если в начале круга у лидера ${R.catchupFrom}+ знамён, каждый, у кого знамён меньше, в этом круге может нанять ещё одного вассала — сверх действия.${on('balance') ? ' В этой партии вместо него — Зависть и Поддержка (модуль «Баланс»).' : ''}</li>` : ''}</ul>`;
     b += `<h3>Карты двора и свита</h3><p>Роли: ⚖️ Купец, 📜 Учёный, ⚔️ Рыцарь, 🔗 Шпион, 🕯 Жрец. <b>Свита</b>: вторая карта той же роли за ход — срабатывает её «Свита». Третья и дальше — «Свита» срабатывает дважды. У карты без блока «Свита» бонуса нет.</p>`;
     { const H0 = D.HOUSES.deer, dg = R.startGold + (H0.gold || 0), fs = D.ESTATES[H0.estates[0]], a = dg + 4, c = a + fs.inc;
       b += `<h3>Пример первого хода</h3><div class="mr-ex"><b>Дом Оленя</b><p>На старте ${dg}🪙. Отставка: убираете «Подать» и берёте новую карту — пришёл Сборщик податей. Играете Подать (+1🪙) и Сборщика податей (+2🪙), потом второго Сборщика — его свита даёт ещё +2🪙: итого ${a}🪙. Бросаете 1 кубик, выпало 4 — ваша ${fs.name}: +${fs.inc}🪙 (${c}). Действие: покупаете владение — Оленям рынок на ${H0.mods.marketDiscount || 0}🪙 дешевле — или копите на первого вассала: родной ⚖️ Оленей даёт скидку на вассалов Торговли.</p></div>`; }
