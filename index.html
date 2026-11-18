@@ -1265,7 +1265,7 @@ function ASSET_URL(p) {
         case 'reroll': return { i: 'reroll', c: 'сыграйте до броска: в этот ход можно перебросить кубики' };
         case 'forage': return { v: `+${b}`, i: 'gold', c: `заберите у самого богатого, у кого ${SYM[a]} меньше, чем у вас` };
         case 'siege': return { pre: 'siege', v: `+${a}`, i: 'war', c: `захват: победа — его владение (на ваш выбор) ценой до 4🪙 — ${RUINS}; брать нечего — возьмите у него 3🪙` };
-        case 'raze': return { pre: 'raze', v: `+${a}`, i: 'war', c: `разрушение: победа — его владение (на ваш выбор) ${b >= 99 ? 'любой цены' : `ценой до ${b}🪙`}${c === 'wall' ? ' (и Каменную стену)' : ''} уходит из игры${c === 'nowalls' ? '; его стены не в счёт' : ''}; разрушать нечего — возьмите у него 2🪙` };
+        case 'raze': return { pre: 'raze', v: `+${a}`, i: 'war', c: `разрушение: победа — его владение (на ваш выбор) ${b >= 99 ? 'любой цены' : `ценой до ${b}🪙`} уходит из игры${c === 'wall' ? ', и ещё одна его 🧱 Каменная стена' : ''}${c === 'nowalls' ? '; его стены не в счёт' : ''}; разрушать нечего — возьмите у него 2🪙` };
         case 'plant': return { pre: 'spy', v: `+${a}`, i: 'int', c: 'подсуньте сопернику: удача — в его сброс, провал — из игры' };
         case 'trashGold': return { v: `до ${a}`, i: 'trash', c: `${plural(a, 'карты', 'карт', 'карт')} из руки уберите из игры, +${b}🪙 за каждую` };
         case 'spy': return { pre: 'spy', v: `+${a}`, i: 'int', c: `шпионаж: удача — ${spyCap(b, c)}` };
@@ -1728,13 +1728,11 @@ const DATA = (() => {
     inventor: { name: 'Зодчий', role: 'scholar', cost: 4, fx: [['regDiscount', 4]], ally: [['gold', 2]], plot: 'timed', pfx: [['regDiscount', 6]] },
 
     sappers: { name: 'Подкопщики', role: 'knight', cost: 2, fx: [['siege', 2]], plot: 'dice', pn: [3, 10], pfx: [['ambush', 4]], ally: [['gold', 2]] },
-    mercenary: { name: 'Наёмник', role: 'knight', cost: 2, fx: [['gold', 1]], ally: [['gold', 1]] },
     foragers: { name: 'Фуражиры', role: 'knight', cost: 2, fx: [['forage', 'war', 1]], ally: [['forage', 'war', 1]], plot: 'dice', pn: [2, 8], pfx: [['ambush', 4]] },
     siegeband: { name: 'Осадный отряд', role: 'knight', cost: 4, fx: [['siege', 3]], plot: 'timed', pfx: [['siege', 5]], ally: [['draw', 1]] },
     commander: { name: 'Победитель турнира', role: 'knight', cost: 4, fx: [['gold', 3]], ally: [['gold', 2]], plot: 'timed', pfx: [['levy', 2]] },
 
     pickpocket: { name: 'Карманник', role: 'spy', cost: 1, fx: [['spy', 1, 'steal', 2]], ally: [['gold', 2]], plot: 'dice', pn: [6, 11], pfx: [['ambush', 2]] },
-    informer: { name: 'Доносчик', role: 'spy', cost: 2, fx: [['draw', 1]], ally: [['draw', 1]] },
     whisper: { name: 'Шептун', role: 'spy', cost: 3, fx: [['forage', 'int', 1]], ally: [['gold', 2]], plot: 'dice', pn: [6, 9], pfx: [['ambush', 5]] },
     blackmailer: { name: 'Вымогатель', role: 'spy', cost: 5, fx: [['spy', 2, 'estate', 4]], plot: 'timed', pfx: [['spy', 4, 'estate', 6]], ally: [['gold', 2]] },
 
@@ -1756,7 +1754,6 @@ const DATA = (() => {
     rumor: { name: 'Дурной слух', role: null, cost: 1, bad: 'rumor', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: рынок вам на 1🪙 дороже.' },
 
     // ---------- Жрецы (направление «Вера»): свечи 🕯 до конца хода, подаяния, очищение колоды ----------
-    preacher: { name: 'Проповедник', role: 'priest', cost: 3, fx: [['gold', 2]], ally: [['gold', 2]] },
     reliquary: { name: 'Реликварий', role: 'priest', cost: 4, fx: [['goldPerSym', 'faith', 1, 99]], plot: 'timed', pfx: [['goldPerSym', 'faith', 2, 99]] },
     // жрецы вер (модуль «Вера»): в колоду двора — только жрецы вер партии; последователю веры — ещё и «Вере»
     pr_grain: { name: 'Жрица Колоса', role: 'priest', cost: 2, faith: 'grain', fx: [['gold', 1]], ffx: [['goldPerLand', 1]], plot: 'timed', pfx: [['goldPerLand', 1, 6]] },
@@ -1811,7 +1808,7 @@ const DATA = (() => {
       name: 'Дом Совы', short: 'Совы', gen: 'Сов', dat: 'Совам', sigil: '🦉', path: 'Наука', dir: 'sci',
       about: 'Учёные Востока: архивы, звездочёты, расчёт. Герб — сова.',
       ability: 'Раз в ход можно перебросить кубики. В начале хода +1🪙 за каждые 2📜.',
-      mods: { reroll: 1, symIncome_sci: 1 }, gold: 1,
+      mods: { reroll: 1, symIncome_sci: 1 }, gold: 3,
       deck: ['collector', 'scribe', 'owlsight'], estates: ['observatory'], heir: 'heir_owl', courtier: 'bookman',
     },
     wolf: {
@@ -1826,20 +1823,20 @@ const DATA = (() => {
       about: 'Мореходы побережья: торгуют, а при случае грабят. Герб — морской змей.',
       ability: '🟥 Набеги забирают +1🪙 и срабатывают и в ваш ход (золото из банка).',
       mods: { redBonus: 1, redOwn: 1 }, gold: 4,
-      deck: ['mercenary', 'collector', 'boarding'], estates: ['piratecove'], heir: 'heir_serpent', courtier: 'boatswain',
+      deck: ['collector', 'collector', 'boarding'], estates: ['piratecove'], heir: 'heir_serpent', courtier: 'boatswain',
     },
     bear: {
       name: 'Дом Медведя', short: 'Медведи', gen: 'Медведей', dat: 'Медведям', sigil: '🐻', path: 'Земли и старые боги', dir: 'faith',
       about: 'Лесные бароны Севера: пашни, пасеки, священные рощи. Герб — бурый медведь.',
       ability: 'В начале хода +1🪙 за каждые 2 ваши 🟦 Земли.',
-      mods: { landIncome: 1 }, gold: 10,
-      deck: ['collector', 'mercenary', 'bearhoard'], estates: ['sacredgrove', 'pasture'], heir: 'heir_bear', courtier: 'forester',
+      mods: { landIncome: 1 }, gold: 3,
+      deck: ['collector', 'collector', 'bearhoard'], estates: ['sacredgrove', 'pasture'], heir: 'heir_bear', courtier: 'forester',
     },
     lion: {
       name: 'Дом Льва', short: 'Львы', gen: 'Львов', dat: 'Львам', sigil: '🦁', path: 'Двор', dir: 'trade',
       about: 'Столичная знать: приёмы, посольства, большой двор. Герб — золотой лев.',
       ability: 'Купленная карта двора сразу идёт в руку — её можно сыграть в тот же ход. Великие лорды вам на 25🪙 дешевле.',
-      mods: { courtToHand: 1, greatCheap: 25 }, gold: -1,
+      mods: { courtToHand: 1, greatCheap: 25 }, gold: 1,
       deck: ['collector', 'scribe', 'lionroar'], estates: ['throneroom'], heir: 'heir_lion', courtier: 'steward',
     },
   };
@@ -1929,11 +1926,11 @@ const DATA = (() => {
     grain: { name: 'Златой Колос', icon: '🌾', dir: 'trade',
       mods: { blueBonus: 1 }, mods2: { marketDiscount: 1 }, mods3: { landIncome: 1 },
       text: '🟦 Земли приносят +1🪙.', text2: 'Всё на рынке вам на 1🪙 дешевле.', text3: 'В начале хода +1🪙 за каждые 2 ваших 🟦 Земли.',
-      rite: { name: 'Первый сноп', cost: { trash: 1 }, fx: [['goldPerLand', 1]] }, oath: 'spy', oathText: 'Нельзя шпионить и подсовывать беды.' },
+      rite: { name: 'Первый сноп', cost: { trash: 1 }, fx: [['goldPerLand', 2, 99]] }, oath: 'spy', oathText: 'Нельзя шпионить и подсовывать беды.' },
     seer: { name: 'Око Провидца', icon: '👁', dir: 'sci',
       mods: { predict: 4 }, mods2: { symIncome_sci: 1 }, mods3: { fetch: 1 },
       text: 'Перед броском назовите сумму кубиков: угадали — +4🪙.', text2: 'В начале хода +1🪙 за каждые 2📜.', text3: 'Раз в ход карту из своего сброса можно взять в руку.',
-      rite: { name: 'Видение', cost: { gold: 1 }, fx: [['draw', 2]] }, oath: 'no_retire', oathText: 'Нельзя делать Отставку.' },
+      rite: { name: 'Видение', cost: { gold: 1 }, fx: [['reroll', 1], ['draw', 1]] }, oath: 'no_retire', oathText: 'Нельзя делать Отставку.' },
     flame: { name: 'Пламя Предков', icon: '🔥', dir: 'war', truce: false,
       mods: { redBonus: 1 }, mods2: { symIncome_war: 1 }, mods3: { siege: 2, siegeWinGold: 2 },
       text: '🟥 Набеги забирают +1🪙.', text2: 'В начале хода +1🪙 за каждые 2⚔️.', text3: 'Каждое ваше нападение +2⚔️, победа — ещё +2🪙.',
@@ -1941,7 +1938,7 @@ const DATA = (() => {
     shade: { name: 'Тихая Тень', icon: '🌑', dir: 'int', truce: false,
       mods: { buyToll: 1 }, mods2: { symIncome_int: 1 }, mods3: { spy: 2, stealBonus: 1 },
       text: 'Соперник купил что-то на рынке — вам +1🪙.', text2: 'В начале хода +1🪙 за каждые 2🔗.', text3: 'Каждый ваш шпионаж +2🔗, кража на 1🪙 больше.',
-      rite: { name: 'Шёпот', cost: { gold: 1 }, fx: [['levy', 1]] }, oath: 'hire_war', oathText: 'Нельзя нанимать вассалов и лордов Войны ⚔️.' },
+      rite: { name: 'Шёпот', cost: {}, fx: [['levy', 1]] }, oath: 'hire_war', oathText: 'Нельзя нанимать вассалов и лордов Войны ⚔️.' },
     cathedral: { name: 'Собор Единого', icon: '⛪', dir: null,
       mods: { startGold: 2 }, mods2: { symIncome_faith: 1 }, mods3: { lordCheap: 2 },
       text: '+2🪙 в начале хода.', text2: 'В начале хода +1🪙 за каждые 2🕯.', text3: 'Лорды вам на 2🪙 дешевле.',
@@ -1949,7 +1946,7 @@ const DATA = (() => {
     harvest: { name: 'Праздник Урожая', icon: '🌻', dir: null,
       mods: { greenBonus: 1 }, mods2: { craftIncome: 1 }, mods3: { landOwn: 1 },
       text: '🟩 Ремёсла приносят +1🪙.', text2: 'В начале хода +1🪙 за каждые 2 ваших 🟩 Ремесла.', text3: '🟦 Земли приносят +1🪙 в ваш ходе.',
-      rite: { name: 'Пир', cost: { gold: 1 }, fx: [['goldPerCraft', 1]] }, oath: 'no_hold', oathText: 'Нельзя покупать 🟪 Твердыни.' },
+      rite: { name: 'Пир', cost: {}, fx: [['goldPerCraft', 1], ['draw', 1]] }, oath: 'no_hold', oathText: 'Нельзя покупать 🟪 Твердыни.' },
   };
   // обряд — текстом: «Уберите карту из руки из игры → +1🪙 за каждую вашу Землю»
   function riteCostText(c) {
@@ -1957,7 +1954,7 @@ const DATA = (() => {
     if (c.gold) return `Заплатите ${c.gold}🪙`;
     if (c.trash) return `Уберите ${c.trash === 1 ? 'карту' : c.trash + ' карты'} из руки из игры`;
     if (c.give) return `Отдайте ${c.give}🪙 самому бедному сопернику`;
-    return '';
+    return 'Бесплатно';
   }
 
 
@@ -1991,7 +1988,7 @@ const DATA = (() => {
       case 'reroll': return `до броска: в этот ход можно перебросить кубики`;
       case 'forage': return `возьмите ${b}🪙 у самого богатого из соперников, у кого ${SYM[a]} меньше, чем у вас`;
       case 'siege': return `Захват (+${a}⚔️): победа — владение соперника ценой до 4🪙 ваше, но в руинах (первое срабатывание — ремонт); брать нечего — возьмите у него 3🪙`;
-      case 'raze': return `Разрушение (+${a}⚔️): победа — владение соперника ${b >= 99 ? 'любой цены' : `ценой до ${b}🪙`} уходит из игры${c === 'wall' ? ' (можно и Каменную стену)' : c === 'nowalls' ? '; стены цели не в счёт' : ''}; разрушать нечего — возьмите у него 2🪙`;
+      case 'raze': return `Разрушение (+${a}⚔️): победа — владение соперника ${b >= 99 ? 'любой цены' : `ценой до ${b}🪙`} уходит из игры${c === 'wall' ? ', и ещё одна его 🧱 Каменная стена' : c === 'nowalls' ? '; стены цели не в счёт' : ''}; разрушать нечего — возьмите у него 2🪙`;
       case 'plant': return `Подсунуть — шпионаж (+${a}🔗): удача — эта карта уходит в сброс соперника, провал — из игры`;
       case 'spy':
         if (b === 'steal') return `Шпионаж (+${a}🔗): украдите ${c}🪙`;
@@ -2151,7 +2148,7 @@ if (typeof module !== 'undefined') module.exports = DATA;
   const MOD_CARDS = ['sets', ...(D.MODULE_PICK || D.MODULE_KEYS)]; // лорды — в основе, «Баланс» убран
   const PROV = { N: 'Север', S: 'Юг', E: 'Восток', W: 'Запад' };
   // плотные карты: мелкий текст эффектов ужат, чтобы влезло с запасом 3% (считает cards/fit.js)
-  const FIT = {"e:citadel":10.99,"e:customs":0.87,"e:granary":0.89,"e:merchants":0.87,"e:fortress":0.92,"e:chancery":11,"e:thieves":0.89,"e:embassy":0.89,"e:plaguehouse":0.92,"e:banditpost":11,"c:sappers":10.99,"c:foragers":11,"c:siegeband":10.99,"c:pickpocket":0.89,"c:whisper":11,"c:blackmailer":10.94,"c:ram":10.99,"c:catapult":10.94,"c:trebuchet":0.98,"c:interceptor":0.88,"c:recruiter":10.95,"c:agitator":0.94,"c:torchman":10.99,"c:pr_harvest":0.93,"c:dreamer":0.99,"c:astrologer":0.99,"c:chronicler":10.96,"c:boarding":0.98,"h:deer":11,"h:owl":10.87,"h:wolf":0.84,"h:serpent":10.87,"h:bear":11,"h:lion":10.93,"b:martin":11,"b:leopold":0.9,"b:anselm":0.91,"b:albin":0.9,"b:morwen":11,"b:robert":11,"b:bertrand":0.9,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:irmina":10.92,"b:aurelius":11,"b:warden":11,"b:heir_owl":0.9,"b:heir_wolf":10.85,"b:heir_serpent":0.9,"b:heir_bear":0.85,"b:matilda":10.91,"b:cassia":10.92,"b:aldo":0.91,"b:edward":10.93,"b:wilhelm":11,"b:oberon":10.95,"f:grain":10.83,"f:seer":10.9,"f:flame":10.91,"f:shade":10.84,"f:cathedral":10.9,"f:harvest":10.92,"p:N":10.95,"p:S":10.9,"p:E":10.94,"p:W":0.89,"m:sets":0.89,"m:faith":0.84,"m:conflict":0.84,"m:court":0.84};
+  const FIT = {"e:citadel":10.99,"e:customs":0.87,"e:granary":0.89,"e:merchants":0.87,"e:fortress":0.92,"e:chancery":11,"e:thieves":0.89,"e:embassy":0.89,"e:plaguehouse":0.92,"e:banditpost":11,"c:sappers":10.99,"c:foragers":11,"c:siegeband":10.99,"c:pickpocket":0.89,"c:whisper":11,"c:blackmailer":10.94,"c:ram":10.92,"c:catapult":10.94,"c:trebuchet":0.98,"c:interceptor":0.88,"c:recruiter":10.95,"c:agitator":0.94,"c:torchman":10.99,"c:pr_harvest":0.93,"c:dreamer":0.99,"c:astrologer":0.99,"c:chronicler":10.96,"c:boarding":0.98,"h:deer":11,"h:owl":10.87,"h:wolf":0.84,"h:serpent":10.87,"h:bear":11,"h:lion":10.93,"b:martin":11,"b:leopold":0.9,"b:anselm":0.91,"b:albin":0.9,"b:morwen":11,"b:robert":11,"b:bertrand":0.9,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:irmina":10.92,"b:aurelius":11,"b:warden":11,"b:heir_owl":0.9,"b:heir_wolf":10.85,"b:heir_serpent":0.9,"b:heir_bear":0.85,"b:matilda":10.91,"b:cassia":10.92,"b:aldo":0.91,"b:edward":10.93,"b:wilhelm":11,"b:oberon":10.95,"f:grain":10.83,"f:seer":10.83,"f:flame":10.91,"f:shade":10.84,"f:cathedral":10.9,"f:harvest":10.9,"p:N":10.95,"p:S":10.9,"p:E":10.94,"p:W":0.89,"m:sets":0.89,"m:faith":0.84,"m:conflict":0.84,"m:court":0.84};
   // FIT[key]: k — ужать текст эффектов; k + 10 — плотная карта: рисунок ниже, текст ужат на k
   const fitK = (key) => { const v = FIT[key]; return v ? (v >= 10 ? +(v - 10).toFixed(2) : v) : 0; };
   const fit = (key) => (fitK(key) ? ` style="--k:${fitK(key)}"` : '');
@@ -2700,7 +2697,7 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
       return { key, icon: M.icon, name: M.name, short: M.short, html: `<div class="mr"><p class="mr-gist">${GROUP_GIST[key] ? GROUP_GIST[key](D.RULES) : M.desc}</p></div>` + parts.map(p => `<h3 class="mr-part">${D.MODULES[p.key].ownIcon || p.icon} ${p.name}</h3>${p.html}`).join('') };
     }
     const R = D.RULES, C = D.COURT, M = D.MODULES[key], B = D.BAN;
-    const houses = Object.keys(D.HOUSES).filter(h => D.NEEDS.house[h] === key).map(h => D.HOUSES[h]);
+    const houses = Object.keys(D.HOUSES).filter(h => D.NEEDS.house[h] === key || (D.MODULES[D.NEEDS.house[h]] || {}).member === key).map(h => D.HOUSES[h]);
     const houseLine = houses.length ? `<p class="mr-house"><b>Дом модуля:</b> ${houses.map(h => `${h.sigil} ${h.name} — ${lo(h.ability)}`).join(' ')}</p>` : '';
     let gist = '', adds = [], rules = [], exs = [], tips = [], with_ = [], qa = [];
     const price = `цена на карте − 1🪙 за каждый ваш значок направления знамени`;
@@ -2760,7 +2757,7 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
         'Перемирие: у восьми вер единоверцы не нападают друг на друга и не шпионят друг за другом. Пламя Предков, Братство Клинка, Тихая Тень и Тайный Круг перемирия не знают. На карте веры это сказано.',
         `Отречься — ${R.renounceCost}🪙. Новую веру можно принять со следующего хода.`,
       ];
-      exs = [ex('Ступени и обряд', `Вы приняли «${F.grain.name}»: ваши Земли приносят +1🪙. Сыграли жреца (+1🕯) — у вас 🕯3, открылась ступень II: ${lo(F.grain.text2)} Обряд «${F.grain.rite.name}»: ${lo(D.riteCostText(F.grain.rite.cost))} — +1🪙 за каждую вашу Землю.`)];
+      exs = [ex('Ступени и обряд', `Вы приняли «${F.grain.name}»: ваши Земли приносят +1🪙. Наняли вассала Веры — у вас 🕯3, открылась ступень II: ${lo(F.grain.text2)} Обряд «${F.grain.rite.name}» (раз в ход): ${lo(D.riteCostText(F.grain.rite.cost))} — +2🪙 за каждую вашу Землю.`)];
       tips = [ks.map(fl).join('<br>')];
       with_ = ['С «Осадами» и «Шпионажем»: обеты и перемирие единоверцев. С «Придворными»: часть ступеней даёт места и золото за посадку.'];
       qa = [
@@ -2880,7 +2877,7 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
   function overview(D) {
     const P = D.PRESETS, M = D.MODULES;
     const rows = Object.keys(P).map(k => `<tr><td><b>${P[k].name}</b></td><td>${P[k].modules.map(m => `${M[m].icon} ${M[m].short}`).join(', ')}</td><td>${P[k].desc}</td></tr>`).join('');
-    const hs = Object.keys(D.NEEDS.house).map(h => `${D.HOUSES[h].sigil} ${D.HOUSES[h].short} — ${M[D.NEEDS.house[h]].short}`).join(', ');
+    const hs = Object.keys(D.NEEDS.house).map(h => `${D.HOUSES[h].sigil} ${D.HOUSES[h].short} — ${(M[(M[D.NEEDS.house[h]] || {}).member] || M[D.NEEDS.house[h]]).name}`).join(', ');
     return `<div class="mr mr-ov">
       <p class="mr-gist">Модули добавляются к базовой игре целиком и сочетаются с любыми другими. Можно выбрать готовый набор или включить модули вручную.</p>
       <h3>Готовые наборы</h3><table class="mr-tab"><tr><th>Набор</th><th>Модули</th><th>Цель</th></tr>${rows}</table>
@@ -3472,6 +3469,8 @@ const Engine = (() => {
         const e0 = el.find(x => x.uid === uid) || el[0];
         t.estates.splice(t.estates.indexOf(e0), 1); S.destroyed.push(e0.id); gone = e0.id; t.stats.lost++; a.stats.destroyed++;
         log(S, `   «${ES(e0).name}» ${nmG(t)} разрушено и уходит из игры`, a.i, 'win');
+        // Таран: заодно рушит одну Каменную стену соперника
+        if (flag === 'wall') { const w = t.estates.find(e => e.id === 'wall' && !e.ruined); if (w) { t.estates.splice(t.estates.indexOf(w), 1); S.destroyed.push('wall'); t.stats.lost++; a.stats.destroyed++; log(S, `   Таран заодно ломает Каменную стену ${nmG(t)}`, a.i, 'win'); } }
       } else {
         gold = Math.min(2, t.gold); t.gold -= gold; a.gold += gold;
         log(S, `   Разрушать нечего — ${nm(a)} взяли ${gold}🪙`, a.i, 'win');
@@ -5869,7 +5868,9 @@ if (typeof module !== 'undefined') module.exports = Music;
   const tierList = (p, t) => (t === 'v' ? p.vassals : t === 'l' ? p.lords : p.greats);
   // «12 знамён: 6 вассалов, 4 лорда и 2 великих лорда»
   const goalLine = () => `${D.banners(goalNow())}: ${goalTxt()}`;
-  const modList = (ks) => ks.map(k => `«${D.MODULES[k].name}»`).join(', ');
+  // части объединённых модулей называем общим именем: «Осады» и «Шпионаж» — «Вражда», «Замыслы» и «Придворные» — «Двор»
+  const modName = (k) => { const m = D.MODULES[k] || {}; return (D.MODULES[m.member] || m).name || k; };
+  const modList = (ks) => [...new Set(ks.map(modName))].map(n => `«${n}»`).join(', ');
   const SYMS5 = D.SYMS;
   function fixSetup() {
     const av = availHouses();
@@ -5891,7 +5892,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) { if (!x.v3) { /* настройки v1: «Полная» → «Полная», остальное → «Базовая» */ setup.mods = (x.mods.includes('foreign') && x.mods.includes('sieges') ? D.PRESETS.full : D.PRESETS.basic).modules.slice(); } else setup.mods = x.mods.flatMap(k => D.modMembers(k)).filter(k => D.MODULE_KEYS.includes(k) && !(D.MODULES[k] || {}).hidden || ['lords', 'sieges', 'spy', 'plots', 'seats'].includes(k)); } if (x.pause === false) pauseBots = false; if (E.SKILL_NAMES && E.SKILL_NAMES[x.skill]) setup.skill = x.skill; if (['system', 'light', 'dark', 'table'].includes(x.theme) && x.tbl) theme = x.theme; if (x.sound === false) sound = false; if (x.music === false) music = false; if (x.coins === false) manualCoins = false; if (x.seating === 'face') setup.seating = 'face'; } } catch (e) { /* хранилище недоступно */ }
     fixSetup();
     // сохранение старой версии правил (v1) с новым движком несовместимо — забываем его
-    try { const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (g && g.S) { const v = JSON.parse(g.S).v; if (v === 2) savedGame = g; else localStorage.removeItem(SAVE_KEY); } } catch (e) { /* нет сохранения */ }
+    try { const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (g && g.S) { const x = JSON.parse(g.S); if (x.v === 2 && saveFits(x)) savedGame = g; else localStorage.removeItem(SAVE_KEY); } } catch (e) { try { localStorage.removeItem(SAVE_KEY); } catch (e2) { /* нет доступа */ } }
   }
   function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ v2: 1, v3: 1, house: setup.house, opps: setup.seats.length, seats: setup.seats, speed, mods: setup.mods, skill: setup.skill, pause: pauseBots, theme, tbl: 1, sound, music, coins: manualCoins, seating: setup.seating })); } catch (e) { /* ignore */ } }
   function saveSafe() {
@@ -7427,7 +7428,7 @@ if (typeof module !== 'undefined') module.exports = Music;
           <div class="modlist">${MODK.map(k => { const x = D.MODULES[k]; return `<button class="mod ${setupOn(k) ? 'on' : ''}" data-act="mod" data-k="${k}" role="switch" aria-checked="${setupOn(k)}"><span class="sw" aria-hidden="true"></span><span class="mi">${x.icon}</span><span><b>${x.name}</b><span class="muted">${x.desc}</span></span></button>`; }).join('')}</div>
         </details>
         <h2 class="lbl">Ваш Дом</h2>
-        <div class="houses">${hs.map(h => { const x = D.HOUSES[h]; const ok = av.includes(h); const need = needOf('house', h); return `<button class="house ${setup.house === h ? 'on' : ''} ${ok ? '' : 'off'}" data-act="pick" data-h="${h}" ${ok ? '' : 'disabled'}><img class="sgi" src="${IMG(`icons/h_${h}.svg`)}" alt=""><b>${x.name}</b><span class="pth">${x.path}</span>${ok ? `<span class="ab muted">${x.about}</span><span class="ab">${x.ability}</span><span class="ab st">Старт: ${R.startGold + (x.gold || 0)}🪙 · ${x.estates.map(id => D.ESTATES[id].name).join(', ')}</span>` : `<span class="ab need">Нужен модуль «${D.MODULES[need].name}»</span>`}</button>`; }).join('')}</div>
+        <div class="houses">${hs.map(h => { const x = D.HOUSES[h]; const ok = av.includes(h); const need = needOf('house', h); return `<button class="house ${setup.house === h ? 'on' : ''} ${ok ? '' : 'off'}" data-act="pick" data-h="${h}" ${ok ? '' : 'disabled'}><img class="sgi" src="${IMG(`icons/h_${h}.svg`)}" alt=""><b>${x.name}</b><span class="pth">${x.path}</span>${ok ? `<span class="ab muted">${x.about}</span><span class="ab">${x.ability}</span><span class="ab st">Старт: ${R.startGold + (x.gold || 0)}🪙 · ${x.estates.map(id => D.ESTATES[id].name).join(', ')}</span>` : `<span class="ab need">Нужен модуль «${modName(need)}»</span>`}</button>`; }).join('')}</div>
         <div class="sec-h"><h2 class="lbl">Соперники · ${setup.seats.length}</h2><span class="seat-n"><button class="btn small" data-act="seat-del" aria-label="Убрать игрока" ${setup.seats.length > 1 ? '' : 'disabled'}>−</button><button class="btn small" data-act="seat-add" aria-label="Добавить игрока" ${setup.seats.length < Math.min(av.length - 1, R.maxPlayers - 1) ? '' : 'disabled'}>+</button></span></div>
         <div class="seats">${setup.seats.map((s, k) => seatEditor(s, k, av)).join('')}</div>
         <p class="muted seatnote"><b>Человек</b> играет на этом же устройстве: передаёте его по очереди, карты каждого скрыты от остальных. <b>По сети</b> — со своего телефона по коду комнаты${NETOK ? '' : ' (только в отдельной версии игры — файл index.html)'}.</p>
@@ -7684,7 +7685,7 @@ if (typeof module !== 'undefined') module.exports = Music;
       else if (k === 'ambush') out.push(`Засада: если число выпало на чужом броске — забираете ${a}🪙 у бросившего, если на вашем — ${a}🪙 из банка.`);
       else if (k === 'levy') out.push(`Забираете ${a}🪙 у самого богатого соперника — без кубика, это не шпионаж.`);
       else if (k === 'unseat') {
-        if (!modOn('seats')) out.push('В этой партии модуль «Придворные» выключен: опалы нет.');
+        if (!modOn('seats')) out.push('В этой партии модуль «Двор» выключен: опалы нет.');
         else { const os = q ? E.unseatOptions(S, q) : []; out.push(`Опала: один придворный соперника уходит в его сброс; позже он снова придёт к нему в руку. Заговорщик при дворе защищает всех придворных своего хозяина.${q ? ` Сейчас прогнать можно: ${os.length ? os.map(o => `«${esc(D.COURT[o.id].name)}» (${esc(H(S.players[o.i]).short)})`).join(', ') : 'никого'}.` : ''}`); }
       }
     }
@@ -7714,7 +7715,7 @@ if (typeof module !== 'undefined') module.exports = Music;
       rows.push(['Места', `Замыслов на столе — не больше ${q ? E.plotSlots(S, q) : R.plotSlots}. Сработавший замысел уходит в сброс.`]);
     }
     if (c.seat) {
-      if (!modOn('seats')) rows.push(['При дворе', 'В этой партии модуль «Придворные» выключен: карту можно только сыграть.']);
+      if (!modOn('seats')) rows.push(['При дворе', 'В этой партии модуль «Двор» выключен: карту можно только сыграть.']);
       else rows.push(['При дворе', `Карту можно не сыграть, а посадить ко двору — вместо розыгрыша, действие хода не тратится. Пока сидит, даёт: ${esc(c.stext)} Мест при дворе — ${E.seatMax(S, S.players[ME] || S.players[S.cur])}; если все заняты, один из придворных уходит в ваш сброс, а оттуда со временем снова придёт в руку.${c.fam && D.HOUSES[c.fam].courtier === id ? ` В начале партии эта карта уже сидит при дворе у ${esc(D.HOUSES[c.fam].gen)}.` : ''}`]);
     }
     rows.push(['Где взять', c.fam ? `Фамильный придворный ${esc(D.HOUSES[c.fam].gen)}: одна карта, ${D.HOUSES[c.fam].courtier === id ? 'в начале партии сидит при дворе' : 'лежит в стартовой колоде — её можно сыграть или посадить ко двору'}. Прогнали или заменили — уходит в сброс владельца.` : c.start ? `Стартовая карта: ${R.startTax} шт. в колоде каждого Дома.` : c.sig ? 'Фамильная карта: одна, в стартовой колоде своего Дома.' : `${c.cost}🪙 на рынке. В колоде двора 2 копии.`]);
@@ -7911,7 +7912,7 @@ if (typeof module !== 'undefined') module.exports = Music;
       <li><b>Карты двора</b> из руки можно играть до броска и после, сколько угодно. <b>Отставка:</b> раз в ход уберите из игры одну карту руки и возьмите новую из колоды.</li>
       <li><b>Бросок:</b> 1 или 2 кубика — на выбор, с начала партии. Бросок обязателен.</li>
       <li><b>Доход по кубику:</b> сначала 🟥 Набеги соперников, потом 🟦 Земли у всех и 🟩 Ремёсла у вас, потом ваши 🟪 Твердыни.</li>
-      <li><b>Действие:</b> одно за ход — купить карту на рынке или нанять знамя. Некоторые карты и лорды дают ещё действие.${on('great') ? ` С «Великими лордами» раз в ход можно купить <b>второе действие</b> за ${R.extraAction}🪙.` : ''} <b>Ярмарка</b> — покупка на рынке, которая действие не тратит: её дают лорды Мартин и Леопольд.</li>
+      <li><b>Действие:</b> одно за ход — купить карту на рынке или нанять знамя. Некоторые карты и лорды дают ещё действие.${on('great') ? ` В длинной партии (с великими лордами) раз в ход можно купить <b>второе действие</b> за ${R.extraAction}🪙.` : ''} <b>Ярмарка</b> — покупка на рынке, которая действие не тратит: её дают лорды Мартин и Леопольд.</li>
       <li><b>Конец:</b> сыгранное и остаток руки — в сброс, берёте ${R.hand} новые карты. Колода кончилась — перемешайте сброс.</li></ol>`;
     b += `<h3>Владения</h3><ul>
       <li>🟦 <b>Земля</b> — доход в ход любого игрока.</li><li>🟩 <b>Ремесло</b> — доход в ваш ход.</li>
@@ -8586,7 +8587,27 @@ if (typeof module !== 'undefined') module.exports = Music;
     document.body.appendChild(el);
     setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), reduceMotion() ? 0 : 420); }, reduceMotion() ? 250 : 1000);
   }
+  // сохранённая партия из прошлой версии может ссылаться на убранные Дома и карты — такую не открываем
+  function saveFits(x) {
+    try {
+      const ok = (id) => !!(D.COURT[id] || D.ESTATES[id] || D.BAN[id]);
+      return (x.players || []).every(p => D.HOUSES[p.house] && [...(p.hand || []), ...(p.deck || []), ...(p.discard || []), ...(p.vassals || []), ...(p.lords || []), ...(p.greats || [])].every(ok) && (p.estates || []).every(e => D.ESTATES[e.id]));
+    } catch (e) { return false; }
+  }
+  // если игра не смогла открыться — не оставлять пустой зелёный экран: показать ошибку и дать сбросить сохранения
+  function bootError(e) {
+    try { console.error(e); } catch (x) { /* консоли нет */ }
+    const msg = String((e && (e.message || e)) || 'неизвестная ошибка').replace(/[<>&]/g, '');
+    const box = app || document.body;
+    box.innerHTML = `<div style="max-width:420px;margin:60px auto;padding:20px;border-radius:14px;background:#f3ead6;color:#241d14;font:15px/1.45 system-ui"><b style="font-size:18px">Не удалось открыть игру</b><p>Скорее всего, мешают настройки или сохранённая партия из прошлой версии.</p><p style="font-size:12px;color:#6c5a3a">${msg}</p><button id="boot-reset" style="padding:10px 14px;border-radius:10px;border:0;background:#c99227;color:#fff;font-weight:700">Сбросить сохранения и открыть заново</button></div>`;
+    const b = document.getElementById('boot-reset');
+    if (b) b.onclick = () => { try { for (const k of [SAVE_KEY, PREF_KEY, NET_KEY]) localStorage.removeItem(k); } catch (x) { /* нет доступа */ } location.reload(); };
+  }
+  window.addEventListener('error', (ev) => { if (app && !app.children.length) bootError(ev.error || ev.message); });
   function boot(data) {
+    try { bootInner(data); } catch (e) { bootError(e); }
+  }
+  function bootInner(data) {
     loadPrefs();
     Sfx.set(sound); Music.set(music);
     applyTheme();
