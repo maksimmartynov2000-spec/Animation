@@ -1715,7 +1715,7 @@ const DATA = (() => {
   // plot — тип замысла ('timed' ⏳ / 'dice' 🎲), pfx — усиленный эффект замысла
   const COURT = {
     tax: { name: 'Подать', role: null, cost: 0, start: true, fx: [['gold', 1]] },
-    herald: { name: 'Вестник', role: null, cost: 1, fx: [['draw', 2], ['gold', 1]] },
+    herald: { name: 'Вестник', role: null, cost: 1, fx: [['draw', 2], ['gold', 1]], plot: 'dice', pn: [2, 12], pfx: [['draw', 3]] },
     chancellor: { name: 'Канцлер', role: null, cost: 1, fx: [['trash', 2], ['gold', 3]] },
 
     collector: { name: 'Сборщик податей', role: 'merchant', cost: 2, fx: [['gold', 2]], ally: [['gold', 2]], plot: 'timed', pfx: [['gold', 5]] },
@@ -1725,13 +1725,13 @@ const DATA = (() => {
     scribe: { name: 'Писарь', role: 'scholar', cost: 1, fx: [['draw', 1], ['gold', 1]], ally: [['draw', 1]], plot: 'timed', pfx: [['draw', 3]] },
     archivist: { name: 'Хранитель свитков', role: 'scholar', cost: 3, fx: [['draw', 1], ['gold', 2]], ally: [['draw', 1]], plot: 'timed', pfx: [['draw', 3]] },
     alchemist: { name: 'Алхимик', role: 'scholar', cost: 4, fx: [['goldPerSym', 'sci', 1, 4]], plot: 'timed', pfx: [['goldPerSym', 'sci', 2, 8]] },
-    inventor: { name: 'Зодчий', role: 'scholar', cost: 4, fx: [['regDiscount', 4]], ally: [['gold', 2]] },
+    inventor: { name: 'Зодчий', role: 'scholar', cost: 4, fx: [['regDiscount', 4]], ally: [['gold', 2]], plot: 'timed', pfx: [['regDiscount', 6]] },
 
     sappers: { name: 'Подкопщики', role: 'knight', cost: 2, fx: [['siege', 2]], plot: 'dice', pn: [3, 10], pfx: [['ambush', 4]], ally: [['gold', 2]] },
     mercenary: { name: 'Наёмник', role: 'knight', cost: 2, fx: [['gold', 1]], ally: [['gold', 1]] },
     foragers: { name: 'Фуражиры', role: 'knight', cost: 2, fx: [['forage', 'war', 1]], ally: [['forage', 'war', 1]], plot: 'dice', pn: [2, 8], pfx: [['ambush', 4]] },
     siegeband: { name: 'Осадный отряд', role: 'knight', cost: 4, fx: [['siege', 3]], plot: 'timed', pfx: [['siege', 5]], ally: [['draw', 1]] },
-    commander: { name: 'Победитель турнира', role: 'knight', cost: 4, fx: [['gold', 3]], ally: [['gold', 2]] },
+    commander: { name: 'Победитель турнира', role: 'knight', cost: 4, fx: [['gold', 3]], ally: [['gold', 2]], plot: 'timed', pfx: [['levy', 2]] },
 
     pickpocket: { name: 'Карманник', role: 'spy', cost: 1, fx: [['spy', 1, 'steal', 2]], ally: [['gold', 2]], plot: 'dice', pn: [6, 11], pfx: [['ambush', 2]] },
     informer: { name: 'Доносчик', role: 'spy', cost: 2, fx: [['draw', 1]], ally: [['draw', 1]] },
@@ -1741,10 +1741,14 @@ const DATA = (() => {
     // ---------- Осадные орудия: Разрушение — владение соперника уходит из игры навсегда ----------
     ram: { name: 'Таран', role: 'knight', cost: 3, fx: [['raze', 2, 3, 'wall']], ally: [['gold', 2]], plot: 'dice', pn: [4, 10], pfx: [['raze', 3, 3]] },
     catapult: { name: 'Катапульта', role: 'knight', cost: 4, fx: [['raze', 2, 5]], plot: 'dice', pn: [3, 9], pfx: [['raze', 4, 5]], copies: 1, ally: [['draw', 1]] },
+    trebuchet: { name: 'Требушет', role: 'knight', cost: 6, fx: [['raze', 4, 99]], plot: 'timed', pfx: [['raze', 6, 99]], copies: 1 },
 
     // ---------- новые шпионы ----------
     interceptor: { name: 'Лазутчик', role: 'spy', cost: 2, fx: [['spy', 1, 'grab', 1]], ally: [['gold', 2]], plot: 'dice', pn: [3, 11], pfx: [['spy', 2, 'steal', 3]] },
     recruiter: { name: 'Вербовщик', role: 'spy', cost: 5, fx: [['spy', 3, 'poach', 1]], copies: 1, ally: [['draw', 1]], plot: 'timed', pfx: [['spy', 3, 'steal', 4]] },
+    courtesan: { name: 'Куртизанка', role: 'spy', cost: 3, fx: [['spy', 2, 'distract', 1]], ally: [['gold', 2]], copies: 1 },
+    agitator: { name: 'Смутьян', role: 'spy', cost: 3, fx: [['spy', 2, 'riot', 3]], ally: [['draw', 1]], copies: 1 },
+    torchman: { name: 'Факельщик', role: 'spy', cost: 3, fx: [['spy', 2, 'burn', 2]], ally: [['gold', 2]], plot: 'dice', pn: [5, 9], pfx: [['spy', 3, 'burn', 3]] },
 
     // ---------- плохие карты: их покупают, чтобы подсунуть сопернику; у того в руке они вредят ----------
     // bad — что делает карта, пока лежит в руке у владельца (см. badText)
@@ -1757,9 +1761,9 @@ const DATA = (() => {
     // жрецы вер (модуль «Вера»): в колоду двора — только жрецы вер партии; последователю веры — ещё и «Вере»
     pr_grain: { name: 'Жрица Колоса', role: 'priest', cost: 2, faith: 'grain', fx: [['gold', 1]], ffx: [['goldPerLand', 1]], plot: 'timed', pfx: [['goldPerLand', 1, 6]] },
     pr_seer: { name: 'Ясновидец', role: 'priest', cost: 2, faith: 'seer', fx: [['draw', 1]], ffx: [['gold', 1]], plot: 'dice', pn: [5, 9], pfx: [['gold', 6]] },
-    pr_flame: { name: 'Хранитель Огня', role: 'priest', cost: 2, faith: 'flame', fx: [['gold', 1]], ffx: [['gold', 3]], plot: 'timed', pfx: [['gold', 5]] },
+    pr_flame: { name: 'Хранитель Огня', role: 'priest', cost: 2, faith: 'flame', fx: [['gold', 1]], ffx: [['levy', 1]], plot: 'timed', pfx: [['gold', 5]] },
     pr_shade: { name: 'Голос Тени', role: 'priest', cost: 2, faith: 'shade', fx: [['gold', 1]], ffx: [['draw', 1], ['gold', 1]], plot: 'dice', pn: [4, 10], pfx: [['draw', 3]] },
-    pr_cathedral: { name: 'Епископ', role: 'priest', cost: 3, faith: 'cathedral', fx: [['gold', 1]], ffx: [['gold', 2]], plot: 'timed', pfx: [['gold', 6]] },
+    pr_cathedral: { name: 'Епископ', role: 'priest', cost: 3, faith: 'cathedral', fx: [['gold', 1]], ffx: [['regDiscount', 3]], plot: 'timed', pfx: [['gold', 6]] },
     pr_harvest: { name: 'Распорядительница пира', role: 'priest', cost: 2, faith: 'harvest', fx: [['gold', 1]], ffx: [['goldPerCraft', 1]], plot: 'timed', pfx: [['goldPerCraft', 2]] },
 
     // ---------- модуль «Придворные»: карту с блоком «При дворе» можно не сыграть, а посадить на место при дворе ----------
@@ -1770,13 +1774,16 @@ const DATA = (() => {
     captain: { name: 'Капитан стражи', role: 'knight', cost: 3, fx: [['gold', 2]], seat: { mods: { raidShield: 1 } }, stext: 'Набеги и Твердыни соперников забирают у вас на 1🪙 меньше.' },
     bannerman: { name: 'Знаменосец', role: 'knight', cost: 4, fx: [['regDiscount', 3]], seat: { mods: { regCheap: 1 } }, stext: 'Каждое знамя на 1🪙 дешевле.' },
     gossip: { name: 'Сплетник', role: 'spy', cost: 2, fx: [['draw', 1], ['gold', 1]], seat: { mods: { oppRegGold: 1 } }, stext: 'Соперник привлёк знамя — вам +1🪙.' },
+    dreamer: { name: 'Толкователь снов', role: 'scholar', cost: 4, fx: [['reroll', 1], ['gold', 2]], seat: { mods: { predict: 3 } }, stext: 'Перед своим броском назовите число: выпало — +3🪙.' },
+    astrologer: { name: 'Звездочёт', role: 'scholar', cost: 5, fx: [['reroll', 1], ['gold', 2]], seat: { mods: { extraTurn: 1 } }, stext: 'Выпал дубль на двух кубиках — сделайте ещё один ход.' },
+    chronicler: { name: 'Летописец', role: 'scholar', cost: 4, fx: [['draw', 1], ['regDiscount', 2]], ally: [['draw', 1]], plot: 'timed', pfx: [['draw', 3]], seat: { mods: { fetch: 1 } }, stext: 'Раз в ход возьмите карту из своего сброса в руку.' },
 
     // Фамильные придворные (модуль «Придворные»): по два у каждого Дома. Первый (HOUSES.courtier) в начале партии сидит при дворе,
     // второй (HOUSES.courtier2) лежит в стартовой колоде — его можно сыграть или посадить
     seneschal: { name: 'Сенешаль', role: 'merchant', cost: 0, sig: true, fam: 'deer', fx: [['gold', 2]], seat: { mods: { startGold: 1 } }, stext: '+1🪙 в начале хода.' },
     bookman: { name: 'Книжник', role: 'scholar', cost: 0, sig: true, fam: 'owl', fx: [['draw', 1]], seat: { mods: { startGold: 2 } }, stext: '+2🪙 в начале хода.' },
     armsmaster: { name: 'Оружничий', role: 'knight', cost: 0, sig: true, fam: 'wolf', fx: [['gold', 1]], seat: { prod: { war: 1 } }, stext: 'Даёт ⚔️.' },
-    boatswain: { name: 'Кормчий', role: 'knight', cost: 0, sig: true, fam: 'serpent', fx: [['gold', 2]], seat: { mods: { redBonus: 1 } }, stext: '🟥 Набеги забирают ещё +1🪙.' },
+    boatswain: { name: 'Кормчий', role: 'knight', cost: 0, sig: true, fam: 'serpent', fx: [['gold', 2]], seat: { mods: { startGold: 1 } }, stext: '+1🪙 в начале хода.' },
     forester: { name: 'Лесничий', role: 'knight', cost: 0, sig: true, fam: 'bear', fx: [['gold', 1], ['draw', 1]], seat: { mods: { landBuyGold: 1 } }, stext: 'Купили 🟦 Землю — верните себе 1🪙 (но Земля обходится не дешевле 1🪙).' },
     steward: { name: 'Гофмейстер', role: 'merchant', cost: 0, sig: true, fam: 'lion', fx: [['draw', 1], ['gold', 1]], seat: { mods: { courtCheap: 1, startGold: 1 } }, stext: 'Карты двора на рынке вам на 1🪙 дешевле. +1🪙 в начале хода.' },
 
@@ -1818,21 +1825,21 @@ const DATA = (() => {
       name: 'Дом Змея', short: 'Змеи', gen: 'Змей', dat: 'Змеям', sigil: '🐍', path: 'Война и море', dir: 'war',
       about: 'Мореходы побережья: торгуют, а при случае грабят. Герб — морской змей.',
       ability: '🟥 Набеги забирают +1🪙 и срабатывают и в ваш ход (золото из банка).',
-      mods: { redBonus: 1, redOwn: 1 }, gold: 2,
+      mods: { redBonus: 1, redOwn: 1 }, gold: 4,
       deck: ['mercenary', 'collector', 'boarding'], estates: ['piratecove'], heir: 'heir_serpent', courtier: 'boatswain',
     },
     bear: {
       name: 'Дом Медведя', short: 'Медведи', gen: 'Медведей', dat: 'Медведям', sigil: '🐻', path: 'Земли и старые боги', dir: 'faith',
       about: 'Лесные бароны Севера: пашни, пасеки, священные рощи. Герб — бурый медведь.',
       ability: 'В начале хода +1🪙 за каждые 2 ваши 🟦 Земли.',
-      mods: { landIncome: 1 }, gold: 8,
+      mods: { landIncome: 1 }, gold: 10,
       deck: ['collector', 'mercenary', 'bearhoard'], estates: ['sacredgrove', 'pasture'], heir: 'heir_bear', courtier: 'forester',
     },
     lion: {
       name: 'Дом Льва', short: 'Львы', gen: 'Львов', dat: 'Львам', sigil: '🦁', path: 'Двор', dir: 'trade',
       about: 'Столичная знать: приёмы, посольства, большой двор. Герб — золотой лев.',
-      ability: 'Карты двора вам на 1🪙 дешевле, и купленная сразу идёт в руку — её можно сыграть в тот же ход. Великие лорды вам на 25🪙 дешевле.',
-      mods: { courtToHand: 1, courtCheap: 1, greatCheap: 25 }, gold: -1,
+      ability: 'Купленная карта двора сразу идёт в руку — её можно сыграть в тот же ход. Великие лорды вам на 25🪙 дешевле.',
+      mods: { courtToHand: 1, greatCheap: 25 }, gold: -1,
       deck: ['collector', 'scribe', 'lionroar'], estates: ['throneroom'], heir: 'heir_lion', courtier: 'steward',
     },
   };
@@ -1897,7 +1904,7 @@ const DATA = (() => {
   ban('l', 'trade', 'heir_deer', 'Леди Элинор', 'наследница Дома Оленя', 25, { vasCheap: 1 }, 'Вассалы вам на 1🪙 дешевле.', { heir: 'deer' });
   ban('l', 'sci', 'heir_owl', 'Аделард', 'наследник Дома Совы', 25, { hand: 1, startGold: 1 }, '+1 карта в руку. +1🪙 в начале хода.', { heir: 'owl' });
   ban('l', 'war', 'heir_wolf', 'Сэр Ульрик', 'наследник Дома Волка', 25, { siege: 2, siegeWinGold: 2, redBonus: 1 }, 'Каждое ваше нападение +2⚔️, победа в нападении +2🪙. 🟥 Набеги забирают +1🪙.', { heir: 'wolf' });
-  ban('l', 'war', 'heir_serpent', 'Дуглас', 'наследник Дома Змея', 25, { redBonus: 1, redIncome: 1 }, '🟥 Набеги забирают +1🪙. В начале хода +1🪙 за каждый ваш Набег.', { heir: 'serpent' });
+  ban('l', 'war', 'heir_serpent', 'Дуглас', 'наследник Дома Змея', 25, { redBonus: 1 }, '🟥 Набеги забирают +1🪙.', { heir: 'serpent' });
   ban('l', 'faith', 'heir_bear', 'Уна', 'наследница Дома Медведя', 25, { blueBonus: 1 }, '🟦 Земли приносят +1🪙.', { heir: 'bear' });
   ban('l', 'trade', 'heir_lion', 'Леонора', 'наследница Дома Льва', 25, { startGold: 2 }, '+2🪙 в начале хода.', { heir: 'lion' });
 
@@ -1934,11 +1941,11 @@ const DATA = (() => {
     shade: { name: 'Тихая Тень', icon: '🌑', dir: 'int', truce: false,
       mods: { buyToll: 1 }, mods2: { symIncome_int: 1 }, mods3: { spy: 2, stealBonus: 1 },
       text: 'Соперник купил что-то на рынке — вам +1🪙.', text2: 'В начале хода +1🪙 за каждые 2🔗.', text3: 'Каждый ваш шпионаж +2🔗, кража на 1🪙 больше.',
-      rite: { name: 'Шёпот', cost: { gold: 1 }, fx: [['draw', 1], ['gold', 1]] }, oath: 'hire_war', oathText: 'Нельзя нанимать вассалов и лордов Войны ⚔️.' },
+      rite: { name: 'Шёпот', cost: { gold: 1 }, fx: [['levy', 1]] }, oath: 'hire_war', oathText: 'Нельзя нанимать вассалов и лордов Войны ⚔️.' },
     cathedral: { name: 'Собор Единого', icon: '⛪', dir: null,
       mods: { startGold: 2 }, mods2: { symIncome_faith: 1 }, mods3: { lordCheap: 2 },
       text: '+2🪙 в начале хода.', text2: 'В начале хода +1🪙 за каждые 2🕯.', text3: 'Лорды вам на 2🪙 дешевле.',
-      rite: { name: 'Месса', cost: { gold: 2 }, fx: [['gold', 4]] }, oath: 'tithe', oathText: 'Десятина: в начале хода 1🪙 — в банк.' },
+      rite: { name: 'Месса', cost: { gold: 1 }, fx: [['regDiscount', 4]] }, oath: 'tithe', oathText: 'Десятина: в начале хода 1🪙 — в банк.' },
     harvest: { name: 'Праздник Урожая', icon: '🌻', dir: null,
       mods: { greenBonus: 1 }, mods2: { craftIncome: 1 }, mods3: { landOwn: 1 },
       text: '🟩 Ремёсла приносят +1🪙.', text2: 'В начале хода +1🪙 за каждые 2 ваших 🟩 Ремесла.', text3: '🟦 Земли приносят +1🪙 в ваш ходе.',
@@ -2074,6 +2081,7 @@ const DATA = (() => {
     estate: { wall: 'sieges', cliffkeep: 'sieges', secretoffice: 'spy', plaguehouse: 'sieges', banditpost: 'sieges', mint: 'sieges|spy', citadel: 'sieges|spy', customs: 'sieges|spy', granary: 'sieges|spy', merchants: 'sieges|spy', fortress: 'sieges|spy', chancery: 'sieges|spy', thieves: 'sieges|spy', robberkeep: 'sieges|spy', embassy: 'sieges|spy' },
   };
   for (const id in BAN) if (BAN[id].needs) NEEDS.ban[id] = BAN[id].needs;
+  Object.assign(NEEDS.court, { courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats' });
   // убранные карты — убрать и из списка зависимостей
   { const SRC = { court: COURT, estate: ESTATES, ban: BAN, house: HOUSES }; for (const k in SRC) for (const id in NEEDS[k] || {}) if (!SRC[k][id]) delete NEEDS[k][id]; }
   // имя знамени для журнала и подсказок: «Томас Хейл, смотритель дорог»
@@ -2143,7 +2151,7 @@ if (typeof module !== 'undefined') module.exports = DATA;
   const MOD_CARDS = ['sets', ...(D.MODULE_PICK || D.MODULE_KEYS)]; // лорды — в основе, «Баланс» убран
   const PROV = { N: 'Север', S: 'Юг', E: 'Восток', W: 'Запад' };
   // плотные карты: мелкий текст эффектов ужат, чтобы влезло с запасом 3% (считает cards/fit.js)
-  const FIT = {"e:citadel":10.99,"e:customs":0.87,"e:granary":0.89,"e:merchants":0.87,"e:fortress":0.92,"e:chancery":11,"e:thieves":0.89,"e:embassy":0.89,"e:plaguehouse":0.92,"e:banditpost":11,"c:sappers":10.99,"c:foragers":11,"c:siegeband":10.99,"c:pickpocket":0.89,"c:whisper":11,"c:blackmailer":10.94,"c:ram":10.99,"c:catapult":10.94,"c:interceptor":0.88,"c:recruiter":10.95,"c:pr_harvest":0.93,"c:boarding":0.98,"h:deer":11,"h:owl":10.87,"h:wolf":0.84,"h:serpent":10.87,"h:bear":11,"h:lion":10.82,"b:martin":11,"b:leopold":0.9,"b:anselm":0.91,"b:albin":0.9,"b:morwen":11,"b:robert":11,"b:bertrand":0.9,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:irmina":10.92,"b:aurelius":11,"b:warden":11,"b:heir_owl":0.9,"b:heir_wolf":10.85,"b:heir_serpent":0.88,"b:heir_bear":0.85,"b:matilda":10.91,"b:cassia":10.92,"b:aldo":0.91,"b:edward":10.93,"b:wilhelm":11,"b:oberon":10.95,"f:grain":10.83,"f:seer":10.9,"f:flame":10.91,"f:shade":10.84,"f:cathedral":11,"f:harvest":10.92,"p:N":10.95,"p:S":10.9,"p:E":10.94,"p:W":0.89,"m:sets":0.89,"m:faith":0.84,"m:conflict":0.84,"m:court":0.84};
+  const FIT = {"e:citadel":10.99,"e:customs":0.87,"e:granary":0.89,"e:merchants":0.87,"e:fortress":0.92,"e:chancery":11,"e:thieves":0.89,"e:embassy":0.89,"e:plaguehouse":0.92,"e:banditpost":11,"c:sappers":10.99,"c:foragers":11,"c:siegeband":10.99,"c:pickpocket":0.89,"c:whisper":11,"c:blackmailer":10.94,"c:ram":10.99,"c:catapult":10.94,"c:trebuchet":0.98,"c:interceptor":0.88,"c:recruiter":10.95,"c:agitator":0.94,"c:torchman":10.99,"c:pr_harvest":0.93,"c:dreamer":0.99,"c:astrologer":0.99,"c:chronicler":10.96,"c:boarding":0.98,"h:deer":11,"h:owl":10.87,"h:wolf":0.84,"h:serpent":10.87,"h:bear":11,"h:lion":10.93,"b:martin":11,"b:leopold":0.9,"b:anselm":0.91,"b:albin":0.9,"b:morwen":11,"b:robert":11,"b:bertrand":0.9,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:irmina":10.92,"b:aurelius":11,"b:warden":11,"b:heir_owl":0.9,"b:heir_wolf":10.85,"b:heir_serpent":0.9,"b:heir_bear":0.85,"b:matilda":10.91,"b:cassia":10.92,"b:aldo":0.91,"b:edward":10.93,"b:wilhelm":11,"b:oberon":10.95,"f:grain":10.83,"f:seer":10.9,"f:flame":10.91,"f:shade":10.84,"f:cathedral":10.9,"f:harvest":10.92,"p:N":10.95,"p:S":10.9,"p:E":10.94,"p:W":0.89,"m:sets":0.89,"m:faith":0.84,"m:conflict":0.84,"m:court":0.84};
   // FIT[key]: k — ужать текст эффектов; k + 10 — плотная карта: рисунок ниже, текст ужат на k
   const fitK = (key) => { const v = FIT[key]; return v ? (v >= 10 ? +(v - 10).toFixed(2) : v) : 0; };
   const fit = (key) => (fitK(key) ? ` style="--k:${fitK(key)}"` : '');
@@ -2843,7 +2851,7 @@ img.ic { width: 1.15em; height: 1.15em; vertical-align: -0.2em; margin: 0; }
       rules = [
         'Шпиона подсылает только карта с пометкой «Шпионаж».',
         `<b>Атака:</b> ваши 🔗 + число на карте + 🎲. <b>Оборона:</b> его 🔗 + 🧱 Стены + 🎲 (у каждого от замка 🧱${R.baseWalls}). Больше — успех, поровну — шпиона поймали.`,
-        'Что делает шпион — написано на карте: украсть золото, забрать карту из сброса, вымогать владение, переманить вассала.',
+        'Что делает шпион — написано на карте: украсть золото, забрать или сжечь карты из сброса, вымогать владение, переманить вассала, отвлечь лорда, поднять смуту (содержание дороже).',
         '<b>Беды</b> (Долговая расписка, Слух) покупают на рынке и подсовывают: это шпион +1 против 🔗 и 🧱 соперника. Удача — беда уходит в его сброс.',
         'Избавиться от беды: подсуньте её дальше тем же способом или уберите Отставкой.',
         on && !on('faith') ? '' : 'С «Верой»: у единоверцев шпионить нельзя, если их вера держит перемирие.',
@@ -3636,9 +3644,9 @@ const Engine = (() => {
       effect = 'steal'; param = 2;
     }
     if (effect === 'riot') {
-      if (t.greats.length) {
+      if (upkeepList(t).length) {
         t.upkeepExtra = (t.upkeepExtra || 0) + param;
-        log(S, `   Смута: в следующий ход ${nm(t)} заплатят за содержание великих лордов на ${param}🪙 больше`, a.i, 'steal');
+        log(S, `   Смута: в следующий ход ${nm(t)} заплатят за содержание на ${param}🪙 больше`, a.i, 'steal');
         done({ riot: param }); return;
       }
       effect = 'steal';
@@ -5226,7 +5234,7 @@ const Engine = (() => {
         case 'burn': return t.discard.length ? Math.min(n, t.discard.length) * 1.1 * k : steal(2);
         case 'poach': { const ok = a.vassals.length < needOf(S, 'v') && t.vassals.some(id => D.BAN[id].cost <= a.gold); return ok ? 8 * k + 4 : steal(3); }
         case 'distract': return t.lords.length ? 4 * k : steal(2);
-        case 'riot': return t.greats.length ? n * k * 1.4 : steal(n);
+        case 'riot': return upkeepList(t).length ? n * k * 1.4 : steal(n);
       }
       return steal(n || 2);
     },
