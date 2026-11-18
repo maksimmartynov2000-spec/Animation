@@ -829,6 +829,13 @@ html, body { overflow-x: clip; }
 /* крупная карта в листе подробностей */
 .ex-pc { display: grid; grid-template-columns: minmax(0, 330px); justify-content: center; margin-bottom: 4px; }
 .ex-pc .pcw.big { cursor: default; }
+/* листать открытую карту: стрелки по бокам и счётчик */
+.ex-pc.navable { position: relative; }
+.cnav { position: absolute; top: 50%; z-index: 2; width: 42px; height: 42px; margin-top: -21px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .3); background: rgba(24, 20, 16, .74); color: #fff; font: 600 28px/1 var(--font-body); display: grid; place-items: center; padding: 0 0 3px; cursor: pointer; box-shadow: 0 2px 8px rgba(0, 0, 0, .3); -webkit-tap-highlight-color: transparent; }
+.cnav.prev { left: 0; }
+.cnav.next { right: 0; }
+.cnav:active { transform: scale(.93); }
+.cnav-n { text-align: center; color: var(--muted); font-size: 13px; margin: 0 0 8px; }
 
 /* ===================== широкий экран: iPad ===================== */
 @media (min-width: 700px) {
@@ -6740,6 +6747,11 @@ if (typeof module !== 'undefined') module.exports = Music;
   function closeAllSheets() { sheetRoot.innerHTML = ''; }
   document.addEventListener('toggle', (e) => { if (e.target.matches && e.target.matches('details.mods')) modsOpen = e.target.open; }, true);
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      const top = [...sheetRoot.children].filter(x => !x.classList.contains('out')).pop();
+      if (top && top.navGo) { e.preventDefault(); top.navGo(e.key === 'ArrowRight' ? 1 : -1); }
+      return;
+    }
     if (e.key !== 'Escape') return;
     const sh = [...sheetRoot.children].filter(x => !x.classList.contains('out')).pop();
     if (sh) { if (sh.dismissible) sh.close(); return; }
@@ -7872,20 +7884,73 @@ if (typeof module !== 'undefined') module.exports = Music;
     if (!st) rows.push(['Когда', 'После броска, вместо покупки на рынке: это ваше действие хода.']);
     return rows;
   }
-  function infoEstate(id, o) {
-    const d = D.ESTATES[id], T = D.ETYPE[d.t];
-    openSheet({ title: `${T.mark} ${esc(d.name)}`, body: `<div class="ex-pc">${pcard('estate', id, { big: true })}</div>${exHtml(estateRows(id, subj(o)))}` });
+  // лист подробностей карты: d — данные карты на столе (act, id / key, kind, o — чей стол, st — состояние знамени)
+  function infoParts(d) {
+    if (d.act === 'info-estate') { const x = D.ESTATES[d.id]; if (!x) return null; const T = D.ETYPE[x.t]; return { title: `${T.mark} ${esc(x.name)}`, body: `<div class="ex-pc">${pcard('estate', d.id, { big: true })}</div>${exHtml(estateRows(d.id, subj(d.o)))}` }; }
+    if (d.act === 'info-court') { const c = D.COURT[d.id]; if (!c) return null; return { title: esc(c.name), body: `<div class="ex-pc">${pcard('court', d.id, { big: true })}</div>${exHtml(courtRows(d.id, subj(d.o)))}` }; }
+    if (d.act === 'info-ban') {
+      const q = subj(d.o), b = D.BAN[d.key];
+      if (!b) return null;
+      const mine = !b.heir || (q && q.house === b.heir); // чужого Наследника вы не наймёте — цену не считаем
+      return { title: esc(b.name), body: `<div class="ex-pc">${pcard('ban', d.key, { big: true })}</div>${offNote(b.mods)}${exHtml(banRows(d.key, mine ? q : null, d.st || ''))}` };
+    }
+    if (d.act === 'zoom') { const m = d.kind === 'house' ? D.HOUSES[d.id].mods : d.kind === 'faith' ? D.FAITHS[d.id].mods : null; return { title: esc(pcName(d.kind, d.id)), body: `<div class="ex-pc">${pcard(d.kind, d.id, { big: true })}</div>${m ? offNote(m) : ''}` }; }
+    return null;
   }
-  function infoCourt(id, o) {
-    const c = D.COURT[id];
-    openSheet({ title: esc(c.name), body: `<div class="ex-pc">${pcard('court', id, { big: true })}</div>${exHtml(courtRows(id, subj(o)))}` });
+  // ---------- листать открытую карту влево-вправо: соседние карты того же экрана, в том порядке, как они лежат; по кругу ----------
+  const NAV_ACTS = ['info-estate', 'info-court', 'info-ban', 'zoom'];
+  const cardData = (el) => ({ act: el.dataset.act, id: el.dataset.id, key: el.dataset.key, kind: el.dataset.kind, o: el.dataset.o, st: el.dataset.st });
+  const navKey = (d) => [d.act, d.id || '', d.key || '', d.kind || '', d.o || '', d.st || ''].join('|');
+  function navFrom(el) {
+    if (!el.classList.contains('pcw')) return null; // открыли не с карты (значок веры, плашка) — листать нечего
+    const scope = el.closest('.catbody') || el.closest('.oppbody') || (el.closest('.scrim, .page') ? null : app);
+    if (!scope) return null;
+    const seen = new Set(), list = [];
+    for (const x of scope.querySelectorAll('.pcw[data-act]')) {
+      if (!NAV_ACTS.includes(x.dataset.act) || !x.offsetParent) continue;
+      const d = cardData(x), k = navKey(d);
+      if (!seen.has(k)) { seen.add(k); list.push(d); }
+    }
+    const i = list.findIndex(d => navKey(d) === navKey(cardData(el)));
+    return list.length > 1 && i >= 0 ? { list, i } : null;
   }
-  function infoBan(key, o, st) {
-    const q = subj(o), b = D.BAN[key];
-    if (!b) return;
-    const mine = !b.heir || (q && q.house === b.heir); // чужого Наследника вы не наймёте — цену не считаем
-    openSheet({ title: esc(b.name), body: `<div class="ex-pc">${pcard('ban', key, { big: true })}</div>${offNote(b.mods)}${exHtml(banRows(key, mine ? q : null, st || ''))}` });
+  function showInfo(d, nav) {
+    const parts = infoParts(d);
+    if (!parts) return;
+    const sh = openSheet(parts);
+    if (!nav) return;
+    const sheet = sh.el.querySelector('.sheet');
+    const decorate = (dir) => {
+      const ex = sheet.querySelector('.sbody .ex-pc'); if (!ex) return;
+      ex.classList.add('navable');
+      ex.insertAdjacentHTML('afterbegin', '<button class="cnav prev" data-nav="-1" aria-label="Предыдущая карта">‹</button>');
+      ex.insertAdjacentHTML('beforeend', '<button class="cnav next" data-nav="1" aria-label="Следующая карта">›</button>');
+      ex.insertAdjacentHTML('afterend', `<p class="cnav-n">${nav.i + 1} из ${nav.list.length} · листайте влево-вправо</p>`);
+      const card = ex.querySelector('.pcw');
+      if (dir && card && !reduceMotion()) card.style.animation = `${dir > 0 ? 'viewFwd' : 'viewBack'} .22s ease`;
+    };
+    const go = (k) => {
+      nav.i = (nav.i + k + nav.list.length) % nav.list.length;
+      const p2 = infoParts(nav.list[nav.i]); if (!p2) return;
+      sheet.querySelector('h2').innerHTML = p2.title;
+      sheet.querySelector('.sbody').innerHTML = p2.body;
+      decorate(k); sheet.scrollTop = 0;
+    };
+    decorate(0);
+    sheet.addEventListener('click', (e) => { const b = e.target.closest('[data-nav]'); if (b) { e.stopPropagation(); go(+b.dataset.nav); } });
+    // свайп: горизонтальное движение пальцем по листу
+    let x0 = null, y0 = 0, t0 = 0;
+    sheet.addEventListener('touchstart', (e) => { if (e.touches.length !== 1) { x0 = null; return; } x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; t0 = Date.now(); }, { passive: true });
+    sheet.addEventListener('touchend', (e) => {
+      if (x0 == null) return;
+      const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4 && Date.now() - t0 < 900) go(dx < 0 ? 1 : -1);
+    }, { passive: true });
+    sh.el.navGo = go;
   }
+  function infoEstate(id, o) { showInfo({ act: 'info-estate', id, o }); }
+  function infoCourt(id, o) { showInfo({ act: 'info-court', id, o }); }
+  function infoBan(key, o, st) { showInfo({ act: 'info-ban', key, o, st }); }
   // Дом, сезон, титул, провинция: просто крупно — прочитать мелкий текст
   function showPile(p, w) {
     const list = w === 'deck' ? p.deck : w === 'discard' ? p.discard : (p.trashed || []);
@@ -7901,10 +7966,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     const dsNote = (canDS ? '<p class="note">Раз в ход одну карту с блоком «При дворе» можно посадить ко двору прямо из сброса.</p>' : '') + (canF ? '<p class="note">Святой Аврелий: раз в ход одну карту из сброса можно взять в руку.</p>' : '');
     openSheet({ title, body: `<p class="muted">${note}</p>${dsNote}${ids.length ? `<div class="pgrid">${ids.map(id => pslot(pcard('court', id), `<span class="pmeta">×${n[id]}</span>${dsBtn(id)}`)).join('')}</div>` : '<p class="muted">Пусто.</p>'}` });
   }
-  function infoZoom(kind, id) {
-    const m = kind === 'house' ? D.HOUSES[id].mods : kind === 'faith' ? D.FAITHS[id].mods : null;
-    openSheet({ title: esc(pcName(kind, id)), body: `<div class="ex-pc">${pcard(kind, id, { big: true })}</div>${m ? offNote(m) : ''}` });
-  }
+  function infoZoom(kind, id) { showInfo({ act: 'zoom', kind, id }); }
   function infoOpp(i) {
     const q = S.players[i];
     const pr = E.prod(S, q);
@@ -8676,10 +8738,10 @@ if (typeof module !== 'undefined') module.exports = Music;
       case 'log': if (S) showLog(); break;
       case 'tab': tab = el.dataset.tab; schedule(); break;
       case 'opp': infoOpp(+el.dataset.i); break;
-      case 'info-estate': if (infoOk(el)) infoEstate(el.dataset.id, el.dataset.o); break;
-      case 'info-court': if (infoOk(el)) { if (e.target.closest('button')) break; infoCourt(el.dataset.id, el.dataset.o); } break;
-      case 'info-ban': if (infoOk(el)) { if (e.target.closest('button')) break; infoBan(el.dataset.key, el.dataset.o, el.dataset.st); } break;
-      case 'zoom': if (infoOk(el)) infoZoom(el.dataset.kind, el.dataset.id); break;
+      case 'info-estate': if (infoOk(el)) showInfo(cardData(el), navFrom(el)); break;
+      case 'info-court': if (infoOk(el)) { if (e.target.closest('button')) break; showInfo(cardData(el), navFrom(el)); } break;
+      case 'info-ban': if (infoOk(el)) { if (e.target.closest('button')) break; showInfo(cardData(el), navFrom(el)); } break;
+      case 'zoom': if (infoOk(el)) showInfo(cardData(el), navFrom(el)); break;
       case 'speed': cycleSpeed(); break;
       case 'pause': paused = !paused; schedule(); break;
       case 'results': showResults(); break;
