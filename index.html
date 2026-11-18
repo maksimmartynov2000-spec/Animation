@@ -1043,6 +1043,9 @@ body.face .opp.facing { transform: rotate(180deg); }
 .rites { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
 .rites .btn { white-space: normal; text-align: left; }
 
+.catsub { margin: 4px 0 8px; }
+.catsub .chip { padding: 4px 8px; font-size: 13px; }
+
 </style>
 </head>
 <body>
@@ -1752,6 +1755,11 @@ const DATA = (() => {
     // bad — что делает карта, пока лежит в руке у владельца (см. badText)
     debt: { name: 'Долговая расписка', role: null, cost: 1, bad: 'debt', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: −2🪙 в начале хода.' },
     rumor: { name: 'Дурной слух', role: null, cost: 1, bad: 'rumor', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: рынок вам на 1🪙 дороже.' },
+    impostor: { name: 'Самозванец', role: null, cost: 1, bad: 'impostor', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: ваша свита не срабатывает.' },
+    letter: { name: 'Подмётное письмо', role: null, cost: 1, bad: 'letter', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: ваши нападения и шпионы слабее на 2.' },
+    usurer: { name: 'Ростовщик у ворот', role: null, cost: 2, bad: 'usurer', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: знамёна вам на 2🪙 дороже.' },
+    schemer: { name: 'Заговор', role: null, cost: 3, bad: 'schemer', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: нанимать знамёна нельзя.' },
+    cursedrelic: { name: 'Проклятая реликвия', role: null, cost: 2, bad: 'relic', fx: [['plant', 1]], copies: 1, badText: 'Пока в руке: ступени, обряд и жрецы вашей веры не действуют.' },
 
     // ---------- Жрецы (направление «Вера»): свечи 🕯 до конца хода, подаяния, очищение колоды ----------
     reliquary: { name: 'Реликварий', role: 'priest', cost: 4, fx: [['goldPerSym', 'faith', 1, 99]], plot: 'timed', pfx: [['goldPerSym', 'faith', 2, 99]] },
@@ -2078,7 +2086,7 @@ const DATA = (() => {
     estate: { wall: 'sieges', cliffkeep: 'sieges', secretoffice: 'spy', plaguehouse: 'sieges', banditpost: 'sieges', mint: 'sieges|spy', citadel: 'sieges|spy', customs: 'sieges|spy', granary: 'sieges|spy', merchants: 'sieges|spy', fortress: 'sieges|spy', chancery: 'sieges|spy', thieves: 'sieges|spy', robberkeep: 'sieges|spy', embassy: 'sieges|spy' },
   };
   for (const id in BAN) if (BAN[id].needs) NEEDS.ban[id] = BAN[id].needs;
-  Object.assign(NEEDS.court, { courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats' });
+  Object.assign(NEEDS.court, { impostor: 'spy', letter: 'spy', usurer: 'spy', schemer: 'spy', cursedrelic: 'spy&faith', courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats' });
   // убранные карты — убрать и из списка зависимостей
   { const SRC = { court: COURT, estate: ESTATES, ban: BAN, house: HOUSES }; for (const k in SRC) for (const id in NEEDS[k] || {}) if (!SRC[k][id]) delete NEEDS[k][id]; }
   // имя знамени для журнала и подсказок: «Томас Хейл, смотритель дорог»
@@ -2148,7 +2156,7 @@ if (typeof module !== 'undefined') module.exports = DATA;
   const MOD_CARDS = ['sets', ...(D.MODULE_PICK || D.MODULE_KEYS)]; // лорды — в основе, «Баланс» убран
   const PROV = { N: 'Север', S: 'Юг', E: 'Восток', W: 'Запад' };
   // плотные карты: мелкий текст эффектов ужат, чтобы влезло с запасом 3% (считает cards/fit.js)
-  const FIT = {"e:citadel":10.99,"e:customs":0.87,"e:granary":0.89,"e:merchants":0.87,"e:fortress":0.92,"e:chancery":11,"e:thieves":0.89,"e:embassy":0.89,"e:plaguehouse":0.92,"e:banditpost":11,"c:sappers":10.99,"c:foragers":11,"c:siegeband":10.99,"c:pickpocket":0.89,"c:whisper":11,"c:blackmailer":10.94,"c:ram":10.92,"c:catapult":10.94,"c:trebuchet":0.98,"c:interceptor":0.88,"c:recruiter":10.95,"c:agitator":0.94,"c:torchman":10.99,"c:pr_harvest":0.93,"c:dreamer":0.99,"c:astrologer":0.99,"c:chronicler":10.96,"c:boarding":0.98,"h:deer":11,"h:owl":10.87,"h:wolf":0.84,"h:serpent":10.87,"h:bear":11,"h:lion":10.93,"b:martin":11,"b:leopold":0.9,"b:anselm":0.91,"b:albin":0.9,"b:morwen":11,"b:robert":11,"b:bertrand":0.9,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:irmina":10.92,"b:aurelius":11,"b:warden":11,"b:heir_owl":0.9,"b:heir_wolf":10.85,"b:heir_serpent":0.9,"b:heir_bear":0.85,"b:matilda":10.91,"b:cassia":10.92,"b:aldo":0.91,"b:edward":10.93,"b:wilhelm":11,"b:oberon":10.95,"f:grain":10.83,"f:seer":10.83,"f:flame":10.91,"f:shade":10.84,"f:cathedral":10.9,"f:harvest":10.9,"p:N":10.95,"p:S":10.9,"p:E":10.94,"p:W":0.89,"m:sets":0.89,"m:faith":0.84,"m:conflict":0.84,"m:court":0.84};
+  const FIT = {"e:citadel":10.99,"e:customs":0.87,"e:granary":0.89,"e:merchants":0.87,"e:fortress":0.92,"e:chancery":11,"e:thieves":0.89,"e:embassy":0.89,"e:plaguehouse":0.92,"e:banditpost":11,"c:sappers":10.99,"c:foragers":11,"c:siegeband":10.99,"c:pickpocket":0.89,"c:whisper":11,"c:blackmailer":10.94,"c:ram":10.92,"c:catapult":10.94,"c:trebuchet":0.98,"c:interceptor":0.88,"c:recruiter":10.95,"c:agitator":0.94,"c:torchman":10.99,"c:pr_harvest":0.93,"c:dreamer":0.99,"c:astrologer":0.99,"c:chronicler":10.96,"c:boarding":0.98,"h:deer":11,"h:owl":10.87,"h:wolf":0.84,"h:serpent":10.87,"h:bear":11,"h:lion":10.93,"b:martin":11,"b:leopold":0.9,"b:anselm":0.91,"b:albin":0.9,"b:morwen":11,"b:robert":11,"b:bertrand":0.9,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:irmina":10.92,"b:aurelius":11,"b:warden":11,"b:heir_owl":0.9,"b:heir_wolf":10.85,"b:heir_serpent":0.9,"b:heir_bear":0.85,"b:matilda":10.91,"b:cassia":10.92,"b:aldo":0.91,"b:edward":10.93,"b:wilhelm":11,"b:oberon":10.95,"f:grain":10.83,"f:seer":10.83,"f:flame":10.91,"f:shade":10.84,"f:cathedral":10.9,"f:harvest":10.9,"p:N":10.95,"p:S":10.9,"p:E":10.94,"p:W":0.89,"m:sets":0.89,"m:faith":0.94,"m:conflict":0.84,"m:court":0.84};
   // FIT[key]: k — ужать текст эффектов; k + 10 — плотная карта: рисунок ниже, текст ужат на k
   const fitK = (key) => { const v = FIT[key]; return v ? (v >= 10 ? +(v - 10).toFixed(2) : v) : 0; };
   const fit = (key) => (fitK(key) ? ` style="--k:${fitK(key)}"` : '');
@@ -4194,7 +4202,7 @@ const Engine = (() => {
     if (!b) return { total: Infinity, ok: false };
     const m = mods(S, p);
     const disc = Math.min(R.discCap[b.tier] || 0, Math.max(0, sym(S, p, b.dir)));
-    let tax = 0;
+    let tax = isCursed(p, 'usurer') ? 2 : 0; // беда «Ростовщик у ворот» в руке: знамёна дороже на 2🪙
     for (const x of allBans(p)) { const t = D.BAN[x].tax; if (t && t[b.tier]) tax += t[b.tier]; }
     const cheap = (m.regCheap || 0) + (b.tier === 'v' ? (m.vasCheap || 0) : b.tier === 'l' ? (m.lordCheap || 0) : (m.greatCheap || 0)) + (p.turn ? p.turn.regDiscount : 0);
     const base = R.costScale ? Math.round(b.cost * (R.costScale[b.tier] || 1)) : b.cost; // costScale — только для подбора цен в лаборатории
@@ -4205,6 +4213,7 @@ const Engine = (() => {
   function hireBlock(S, p, id) {
     const b = D.BAN[id];
     if (!b || !cardOn(S, 'ban', id)) return 'Это знамя в этой партии выключено';
+    if (isCursed(p, 'schemer')) return 'Заговор: пока он у вас в руке, нанимать знамёна нельзя';
     const inRow = b.heir ? p.heir === id : rowOf(S, b.tier).includes(id);
     if (!inRow) return b.heir ? 'Наследник уже на службе' : 'Этого знамени нет в ряду';
     if (tierList(p, b.tier).length >= needOf(S, b.tier)) return `У вас уже ${needOf(S, b.tier)} — больше не нужно`;
@@ -7941,6 +7950,29 @@ if (typeof module !== 'undefined') module.exports = Music;
   // «Все карты»: весь набор, как в печати. Фильтр по модулям — как набор партии: основа + отмеченные модули.
   // catSel: null — весь набор (карты выключенных в партии модулей помечены), Set — показать только такой набор
   let catSel = null;
+  // фильтры внутри вкладок: тип владения, роль карты двора, уровень знамени и направление (значок)
+  const catSub = { estates: 'all', court: 'all', bans: 'all' };
+  let catDir = 'all';
+  const estKind = (id) => { const t = D.ESTATES[id].t; return ['land', 'craft', 'raid', 'hold'].includes(t) ? t : 'other'; };
+  const SUBS = {
+    estates: [['all', 'Все'], ['land', '🟦 Земли'], ['craft', '🟩 Ремёсла'], ['raid', '🟥 Набеги'], ['hold', '🟪 Твердыни'], ['other', 'Стены и беды']],
+    court: [['all', 'Все'], ['merchant', '⚖️ Купцы'], ['scholar', '📜 Учёные'], ['knight', '⚔️ Рыцари'], ['spy', '🔗 Шпионы'], ['priest', '🕯 Жрецы'], ['bad', '☠ Беды']],
+    bans: [['all', 'Все'], ['v', 'Вассалы'], ['l', 'Лорды'], ['g', 'Великие лорды']],
+  };
+  const DIRS5 = [['all', 'Любое'], ['trade', '⚖️'], ['sci', '📜'], ['war', '⚔️'], ['int', '🔗'], ['faith', '🕯']];
+  const subRow = (w) => {
+    if (!SUBS[w]) return '';
+    const c = (attr, label, on) => `<button class="chip${on ? ' on' : ''}" ${attr}>${label}</button>`;
+    const row1 = `<div class="chips catsub">${SUBS[w].map(([k, l]) => c(`data-sub="${k}"`, l, catSub[w] === k)).join('')}</div>`;
+    const row2 = w === 'court' ? '' : `<div class="chips catsub"><span class="muted" style="font-size:13px;align-self:center">Значок:</span>${DIRS5.map(([k, l]) => c(`data-dir="${k}"`, l, catDir === k)).join('')}</div>`;
+    return row1 + row2;
+  };
+  const subOk = (kind, id) => {
+    if (kind === 'estate') { const d = D.ESTATES[id]; return (catSub.estates === 'all' || estKind(id) === catSub.estates) && (catDir === 'all' || d.sym === catDir); }
+    if (kind === 'court') { const c = D.COURT[id], f = catSub.court; return f === 'all' || (f === 'bad' ? !!c.bad : !c.bad && !c.start && c.role === f); }
+    if (kind === 'ban') { const b = D.BAN[id]; return (catSub.bans === 'all' || b.tier === catSub.bans) && (catDir === 'all' || b.dir === catDir); }
+    return true;
+  };
   function showCatalog(which = 'estates') {
     const segs = [['estates', 'Владения'], ['court', 'Двор'], ['houses', 'Дома'], ['bans', 'Знамёна'], ['table', 'Стол']];
     const where = S ? 'в этой партии' : 'в выбранном наборе';
@@ -7968,16 +8000,16 @@ if (typeof module !== 'undefined') module.exports = Music;
     const empty = '<p class="muted">В этом наборе таких карт нет.</p>';
     const famOf = (x) => [x.deck[x.deck.length - 1], x.courtier, x.courtier2].filter(Boolean);
     const L = {
-      estates: () => Object.keys(D.ESTATES).filter(id => !D.ESTATES[id].house && show('estate', id)).sort((a, b) => (D.ESTATES[a].n[0] || 99) - (D.ESTATES[b].n[0] || 99)),
+      estates: () => Object.keys(D.ESTATES).filter(id => !D.ESTATES[id].house && show('estate', id) && subOk('estate', id)).sort((a, b) => (D.ESTATES[a].n[0] || 99) - (D.ESTATES[b].n[0] || 99)),
       court: () => {
         const order = { null: 0, merchant: 1, scholar: 2, knight: 3, spy: 4, priest: 5 };
-        const ids = Object.keys(D.COURT).filter(id => !D.COURT[id].sig && !D.COURT[id].start && show('court', id));
+        const ids = Object.keys(D.COURT).filter(id => !D.COURT[id].sig && !D.COURT[id].start && show('court', id) && subOk('court', id));
         ids.sort((a, b) => (D.COURT[a].bad ? 9 : order[D.COURT[a].role]) - (D.COURT[b].bad ? 9 : order[D.COURT[b].role]) || D.COURT[a].cost - D.COURT[b].cost);
-        return [...Object.keys(D.COURT).filter(id => D.COURT[id].start), ...ids];
+        return [...Object.keys(D.COURT).filter(id => D.COURT[id].start && catSub.court === 'all'), ...ids];
       },
       houses: () => Object.keys(D.HOUSES).filter(h => show('house', h)),
       houseCards: (h) => { const x = D.HOUSES[h]; return [['house', h], ...x.estates.filter(id => D.ESTATES[id].house).map(id => ['estate', id]), ...famOf(x).map(id => ['court', id]), ['ban', x.heir]].filter(([k, id]) => show(k, id)); },
-      bans: (t) => Object.keys(D.BAN).filter(id => D.BAN[id].tier === t && !D.BAN[id].heir && show('ban', id)).sort((a, b) => SYMS5.indexOf(D.BAN[a].dir) - SYMS5.indexOf(D.BAN[b].dir) || D.BAN[a].cost - D.BAN[b].cost),
+      bans: (t) => Object.keys(D.BAN).filter(id => D.BAN[id].tier === t && !D.BAN[id].heir && show('ban', id) && subOk('ban', id)).sort((a, b) => SYMS5.indexOf(D.BAN[a].dir) - SYMS5.indexOf(D.BAN[b].dir) || D.BAN[a].cost - D.BAN[b].cost),
       table: () => [...Object.keys(D.FAITHS).map(f => ['faith', f]), ...Object.keys(D.PROV).map(k => ['prov', k]), ...((D.MODULES.balance || {}).hidden ? [] : ['envy', 'support']).map(r => ['rule', r]), ...PCards.MOD_CARDS.map(m => ['module', m])].filter(([k, id]) => show(k, id)),
     };
     const count = () => L.estates().length + L.court().length + ['v', 'l', 'g'].reduce((a, t) => a + L.bans(t).length, 0) + L.houses().reduce((a, h) => a + L.houseCards(h).length, 0) + L.table().length + 1;
@@ -7992,7 +8024,8 @@ if (typeof module !== 'undefined') module.exports = Music;
         : `Набор: основа${catSel.size ? ' + ' + MODK.filter(k => catSel.has(k)).map(k => D.MODULES[k].short || D.MODULES[k].name).join(', ') : ''} — ${count()} из ${TOTAL} карт. Отметьте модули, чтобы добавить их карты.`;
       return `<div class="modf"><div class="chips">${presets}</div><div class="chips">${mods}</div></div><p class="note">${note}</p>`;
     };
-    const content = (w) => {
+    const content = (w) => subRow(w) + contentInner(w);
+    const contentInner = (w) => {
       if (w === 'estates') {
         const ids = L.estates();
         return `<p class="note">Пашня, Пекарня и Каменная стена — всегда в продаже, пока есть в запасе (${R.basicStock.field}, ${R.basicStock.bakery} и ${R.basicStock.wall} карт на всех). Остальные владения — по 3 копии в колоде (плохие — по 2), в ряду рынка ${R.estateRow}. Твердыни — отдельным рядом из ${R.holdRow}; копий каждой — по числу игроков. Стартовые владения Домов — во вкладке «Дома».</p>${sec('Владения', cnt(ids.length))}${ids.length ? grid(ids.map(id => slot('estate', id))) : empty}`;
@@ -8029,6 +8062,9 @@ if (typeof module !== 'undefined') module.exports = Music;
     const redraw = () => { pg.el.querySelector('.cathead').innerHTML = head(); pg.el.querySelector('.catbody').innerHTML = content(which); };
     pg.el.addEventListener('click', (e) => {
       const f = e.target.closest('[data-cf]'), m = e.target.closest('[data-cm]'), b = e.target.closest('[data-seg]');
+      const sb = e.target.closest('[data-sub]'), dr = e.target.closest('[data-dir]');
+      if (sb) { catSub[which] = sb.dataset.sub; redraw(); return; }
+      if (dr) { catDir = dr.dataset.dir; redraw(); return; }
       if (f) { const v = f.dataset.cf; catSel = v === 'all' ? null : v === 'base' ? new Set() : new Set(MODK.filter(modOn)); redraw(); return; }
       if (m) { const k = m.dataset.cm; catSel = new Set(catSel || []); if (catSel.has(k)) catSel.delete(k); else catSel.add(k); redraw(); return; }
       if (!b) return;
