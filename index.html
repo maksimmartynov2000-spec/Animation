@@ -4419,7 +4419,8 @@ const Engine = (() => {
   async function hire(S, p, id) {
     if (S.winner !== null || S.players[S.cur] !== p) return { ok: false, why: 'Сейчас не ваш ход' };
     if (!p.turn.rolled) return { ok: false, why: 'Сначала бросьте кубики' };
-    const catchupH = !hireFree(S, p) && buysLeft(S, p) <= 0 && (p.turn.catchupHire || 0) > 0 && (!R.catchupTier || D.BAN[id].tier === R.catchupTier); // отстающему — ещё один найм
+    // догоняющий наём отстающему тратится первым: обычное действие остаётся на покупку или другое знамя
+    const catchupH = !hireFree(S, p) && (p.turn.catchupHire || 0) > 0 && !!D.BAN[id] && (!R.catchupTier || D.BAN[id].tier === R.catchupTier);
     if (!hireFree(S, p) && !catchupH && buysLeft(S, p) <= 0) return { ok: false, why: R.splitActions ? 'Знамя в этот ход уже нанято' : 'Действия на этот ход закончились' };
     const why = hireBlock(S, p, id);
     if (why) return { ok: false, why };
@@ -4430,7 +4431,7 @@ const Engine = (() => {
     if (b.heir) p.heir = null;
     else { const row = rowOf(S, b.tier); row.splice(row.indexOf(id), 1); (S.rowHired = S.rowHired || {})[b.tier] = true; refill(S); }
     const what = b.tier === 'v' ? 'вассала' : b.tier === 'l' ? (b.heir ? 'Наследника' : 'лорда') : 'великого лорда';
-    log(S, `🚩 ${nm(p)} наняли ${what} «${D.regName(b)}» за ${c.total}🪙. Знамён: ${regCount(p)} из ${goal(S)}`, p.i, 'regalia');
+    log(S, `🚩 ${nm(p)} наняли ${what} «${D.regName(b)}» за ${c.total}🪙${catchupH ? ' (догоняющий наём, без действия)' : ''}. Знамён: ${regCount(p)} из ${goal(S)}`, p.i, 'regalia');
     if (b.take) { await applyFx(S, p, b.take, {}); log(S, `${nm(p)}: награда «${b.name}» при найме`, p.i, 'gold'); }
     { const rg = mods(S, p).regGold || 0; if (rg) { p.gold += rg; log(S, `   ${nm(p)}: Фаворитка — +${rg}🪙 за новое знамя`, p.i, 'gold'); } }
     for (const o of opps(S, p)) { const v = mods(S, o).oppRegGold || 0; if (v) { o.gold += v; log(S, `   ${nm(o)}: соперник нанял знамя — +${v}🪙`, o.i, 'gold'); } }
