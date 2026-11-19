@@ -1066,6 +1066,9 @@ body.face .opp.facing { transform: rotate(180deg); }
 .rtab .strip > * { flex: 0 0 64px; width: 64px; }
 .rtab .strip .dim { opacity: .38; filter: saturate(.6); }
 .rtabs-t { appearance: none; border: 0; background: none; font: inherit; font-size: 12px; font-weight: 700; color: var(--muted); padding: 4px 0; cursor: pointer; text-align: left; }
+/* v8.1: плавность — браузерную привязку прокрутки выключаем (у нас своя, одинаковая и в Safari), итог броска на время броска приглушён, а не пропадает */
+html, body { overflow-anchor: none; }
+.rollsum.stale { opacity: .55; transition: opacity .2s; }
 
 </style>
 </head>
@@ -7503,7 +7506,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     const el = performance.now() - t;
     if (el > FLIP_MS) return html;
     // при перерисовке анимация продолжается с того же места (отрицательная задержка)
-    return `<div class="pflip" style="--fd:${Math.round(-el)}ms"><div class="pf-in"><div class="pf-face">${html}</div><div class="pf-back"><img src="${backSrc(BACK_OF[kind] || 'court')}" alt=""></div></div></div>`;
+    return `<div class="pflip" data-k="flip:${f.key}:${Math.round(t)}" style="--fd:${Math.round(-el)}ms"><div class="pf-in"><div class="pf-face">${html}</div><div class="pf-back"><img src="${backSrc(BACK_OF[kind] || 'court')}" alt=""></div></div></div>`;
   }
   const pslot = (card, below = '') => `<div class="pslot">${card}${below}</div>`;
   // рубашка колоды с числом карт. Рубашка — картинкой: страница легче, а надпись в таком размере всё равно не читается
@@ -7651,7 +7654,79 @@ if (typeof module !== 'undefined') module.exports = Music;
   // экраны с полями ввода и выпадающими списками перерисовываем, только если что-то изменилось
   function setApp(html) { if (html !== lastAppHtml) { app.innerHTML = html; lastAppHtml = html; } }
   function setBar(html) { if (html !== lastBarHtml) { barEl.innerHTML = html; lastBarHtml = html; } }
-  let gameHtml = { top: '', side: '', panel: '' };
+  let gameHtml = { top: '', side: '', panel: '', bar: '', tabs: '' };
+  // ---------- бережная перерисовка (v8.1) ----------
+  // Экран партии не пересоздаётся целиком: живые узлы правятся по новой разметке (morph). Картинки не мигают,
+  // анимации не начинаются заново, лента карт не сбрасывает прокрутку, нажатие не теряется.
+  const morphTpl = document.createElement('template');
+  const keyOf = (n) => { const d = n.dataset; if (!d) return ''; return d.k || `${d.act || ''}|${d.id || d.key || d.uid || d.i || d.tab || d.kind || d.n || d.s || ''}`; };
+  const sameNode = (a, b) => a.nodeType === b.nodeType && (a.nodeType !== 1 || (a.tagName === b.tagName && keyOf(a) === keyOf(b)));
+  function morphAttrs(a, b) {
+    const keepStyle = a.hasAttribute('data-k') && a.hasAttribute('style'); // идущая анимация: её задержку не трогаем
+    for (let i = a.attributes.length - 1; i >= 0; i--) { const n = a.attributes[i].name; if (!b.hasAttribute(n) && !(keepStyle && n === 'style')) a.removeAttribute(n); }
+    for (let i = 0; i < b.attributes.length; i++) { const { name, value } = b.attributes[i]; if (keepStyle && name === 'style') continue; if (a.getAttribute(name) !== value) a.setAttribute(name, value); }
+    if ((a.tagName === 'BUTTON' || a.tagName === 'INPUT') && a.disabled !== b.hasAttribute('disabled')) a.disabled = b.hasAttribute('disabled');
+  }
+  function morphNode(a, b) {
+    if (a.nodeType !== 1) { if (a.nodeValue !== b.nodeValue) a.nodeValue = b.nodeValue; return; }
+    morphAttrs(a, b);
+    morphKids(a, b);
+  }
+  function morphKids(a, b) {
+    let ac = a.firstChild, bc = b.firstChild;
+    while (bc) {
+      const bn = bc.nextSibling;
+      if (!ac) { a.appendChild(bc); bc = bn; continue; }
+      if (sameNode(ac, bc)) { morphNode(ac, bc); ac = ac.nextSibling; bc = bn; continue; }
+      // карта перевернулась до конца: снять обёртку переворота, саму карту оставить
+      if (ac.nodeType === 1 && ac.classList.contains('pflip') && bc.nodeType === 1) {
+        const face = ac.querySelector(':scope > .pf-in > .pf-face > *');
+        if (face && sameNode(face, bc)) { a.replaceChild(face, ac); morphNode(face, bc); ac = face.nextSibling; bc = bn; continue; }
+      }
+      // узел с ключом мог сдвинуться (карту сыграли из начала руки) — ищем его чуть дальше
+      if (bc.nodeType === 1 && keyOf(bc) !== '|') {
+        let m = ac.nextSibling, found = null;
+        for (let k = 0; m && k < 12; k++, m = m.nextSibling) if (sameNode(m, bc)) { found = m; break; }
+        if (found) { a.insertBefore(found, ac); morphNode(found, bc); bc = bn; continue; }
+      }
+      // перед живым узлом вставили новый (строка в итоге броска, карта в начале ряда) — вставить, живой не трогать
+      if (ac.nodeType === 1 && keyOf(ac) !== '|') {
+        let m = bn, ahead = false;
+        for (let k = 0; m && k < 12; k++, m = m.nextSibling) if (sameNode(ac, m)) { ahead = true; break; }
+        if (ahead) { a.insertBefore(bc, ac); bc = bn; continue; }
+      }
+      const next = ac.nextSibling;
+      a.replaceChild(bc, ac);
+      ac = next; bc = bn;
+    }
+    while (ac) { const n = ac.nextSibling; a.removeChild(ac); ac = n; }
+  }
+  function morphInto(el, html) { morphTpl.innerHTML = html; morphKids(el, morphTpl.content); }
+  // своя привязка прокрутки: в Safari её нет — всё, что выросло или пропало выше, сдвигало бы карты под пальцем.
+  // Перед перерисовкой запоминаем крупные блоки на экране; после — тот, что ближе к середине экрана и уцелел, возвращаем на место
+  const ANC = { picks: 0, fixes: 0, none: 0 };
+  function anchorPick() {
+    ANC.picks++;
+    if (window.scrollY < 2) return null;
+    const vh = window.innerHeight, mid = vh * 0.45, list = [];
+    for (const el of app.querySelectorAll(':scope > .gwrap > .gside > *, :scope > .gwrap > .gmain > .panel > *')) {
+      const r = el.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > vh || !r.height) continue;
+      list.push([el, r.top, Math.abs(Math.max(r.top, Math.min(mid, r.bottom)) - mid)]);
+    }
+    list.sort((x, y) => x[2] - y[2]);
+    return list;
+  }
+  function anchorFix(list) {
+    if (!list) return;
+    for (const [el, t] of list) {
+      if (!el.isConnected) continue;
+      const d = el.getBoundingClientRect().top - t;
+      if (Math.abs(d) >= 1) { window.scrollBy(0, d); ANC.fixes++; }
+      return;
+    }
+    ANC.none++;
+  }
   function render() {
     const v = S ? 'game' : view;
     if (v !== lastView) {
@@ -7659,6 +7734,7 @@ if (typeof module !== 'undefined') module.exports = Music;
       if (lastView !== null && !reduceMotion()) { void app.offsetWidth; app.classList.add(ORD[v] >= ORD[lastView] ? 'enter-fwd' : 'enter-back'); }
       lastView = v;
       prevTab = null;
+      gameHtml = { top: '', side: '', panel: '', bar: '', tabs: '' };
       window.scrollTo(0, 0);
     }
     document.body.dataset.view = v;
@@ -7684,19 +7760,24 @@ if (typeof module !== 'undefined') module.exports = Music;
     // карты (панель вкладки) перерисовываем, только если они изменились: так легче телефону и не сбивается прокрутка
     const top = header(), side = oppsHtml() + tableHtml() + commonHtml() + recHtml() + mineHtml(p) + coachHtml(hint), panel = panelHtml(p);
     const topEl = app.querySelector(':scope > .top'), sideEl = app.querySelector(':scope > .gwrap > .gside'), panelEl = app.querySelector(':scope > .gwrap > .gmain > .panel');
-    if (topEl && sideEl && panelEl && !swapped && panel === gameHtml.panel) {
-      if (top !== gameHtml.top) topEl.outerHTML = top;
-      if (side !== gameHtml.side) sideEl.innerHTML = side;
+    if (topEl && sideEl && panelEl) {
+      const anc = swapped ? null : anchorPick();
+      if (top !== gameHtml.top) { morphTpl.innerHTML = top; const nt = morphTpl.content.firstElementChild; if (nt && nt.tagName === topEl.tagName) morphNode(topEl, nt); else topEl.outerHTML = top; }
+      if (side !== gameHtml.side) morphInto(sideEl, side);
+      if (swapped) { panelEl.classList.remove('swap'); panelEl.innerHTML = panel; if (!reduceMotion()) { void panelEl.offsetWidth; panelEl.classList.add('swap'); } }
+      else if (panel !== gameHtml.panel) morphInto(panelEl, panel);
+      anchorFix(anc);
     } else app.innerHTML = top + `<div class="gwrap"><div class="gside">${side}</div><div class="gmain"><div class="panel${swapped ? ' swap' : ''}" role="tabpanel">${panel}</div></div></div>`;
-    gameHtml = { top, side, panel };
     const fc = hint && hint.focus ? hint.focus : '';
     app.dataset.focus = fc;
     barEl.dataset.focus = fc;
     tabEl.dataset.focus = fc;
-    barEl.innerHTML = `<div class="in">${barHtml(p)}</div>`;
+    const bar = `<div class="in">${barHtml(p)}</div>`, tabs = tabbarHtml(p);
+    if (bar !== gameHtml.bar || !barEl.firstChild) morphInto(barEl, bar);
     barEl.hidden = false;
-    tabEl.innerHTML = tabbarHtml(p);
+    if (tabs !== gameHtml.tabs || !tabEl.firstChild) morphInto(tabEl, tabs);
     tabEl.hidden = false;
+    gameHtml = { top, side, panel, bar, tabs };
     if (prevTab !== tab) { const first = prevTab === null; prevTab = tab; if (!first) bringPanel(); }
   }
   // ---------- одно устройство на несколько человек: экран «передайте устройство» ----------
@@ -7802,7 +7883,7 @@ if (typeof module !== 'undefined') module.exports = Music;
       who = `<b>${pname(S.players[dv.p])} ${dv.final ? 'выбросили' : 'бросают…'}</b><span class="tot">${rolling ? '…' : tot}</span>${rolling ? '' : how}`;
     }
     const feed = nextReq ? '' : `<ul class="feed" data-act="log">${S.log.slice(-3).map(l => `<li class="${l.p === ME ? 'me' : ''}">${esc(l.t.trim())}</li>`).join('')}</ul>`;
-    return `<div class="table"><div class="dice">${dice}</div><div class="who">${who}</div></div>${rolling ? '' : rollHtml(rollView)}${feed}`;
+    return `<div class="table"><div class="dice">${dice}</div><div class="who">${who}</div></div>${rollHtml(rollView, rolling)}${feed}`;
   }
   // ---------- итог броска: кто что получил ----------
   const NOFIRE = { craft: 'Ремесло платит только в свой ход', raid: 'Набег не срабатывает в свой ход', hold: 'Твердыня платит только в свой ход', bad: 'беда срабатывает только в ход того, у кого лежит' };
@@ -7831,7 +7912,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     return q.estates.filter(e => { const d = D.ESTATES[e.id]; return d.n.includes(rv.r) && !fired.has(e.uid) && ((d.t === 'craft' && !own && !m.craftAny) || (d.t === 'raid' && own && !m.redOwn) || (d.t === 'hold' && !own) || (d.t === 'bad' && d.bad === 'quarantine' && !own)); })
       .map(e => { const d = D.ESTATES[e.id]; return `${esc(d.name)} — ${NOFIRE[d.t].toLowerCase()}`; });
   }
-  function rollHtml(rv) {
+  function rollHtml(rv, stale) {
     if (!rv || !S.players[rv.a]) return '';
     const N = S.players.length;
     let order = Array.from({ length: N }, (_, k) => S.players[(rv.a + k) % N]);
@@ -7847,7 +7928,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     const head = `<div class="rh2">Итог броска ${rv.r}</div>`;
     const any = order.some(q => rollParts(rv, q).any);
     const body = any ? rows.join('') : `<div class="rr none">Ни одно владение не принесло золота</div>`;
-    return `<div class="rollsum">${head}${body}${miss.length ? `<div class="rmiss">Промолчали ваши: ${miss.join('; ')}</div>` : ''}${rollTables(rv, order)}</div>`;
+    return `<div class="rollsum${stale ? ' stale' : ''}">${head}${body}${miss.length ? `<div class="rmiss">Промолчали ваши: ${miss.join('; ')}</div>` : ''}${rollTables(rv, order)}</div>`;
   }
   // столы всех игроков на этом броске: сработавшее — первым и с суммой, остальное приглушено. Свернуть можно (запоминается)
   let stripsOpen = (() => { try { return localStorage.getItem('vd-strips') !== '0'; } catch (e) { return true; } })();
@@ -7934,7 +8015,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     if (!pp || !pp.d) return '';
     const el = performance.now() - pp.t;
     if (el > 2600) return '';
-    return `<span class="${cls} ${pp.d < 0 ? 'neg' : ''}" style="animation-delay:-${Math.round(el)}ms">${pp.d > 0 ? '+' : '−'}${Math.abs(pp.d)}</span>`;
+    return `<span class="${cls} ${pp.d < 0 ? 'neg' : ''}" data-k="pop:${i}:${Math.round(pp.t)}:${pp.d}" style="animation-delay:-${Math.round(el)}ms">${pp.d > 0 ? '+' : '−'}${Math.abs(pp.d)}</span>`;
   }
   function mineHtml(p) {
     const pr = E.prod(S, p);
@@ -9587,7 +9668,7 @@ if (typeof module !== 'undefined') module.exports = Music;
   try { window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(() => ({ save: S && S.winner === null ? lastSafe : null, ME, WATCH })); } catch (e) { /* нет хука */ }
   const hot = window.claude && window.claude.hot;
   if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
-  window.__VD = { get S() { return S; }, get ME() { return ME; }, startGame, isMyTurn, get adjust() { return adjustReq; }, get waitNext() { return !!nextReq; }, get view() { return S ? 'game' : view; }, ask: (q) => askHuman(S.players[ME], q),
+  window.__VD = { anc: ANC, get S() { return S; }, get ME() { return ME; }, startGame, isMyTurn, get adjust() { return adjustReq; }, get waitNext() { return !!nextReq; }, get view() { return S ? 'game' : view; }, ask: (q) => askHuman(S.players[ME], q),
     get cover() { return coverReq ? { p: coverReq.p, why: coverReq.why } : null; }, get busy() { return busy; },
     get net() { return NETG ? { role: NETG.role, code: NETG.code, started: !!NETG.started, n: NETG.n, joined: !!NETG.joined, online: NETG.room ? NETG.room.online : 0, pending: !!NETG.pending, turn: NETG.role === 'host' ? (NETG.turn ? NETG.turn.pi : null) : (NETG.w ? NETG.w.turn : null), asks: NETG.role === 'host' ? NETG.asks.size : NETG.asksOpen.size, status: NETG.status || '' } : null; } };
 })();
