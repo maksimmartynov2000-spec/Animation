@@ -1073,6 +1073,10 @@ html, body { overflow-anchor: none; }
 .atkwarn { margin: 4px 0 0; font-size: 12.5px; line-height: 1.3; color: var(--gules); font-weight: 600; }
 .opt.bad b { opacity: .75; }
 .note.warn { border-left: 3px solid var(--gules); background: color-mix(in srgb, var(--gules) 9%, var(--surface)); }
+/* v8.3: доход в начале хода на «Столе»; плашки итога броска нажимаются */
+.pcb.dawn { top: -8px; left: -6px; background: #b07d14; color: #fff; }
+.pcb.dawn.lo { top: auto; bottom: 22%; left: -6px; }
+.rd .c[data-act] { cursor: pointer; text-decoration: underline dotted; text-underline-offset: 2px; }
 
 </style>
 </head>
@@ -3270,7 +3274,7 @@ const Engine = (() => {
   // ---------- создание партии ----------
   function newGame(opts) {
     const S = {
-      v: 2, seed: opts.seed != null ? opts.seed : (Math.random() * 2 ** 31) | 0, uid: 1, round: 1, cur: 0, first: 0,
+      v: 2, seed: opts.seed != null ? opts.seed : (Math.random() * 2 ** 31) | 0, gid: Math.random().toString(36).slice(2, 10), uid: 1, round: 1, cur: 0, first: 0,
       log: [], winner: null, lastRoll: null, players: [], turnNo: 0, extraTaken: false, unionFirst: {}, destroyed: [],
     };
     // opts.modules: массив включённых модулей или объект {модуль: true/false}; нет — включено всё
@@ -6574,6 +6578,7 @@ if (typeof module !== 'undefined') module.exports = Music;
   let sound = true;       // звуки стола
   let music = true;       // музыка: тема Дома на время хода, мотивы событий
   let manualCoins = true; // монеты с карт забирают руками
+  let autoTable = true;   // во время своего броска открыть вкладку «Стол»: что сработало и откуда доход
   let shakeRoll = false;  // бросать кубик встряхиванием устройства
   let lastN = 1;          // сколько кубиков бросали прошлый раз
   let handOpen = false;   // «лицом к лицу»: рука открыта, пока игрок сам не скроет
@@ -6662,12 +6667,12 @@ if (typeof module !== 'undefined') module.exports = Music;
 
   // ---------- настройки ----------
   function loadPrefs() {
-    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) { if (!x.v3) { /* настройки v1: «Полная» → «Полная», остальное → «Базовая» */ setup.mods = (x.mods.includes('foreign') && x.mods.includes('sieges') ? D.PRESETS.full : D.PRESETS.basic).modules.slice(); } else setup.mods = x.mods.flatMap(k => D.modMembers(k)).filter(k => D.MODULE_KEYS.includes(k) && !(D.MODULES[k] || {}).hidden || ['lords', 'sieges', 'spy', 'plots', 'seats'].includes(k)); } if (x.pause === false) pauseBots = false; if (E.SKILL_NAMES && E.SKILL_NAMES[x.skill]) setup.skill = x.skill; if (['system', 'light', 'dark', 'table'].includes(x.theme) && x.tbl) theme = x.theme; if (x.sound === false) sound = false; if (x.music === false) music = false; if (x.coins === false) manualCoins = false; if (x.seating === 'face') setup.seating = 'face'; } } catch (e) { /* хранилище недоступно */ }
+    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) { if (!x.v3) { /* настройки v1: «Полная» → «Полная», остальное → «Базовая» */ setup.mods = (x.mods.includes('foreign') && x.mods.includes('sieges') ? D.PRESETS.full : D.PRESETS.basic).modules.slice(); } else setup.mods = x.mods.flatMap(k => D.modMembers(k)).filter(k => D.MODULE_KEYS.includes(k) && !(D.MODULES[k] || {}).hidden || ['lords', 'sieges', 'spy', 'plots', 'seats'].includes(k)); } if (x.pause === false) pauseBots = false; if (E.SKILL_NAMES && E.SKILL_NAMES[x.skill]) setup.skill = x.skill; if (['system', 'light', 'dark', 'table'].includes(x.theme) && x.tbl) theme = x.theme; if (x.sound === false) sound = false; if (x.music === false) music = false; if (x.coins === false) manualCoins = false; if (x.autoTable === false) autoTable = false; if (x.seating === 'face') setup.seating = 'face'; } } catch (e) { /* хранилище недоступно */ }
     fixSetup();
     // сохранение старой версии правил (v1) с новым движком несовместимо — забываем его
     try { const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (g && g.S) { const x = JSON.parse(g.S); if (x.v === 2 && saveFits(x)) savedGame = g; else localStorage.removeItem(SAVE_KEY); } } catch (e) { try { localStorage.removeItem(SAVE_KEY); } catch (e2) { /* нет доступа */ } }
   }
-  function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ v2: 1, v3: 1, house: setup.house, opps: setup.seats.length, seats: setup.seats, speed, mods: setup.mods, skill: setup.skill, pause: pauseBots, theme, tbl: 1, sound, music, coins: manualCoins, seating: setup.seating })); } catch (e) { /* ignore */ } }
+  function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ v2: 1, v3: 1, house: setup.house, opps: setup.seats.length, seats: setup.seats, speed, mods: setup.mods, skill: setup.skill, pause: pauseBots, theme, tbl: 1, sound, music, coins: manualCoins, autoTable, seating: setup.seating })); } catch (e) { /* ignore */ } }
   function saveSafe() {
     if (!S || guest()) return; // гость партию не хранит — она у хозяина
     lastSafe = JSON.stringify(S);
@@ -6806,6 +6811,7 @@ if (typeof module !== 'undefined') module.exports = Music;
         if (!d.final && !d.adj) { const key = `${S.round}:${d.p}`; if (throwKey !== key) { throwKey = key; startThrow(d.n || d.vals.length, oppEl(d.p), null); } }
         diceView = d;
         if (d.final) rollView = { a: d.p, r: d.total, vals: d.vals, n: d.n, adj: d.adj || 0, ev: [], plots: [] };
+        if (d.final && autoTable && ME !== null && d.p === ME && !WATCH && tab !== 'lands') tab = 'lands'; // свой бросок — сразу на «Стол»: что сработало, откуда доход
         if (!d.final && !rolling) { rolling = true; setTimeout(() => { rolling = false; schedule(); }, 520); }
         break;
       case 'income': {
@@ -7537,7 +7543,8 @@ if (typeof module !== 'undefined') module.exports = Music;
   function trackFlips() {
     if (!S || reduceMotion()) { seenTable = null; flips.clear(); freshHand.clear(); return; }
     const now = performance.now();
-    const gid = `${S.seed}|${S.players.length}`;
+    if (!S.gid) S.gid = 'g' + Math.random().toString(36).slice(2, 10); // партия из старого сохранения
+    const gid = `${S.gid}|${S.players.length}`; // не S.seed: это состояние генератора — менялось на каждом броске, и рука «переворачивалась»
     const len = (a) => (a ? a.length : 0);
     const snap = () => ({ gid, est: S.estateRow.slice(), court: S.courtRow.slice(), v: (S.vRow || []).slice(), l: (S.lRow || []).slice(), g: (S.gRow || []).slice(), hand: S.players.map(q => q.hand.slice()),
       dE: len(S.estateDeck), dC: len(S.courtDeck), dv: len(S.vDeck), dl: len(S.lDeck), dg: len(S.gDeck) });
@@ -7766,11 +7773,12 @@ if (typeof module !== 'undefined') module.exports = Music;
   // своя привязка прокрутки: в Safari её нет — всё, что выросло или пропало выше, сдвигало бы карты под пальцем.
   // Перед перерисовкой запоминаем крупные блоки на экране; после — тот, что ближе к середине экрана и уцелел, возвращаем на место
   const ANC = { picks: 0, fixes: 0, none: 0 };
-  function anchorPick() {
+  function anchorPick(sideOnly) {
     ANC.picks++;
     if (window.scrollY < 2) return null;
     const vh = window.innerHeight, mid = vh * 0.45, list = [];
-    for (const el of app.querySelectorAll(':scope > .gwrap > .gside > *, :scope > .gwrap > .gmain > .panel > *')) {
+    // при смене вкладки панель меняется целиком — держим на месте только верхнюю часть (сводки, итог броска)
+    for (const el of app.querySelectorAll(sideOnly ? ':scope > .gwrap > .gside > *' : ':scope > .gwrap > .gside > *, :scope > .gwrap > .gmain > .panel > *')) {
       const r = el.getBoundingClientRect();
       if (r.bottom < 0 || r.top > vh || !r.height) continue;
       list.push([el, r.top, Math.abs(Math.max(r.top, Math.min(mid, r.bottom)) - mid)]);
@@ -7822,7 +7830,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     const top = header(), side = oppsHtml() + tableHtml() + commonHtml() + recHtml() + mineHtml(p) + coachHtml(hint), panel = panelHtml(p);
     const topEl = app.querySelector(':scope > .top'), sideEl = app.querySelector(':scope > .gwrap > .gside'), panelEl = app.querySelector(':scope > .gwrap > .gmain > .panel');
     if (topEl && sideEl && panelEl) {
-      const anc = swapped ? null : anchorPick();
+      const anc = anchorPick(swapped);
       if (top !== gameHtml.top) { morphTpl.innerHTML = top; const nt = morphTpl.content.firstElementChild; if (nt && nt.tagName === topEl.tagName) morphNode(topEl, nt); else topEl.outerHTML = top; }
       if (side !== gameHtml.side) morphInto(sideEl, side);
       if (swapped) { panelEl.classList.remove('swap'); panelEl.innerHTML = panel; if (!reduceMotion()) { void panelEl.offsetWidth; panelEl.classList.add('swap'); } }
@@ -7958,9 +7966,10 @@ if (typeof module !== 'undefined') module.exports = Music;
     // одинаковые срабатывания (два Постоялого двора одного соперника) — одной плашкой «×2»
     const grp = (list, key) => { const m = new Map(); for (const x of list) { const k = key(x); const g = m.get(k); if (g) { g.amt += x.amt; g.n++; } else m.set(k, { ...x, n: 1 }); } return [...m.values()]; };
     const xn = (x) => (x.n > 1 ? ` ×${x.n}` : '');
-    for (const x of grp(gain, x => `${x.src}|${x.from}`)) chips.push(`<span class="c g">+${x.amt} ${esc(x.src)}${xn(x)}${x.from != null ? ` <i>у ${esc(x.from === ME ? 'вас' : E.shortG(S.players[x.from]))}</i>` : ''}</span>`);
+    const tap = (x, owner) => (x.id && D.ESTATES[x.id] ? ` data-act="info-estate" data-id="${x.id}" data-o="${owner}" role="button" tabindex="0"` : '');
+    for (const x of grp(gain, x => `${x.src}|${x.from}`)) chips.push(`<span class="c g"${tap(x, x.to)}>+${x.amt} ${esc(x.src)}${xn(x)}${x.from != null ? ` <i>у ${esc(x.from === ME ? 'вас' : E.shortG(S.players[x.from]))}</i>` : ''}</span>`);
     for (const x of plots) chips.push(`<span class="c g">+${x.gold} замысел «${esc(D.COURT[x.id].name)}»</span>`);
-    for (const x of grp(loss, x => `${x.src}|${x.to}`)) chips.push(`<span class="c l">−${x.amt} ${esc(x.src)}${xn(x)} <i>${x.to == null ? 'в банк' : esc(x.to === ME ? '→ вам' : E.shortG(S.players[x.to]))}</i></span>`);
+    for (const x of grp(loss, x => `${x.src}|${x.to}`)) chips.push(`<span class="c l"${tap(x, x.t === 'bad' ? x.from : x.to != null ? x.to : x.from)}>−${x.amt} ${esc(x.src)}${xn(x)} <i>${x.to == null ? 'в банк' : esc(x.to === ME ? '→ вам' : E.shortG(S.players[x.to]))}</i></span>`);
     for (const x of zero) chips.push(x.blight ? `<span class="c z">${esc(x.src)}: Неурожай — без дохода</span>` : `<span class="c z">${esc(x.src)}: у ${esc(x.from === ME ? 'вас' : E.shortG(S.players[x.from]))} нет золота</span>`);
     for (const x of badz) chips.push(`<span class="c l">⬛ ${esc(x.src)}${x.block === 'hire' ? ': в этот ход без найма' : x.blight ? ': Земли и Ремёсла молчат' : ': золота нет'}</span>`);
     const net = gain.reduce((a, x) => a + x.amt, 0) + plots.reduce((a, x) => a + x.gold, 0) - loss.reduce((a, x) => a + x.amt, 0);
@@ -8274,15 +8283,24 @@ if (typeof module !== 'undefined') module.exports = Music;
       const my = isMyTurn() && !WATCH && p.i === ME;
       out += `<div class="sec-h"><h3>⬛ Беды</h3><span>избавиться — действие и ${R.purgeCost || 2}🪙</span></div><div class="pgrid">${bads.map(e => { const why = my ? E.purgeBlock(S, p, e) : null; return pslot(pcard('estate', e.id, { badge: '<span class="pcb tag">⬛ беда</span>' }), my ? `<button class="btn small ${why ? '' : 'primary'}" data-act="purge" data-uid="${e.uid}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : `Избавиться · ${R.purgeCost || 2}🪙`}</button>` : ''); }).join('')}</div><p class="muted" style="margin:0;font-size:13px">Беда замешивается обратно в колоду владений — из игры она не уходит.</p>`;
     }
-    // всё, что работает постоянно: Дом, знамёна, вера, придворные — по нажатию карта крупно
+    // всё, что работает постоянно: Дом, знамёна, вера, придворные — по нажатию карта крупно.
+    // 🌅 — сколько карта даёт в начале вашего хода (её вклад в «доход в начале хода»)
     const bans = E.allBans(p);
-    out += `<div class="sec-h"><h3>Дом и знамёна</h3><span>${E.regCount(p)}/${E.goal(S)} · свойства действуют всегда</span></div><div class="pgrid">${pcard('house', p.house)}${bans.map(id => banSlot(p, id, 'built')).join('')}</div>`;
+    const base = E.dawnGold(S, p, {}).g;
+    const dawnOf = (mods) => (mods ? Math.max(0, E.dawnGold(S, p, mods).g - base) : 0);
+    const dawnB = (v) => (v > 0 ? `<span class="pcb dawn">🌅 +${v}🪙</span>` : '');
+    const dg = E.dawnGold(S, p, E.mods(S, p)), up = E.upkeepOf(p);
+    out += `<div class="sec-h"><h3>Дом и знамёна</h3><span>${E.regCount(p)}/${E.goal(S)} · свойства действуют всегда</span></div>`;
+    if (dg.g || up) out += `<p class="note">🌅 В начале вашего хода: ${dg.g ? `+${dg.g}🪙 (${esc(dg.src.join(', '))})` : 'дохода нет'}${up ? `; содержание −${up}🪙` : ''}. Значок 🌅 на карте — сколько из этого даёт она.</p>`;
+    const dist = p.distracted && p.distracted.id;
+    out += `<div class="pgrid">${pcard('house', p.house, { badge: dawnB(dawnOf(D.HOUSES[p.house].mods)) })}${bans.map(id => pcard('ban', id, { cls: 'built', badge: dist === id ? '<span class="pcb tag">отвлечён</span>' : dawnB(dawnOf(D.BAN[id].mods)) })).join('')}</div>`;
     if (!bans.length) out += `<p class="muted" style="margin:0;font-size:13px">Знамён пока нет — нанять можно на вкладке «Знамёна».</p>`;
     if (modOn('faith') && (p.faiths || []).length) {
       const st = E.faithStage(S, p);
-      out += `<div class="sec-h"><h3>🕯 Вера</h3><span>ступень ${['I', 'II', 'III'][st - 1]} · 🕯${E.faithCandles(S, p)}</span></div><div class="pgrid">${p.faiths.map(f => pcard('faith', f, { cls: 'built', badge: `<span class="pcb own">🕯 ${['I', 'II', 'III'][st - 1]}</span>` })).join('')}</div>`;
+      const fm = (f) => { const F = D.FAITHS[f], o = {}; for (const x of [F.mods, st >= 2 ? F.mods2 : null, st >= 3 ? F.mods3 : null]) for (const k in x || {}) o[k] = (o[k] || 0) + x[k]; return o; };
+      out += `<div class="sec-h"><h3>🕯 Вера</h3><span>ступень ${['I', 'II', 'III'][st - 1]} · 🕯${E.faithCandles(S, p)}</span></div><div class="pgrid">${p.faiths.map(f => pcard('faith', f, { cls: 'built', badge: `<span class="pcb own">🕯 ${['I', 'II', 'III'][st - 1]}</span>${dawnB(dawnOf(fm(f))).replace('pcb dawn', 'pcb dawn lo')}` })).join('')}</div>`;
     }
-    if (modOn('seats') && (p.seats || []).length) out += `<div class="sec-h"><h3>🪑 При дворе</h3><span>${p.seats.length}/${E.seatMax(S, p)}</span></div><div class="pgrid mini">${p.seats.map(id => pcard('court', id, { seatOn: true })).join('')}</div>`;
+    if (modOn('seats') && (p.seats || []).length) out += `<div class="sec-h"><h3>🪑 При дворе</h3><span>${p.seats.length}/${E.seatMax(S, p)}</span></div><div class="pgrid mini">${p.seats.map(id => pcard('court', id, { seatOn: true, badge: dawnB(dawnOf((D.COURT[id].seat || {}).mods)) })).join('')}</div>`;
     const m = E.mods(S, p);
     const sg = modOn('sieges'), sp = modOn('spy');
     if (sg || sp) out += `<div class="sec-h"><h3>Оборона</h3><span>${sg && sp ? 'против нападений и шпионов' : sg ? 'против нападений' : 'против шпионов'}</span></div><dl class="kv">${sg ? `<dt>Против захвата и разрушения</dt><dd>⚔️ ${E.prod(S, p).war} + 🧱 ${E.walls(S, p)}${(m.defense || 0) + (m.shield || 0) ? ` + ${(m.defense || 0) + (m.shield || 0)} (свойства)` : ''} + кубик${m.captureImmune ? '. Ваши владения нельзя захватить и разрушить' : ''}</dd>` : ''}${sp ? `<dt>Против шпиона</dt><dd>🔗 ${E.prod(S, p).int} + 🧱 ${E.walls(S, p)}${(m.shield || 0) ? ` + ${m.shield} (свойства)` : ''} + кубик</dd>` : ''}${modOn('faith') && (p.faiths || []).length ? `<dt>Перемирие единоверцев</dt><dd>${S.players.filter(q => q !== p && E.truce(S, p, q)).map(q => esc(H(q).short)).join(', ') || 'нет'} — не нападают на вас, и вы на них</dd>` : ''}</dl>`;
@@ -8926,6 +8944,7 @@ if (typeof module !== 'undefined') module.exports = Music;
       <h2 class="lbl">Оформление</h2>${seg('theme', theme, [['table', 'Стол'], ['system', 'Как в системе'], ['light', 'Светлое'], ['dark', 'Тёмное']])}
       <h2 class="lbl">Как за столом</h2>
       <div class="group">${sw('coins', manualCoins, 'Ручные действия', manualCoins ? 'монеты, добор карт и обновление рынка — касанием, как за столом' : 'всё делается само')}
+      ${sw('table', autoTable, 'Бросок — на «Стол»', autoTable ? 'во время своего броска открывается вкладка «Стол»: что сработало и откуда доход' : 'вкладка не меняется')}
       ${sw('sound', sound, 'Звуки стола', 'кубик, монеты, карты')}
       ${sw('music', music, 'Музыка', 'тема каждого Дома в его ход, мотивы вассалов, лордов, сезонов, титулов, осад и шпионов')}
       ${sw('shake', shakeRoll, 'Бросать встряхиванием', 'потрясите телефон или планшет, чтобы бросить кубик')}</div>
@@ -8950,6 +8969,7 @@ if (typeof module !== 'undefined') module.exports = Music;
       const k = b.dataset.set, v = b.dataset.v;
       if (k === 'theme') { theme = v; applyTheme(); }
       else if (k === 'coins') { manualCoins = !manualCoins; if (!manualCoins) for (const c of myCoins()) takeCoin(c.k, true); }
+      else if (k === 'table') autoTable = !autoTable;
       else if (k === 'music') { music = !music; Music.set(music); if (music && S && S.winner === null) { Music.unlock(); Music.house(S.players[S.cur].house); } }
       else if (k === 'sound') { sound = !sound; Sfx.set(sound); if (sound) { Sfx.unlock(); Sfx.coin(); } }
       else if (k === 'shake') {
@@ -9737,7 +9757,7 @@ if (typeof module !== 'undefined') module.exports = Music;
   try { window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(() => ({ save: S && S.winner === null ? lastSafe : null, ME, WATCH })); } catch (e) { /* нет хука */ }
   const hot = window.claude && window.claude.hot;
   if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
-  window.__VD = { anc: ANC, get S() { return S; }, get ME() { return ME; }, startGame, isMyTurn, get adjust() { return adjustReq; }, get waitNext() { return !!nextReq; }, get view() { return S ? 'game' : view; }, ask: (q) => askHuman(S.players[ME], q),
+  window.__VD = { anc: ANC, get flips() { return [...flips.entries()].map(([k, t]) => k + '@' + Math.round(performance.now() - t)); }, get fresh() { return [...freshHand]; }, get S() { return S; }, get ME() { return ME; }, startGame, isMyTurn, get adjust() { return adjustReq; }, get waitNext() { return !!nextReq; }, get view() { return S ? 'game' : view; }, ask: (q) => askHuman(S.players[ME], q),
     get cover() { return coverReq ? { p: coverReq.p, why: coverReq.why } : null; }, get busy() { return busy; },
     get net() { return NETG ? { role: NETG.role, code: NETG.code, started: !!NETG.started, n: NETG.n, joined: !!NETG.joined, online: NETG.room ? NETG.room.online : 0, pending: !!NETG.pending, turn: NETG.role === 'host' ? (NETG.turn ? NETG.turn.pi : null) : (NETG.w ? NETG.w.turn : null), asks: NETG.role === 'host' ? NETG.asks.size : NETG.asksOpen.size, status: NETG.status || '' } : null; } };
 })();
