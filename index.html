@@ -1598,7 +1598,7 @@ function ASSET_URL(p) {
   function terms(R, ico, on = ALL) {
     const T = [
       R.retire === false ? null : ['Отставка', 'раз в ход карту из руки — из игры, взамен возьмите новую.'],
-      ['Свита', 'действует, если в этот ход уже сыграна карта той же роли; после двух таких — дважды.'],
+      ['Свита', 'действует, если в этот ход уже сыграна карта той же роли (у Сборщика — «Подать»); после двух других карт той же роли — дважды.'],
       ['Ярмарка', 'покупка без траты действия.'],
       ['Пара', 'есть ещё владение той же провинции — «пара» приносит больше.'],
       on('plots') ? ['Засада', 'замысел на чужом броске забирает золото у того, чей ход; на вашем — из банка.'] : null,
@@ -1769,7 +1769,7 @@ const DATA = (() => {
     herald: { name: 'Вестник', role: null, cost: 1, fx: [['draw', 2], ['gold', 1]], plot: 'dice', pn: [2, 12], pfx: [['draw', 3]] },
 
     // свита Сборщика — Подати: сыграли до него хоть одну «Подать» — +2🪙 за каждую
-    collector: { name: 'Сборщик податей', role: 'merchant', cost: 2, fx: [['gold', 1]], ally: [['perPlayed', 'tax', 2]], allyBy: 'tax', plot: 'timed', pfx: [['gold', 5]] },
+    collector: { name: 'Сборщик податей', role: 'merchant', cost: 2, fx: [['gold', 1]], ally: [['perPlayed', 'tax', 1]], allyBy: 'tax', plot: 'timed', pfx: [['gold', 5]] },
     spicer: { name: 'Торговец пряностями', role: 'merchant', cost: 2, fx: [['gold', 2], ['draw', 1]], ally: [['gold', 2]], plot: 'dice', pn: [4, 7], pfx: [['gold', 6]] },
     guildmaster: { name: 'Старшина гильдии', role: 'merchant', cost: 4, fx: [['buys', 1], ['discount', 2]], ally: [['gold', 2]] },
 
@@ -1846,7 +1846,7 @@ const DATA = (() => {
     wolfpack: { name: 'Волчья стая', role: 'knight', cost: 0, sig: true, fx: [['siege', 2]], plot: 'timed', pfx: [['siege', 4]] },
     boarding: { name: 'Абордаж', role: 'knight', cost: 0, sig: true, fx: [['goldPerRaid', 1], ['gold', 1]], plot: 'timed', pfx: [['gold', 4]] },
     bearhoard: { name: 'Медвежий запас', role: 'merchant', cost: 0, sig: true, fx: [['goldPerLand', 1], ['gold', 1]], ally: [['gold', 2]], plot: 'timed', pfx: [['goldPerLand', 1], ['gold', 2]] },
-    lionroar: { name: 'Львиный рык', role: 'merchant', cost: 0, sig: true, fx: [['draw', 2]], ally: [['gold', 2]] },
+    lionroar: { name: 'Львиный рык', role: 'merchant', cost: 0, sig: true, fx: [['draw', 1]], ally: [['gold', 2]] },
   };
 
   // ---------- Дома ----------
@@ -4065,10 +4065,11 @@ const Engine = (() => {
     const before = c.role ? (p.turn.roles[c.role] || 0) : 0;
     // Самозванец в руке: свита не срабатывает
     const noAlly = isCursed(p, 'impostor');
-    // свита: в этот ход уже сыграна карта той же роли; у Сборщика податей свита — сыгранные до него Подати (allyBy)
+    // свита: в этот ход уже сыграна карта той же роли; у Сборщика податей свиту запускает сыгранная до него «Подать» (allyBy)
+    // «большая» свита (дважды) — у всех одинаково: до карты сыграны две другие карты её роли (у Сборщика — два других Купца)
     const by = c.allyBy ? p.inPlay.slice(0, -1).includes(c.allyBy) : null;
     const ally = !noAlly && (by != null ? (by || !!m.allyAll) : !!(c.role && (before >= 1 || (c.role === 'scholar' && m.allyScholar) || m.allyAll)));
-    const big = !noAlly && by == null && !!(c.role && c.ally && before >= 2);
+    const big = !noAlly && ally && !!(c.role && c.ally && before >= 2) && (by == null || R.allyByDouble !== false);
     if (c.role) p.turn.roles[c.role] = before + 1;
     const g0 = p.gold, h0 = p.hand.length, t0 = { ...p.temp };
     log(S, `${nm(p)} сыграли «${c.name}»${big ? ' с большой свитой' : ally && c.ally ? ' со свитой' : ''}`, p.i, 'play');
@@ -5175,6 +5176,7 @@ const Engine = (() => {
         if (oathPlay(S, p, id)) return;
         let v = pri(id);
         if (c.role && p.turn.roles[c.role] && c.ally) v -= 0.5;
+        if (c.allyBy && R.botAllyByLast !== false) v += 0.9; // Сборщик — после Податей и других Купцов: так его свита сработает, а может и дважды
         if (v < bv) { bv = v; bi = i; }
       });
       return bi;
@@ -8220,7 +8222,12 @@ if (typeof module !== 'undefined') module.exports = Music;
     if (atk) rows.push(['Нападение', atk === 'siege' ? 'Эта карта начинает осаду. Сыграйте её в свой ход — игра спросит, кого осаждаем. Без такой карты осаду не начать.' : 'Эта карта подсылает шпиона. Сыграйте её в свой ход — игра спросит, к кому. Без такой карты шпионить нельзя.', 'hl']);
     const notes = fxNotes(c.fx, q);
     if (notes.length) rows.push(['Подробно', notes.join('<br>')]);
-    if (c.ally && role) {
+    if (c.ally && c.allyBy && D.COURT[c.allyBy]) {
+      // свита по другой карте (Сборщик податей): запускает сыгранная до него «Подать», бонус — за каждую; два других Купца до него — дважды
+      const by = D.COURT[c.allyBy].name, pp = (c.ally.find(o => o[0] === 'perPlayed') || [])[2], base = (c.fx.find(o => o[0] === 'gold') || [])[1] || 0;
+      const two = c.role === 'merchant' ? 'два других Купца' : `две другие карты роли ${role ? role.name : ''}`;
+      rows.push(['Свита', `Если в этот ход до неё уже сыграна «${esc(by)}», эта даст ещё: ${lo1(D.fxText(c.ally))}. Если до неё сыграны ещё и ${two} — свита срабатывает дважды, как у всех.${pp ? ` Например: 3 карты «${esc(by)}», потом «${esc(c.name)}» — ${base ? `${base} + ` : ''}3 × ${pp} = ${base + 3 * pp}🪙; а если перед ним ещё ${two} — ${base ? `${base} + ` : ''}2 × 3 × ${pp} = ${base + 6 * pp}🪙.` : ''}`]);
+    } else if (c.ally && role) {
       const other = Object.keys(D.COURT).find(k => k !== id && D.COURT[k].role === c.role && !D.COURT[k].sig && cardOk('court', k));
       rows.push(['Свита', `Если в этот ход вы уже сыграли другую карту роли ${role.icon} ${role.name}, эта даст ещё: ${lo1(D.fxText(c.ally))}. Если до неё уже две такие — дважды.${other ? ` Например: сначала «${esc(D.COURT[other].name)}», потом «${esc(c.name)}».` : ''}`]);
     }
@@ -8488,9 +8495,10 @@ if (typeof module !== 'undefined') module.exports = Music;
       <li><b>Вассалы</b> помогают зарабатывать. ${on('lords') ? '<b>Лорды</b> дороже и меняют правила лично для вас; каждый даёт ещё место при дворе. Наследник Дома — ваш личный лорд.' : ''}${on('great') ? ' <b>Великие лорды</b> — власть над столом и награда при найме, но содержание каждый ход.' : ''}</li>
       <li>Любой ряд (рынка и знамён), из которого за круг ничего не взяли, в начале нового круга обновляется: крайняя карта уходит под низ колоды.</li>${R.catchupGap ? `
       <li><b>Догоняющий наём.</b> Если в начале круга у лидера ${R.catchupFrom}+ знамён, каждый, у кого знамён меньше, в этом круге может нанять ещё одного вассала — сверх действия.${on('balance') ? ' В этой партии вместо него — Зависть и Поддержка (модуль «Баланс»).' : ''}</li>` : ''}</ul>`;
-    b += `<h3>Карты двора и свита</h3><p>Роли: ⚖️ Купец, 📜 Учёный, ⚔️ Рыцарь, 🔗 Шпион, 🕯 Жрец. <b>Свита</b>: вторая карта той же роли за ход — срабатывает её «Свита». Третья и дальше — «Свита» срабатывает дважды. У карты без блока «Свита» бонуса нет. У Сборщика податей свита — «Подати»: сыграйте до него хоть одну «Подать».</p>`;
-    { const H0 = D.HOUSES.deer, dg = R.startGold + (H0.gold || 0), fs = D.ESTATES[H0.estates[0]], a = dg + 4, c = a + fs.inc;
-      b += `<h3>Пример первого хода</h3><div class="mr-ex"><b>Дом Оленя</b><p>На старте ${dg}🪙. Отставка: убираете «Подать» и берёте новую карту — пришёл Сборщик податей. Играете Подать (+1🪙) и Сборщика податей (+2🪙), потом второго Сборщика — его свита даёт ещё +2🪙: итого ${a}🪙. Бросаете 1 кубик, выпало 4 — ваша ${fs.name}: +${fs.inc}🪙 (${c}). Действие: покупаете владение — Оленям рынок на ${H0.mods.marketDiscount || 0}🪙 дешевле — или копите на первого вассала: родной ⚖️ Оленей даёт скидку на вассалов Торговли.</p></div>`; }
+    b += `<h3>Карты двора и свита</h3><p>Роли: ⚖️ Купец, 📜 Учёный, ⚔️ Рыцарь, 🔗 Шпион, 🕯 Жрец. <b>Свита</b>: вторая карта той же роли за ход — срабатывает её «Свита». Третья и дальше — «Свита» срабатывает дважды. У карты без блока «Свита» бонуса нет. У Сборщика податей свиту запускает «Подать»: сыграйте до него хоть одну; бонус — за каждую «Подать». Если до него сыграны ещё и два других Купца — дважды, как у всех.</p>`;
+    { const H0 = D.HOUSES.deer, dg = R.startGold + (H0.gold || 0), C0 = D.COURT.collector, pp = (C0.ally.find(o => o[0] === 'perPlayed') || [0, 0, 0])[2], cb = (C0.fx.find(o => o[0] === 'gold') || [0, 0])[1];
+      const fid = H0.estates.find(id => D.ESTATES[id].n.includes(4) && D.ESTATES[id].inc) || H0.estates[0], fs = D.ESTATES[fid], a = dg + 2 + cb + 2 * pp, c = a + (fs.inc || 0);
+      b += `<h3>Пример первого хода</h3><div class="mr-ex"><b>Дом Оленя</b><p>На старте ${dg}🪙. В руке две «Подати» и Сборщик податей. Играете обе «Подати» (+2🪙), потом Сборщика: +${cb}🪙 и свита — +${pp}🪙 за каждую «Подать»: итого ${a}🪙. Бросаете 1 кубик, выпало ${fs.n.includes(4) ? 4 : fs.n[0]} — ваша ${fs.name}: +${fs.inc}🪙 (${c}). Действие: покупаете владение — Оленям рынок на ${H0.mods.marketDiscount || 0}🪙 дешевле — или копите на первого вассала: родной ⚖️ Оленей даёт скидку на вассалов Торговли.</p></div>`; }
     b += `<h3>Модули</h3><div class="optlist"><button class="opt" data-mr="__ov"><span class="big">🧩</span><span><b>Как собрать набор</b><br><span class="muted">Готовые наборы, с чего начать, что от чего зависит</span></span><span class="r">›</span></button>${ModRules.ORDER.map(k => `<button class="opt" data-mr="${k}"><span class="big">${D.MODULES[k].icon}</span><span><b>${D.MODULES[k].name}</b><br><span class="muted">${D.MODULES[k].desc}</span></span><span class="r">${on(k) ? '<small>вкл.</small>' : ''}›</span></button>`).join('')}</div>`;
     b += `</div>`;
     const pg = openPage({ title: 'Правила', body: b });
