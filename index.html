@@ -1163,6 +1163,25 @@ body.coins-on #toasts .toast { pointer-events: none; opacity: .9; }
 .pgrid.mini.om { margin-bottom: 10px; }
 .om-s { margin: -4px 0 10px; font-size: 13px; }
 .omx { display: grid; gap: 4px; place-items: center; text-align: center; min-height: 70px; padding: 8px; border-radius: 10px; border: 1px dashed var(--line); font-size: 13px; }
+/* итог последнего броска в шапке: сюда уезжают кубики после показа; нажатие — к «Итогу броска» на столе */
+.rollchip { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 4px; width: 88px; box-sizing: border-box; min-height: 44px; padding: 4px 6px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); cursor: pointer; font: 400 21px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.rollchip:focus-visible { outline: 3px solid var(--azure); outline-offset: 2px; }
+.rollchip .die.mini { width: 20px; height: 20px; padding: 2.5px; border-radius: 5px; border-width: 1px; box-shadow: none; box-sizing: border-box; }
+.rollchip .die.mini i { width: 3.6px; height: 3.6px; }
+.rollchip .die.mini.blank { border-style: dashed; }
+.rollchip b { font-weight: 400; margin-left: 3px; }
+.rollchip b.ghost { visibility: hidden; }
+.rollchip.empty { opacity: .55; }
+.rollchip.pulse { animation: rcpulse .65s ease-out; }
+@keyframes rcpulse { 0% { transform: scale(1.16); box-shadow: 0 0 0 5px rgba(240, 198, 101, .55); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(240, 198, 101, 0); } }
+@media (prefers-reduced-motion: reduce) { .rollchip.pulse { animation: none; } }
+/* кубики уезжают: затемнение и подпись гаснут, кубики летят в итог */
+.dstage::before { transition: opacity .3s ease; }
+.dstage.leave::before { opacity: 0; }
+.dstage.leave .ds-res { animation: dsout .2s ease-in forwards; }
+@keyframes dsout { from { opacity: 1; transform: translateX(-50%) scale(1); } to { opacity: 0; transform: translateX(-50%) scale(.9); } }
+/* узкий телефон: в шапке только кубики, без суммы — чтобы цель партии не обрезалась */
+@media (max-width: 350px) { .top { gap: 6px; } .rollchip { width: 52px; gap: 3px; padding: 4px; } .rollchip b { display: none; } .rollchip .die.mini { width: 18px; height: 18px; padding: 2px; } .rollchip .die.mini i { width: 3.2px; height: 3.2px; } }
 
 </style>
 </head>
@@ -6391,6 +6410,13 @@ const Sfx = (() => {
     g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     s.connect(f); f.connect(g); g.connect(master); s.start(t, Math.random() * 0.3); s.stop(t + dur + 0.02);
   }
+  // глухой стук: синус с падающей высотой — дерево стола под сукном
+  function thump(t, freq, dur, gain) {
+    const c = ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * 0.55, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(gain, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
+  }
   function tone(t, freq, dur, gain, type = 'sine') {
     const c = ctx, o = c.createOscillator(), g = c.createGain();
     o.type = type; o.frequency.setValueAtTime(freq, t);
@@ -6407,6 +6433,22 @@ const Sfx = (() => {
       const hits = [0, 0.16, 0.29, 0.39, 0.47, 0.53, 0.58];
       for (let k = 0; k < n; k++) hits.forEach((h, i) => burst(t0 + h + k * 0.035 + Math.random() * 0.02, 0.05, 1500 + Math.random() * 900, 2.2, 0.5 * Math.pow(0.72, i)));
     },
+    // кубики в руке и в полёте: лёгкое постукивание друг о друга (at — через сколько секунд)
+    shake(n = 1, at = 0) {
+      if (!ac()) return; const t0 = ctx.currentTime + 0.01 + at;
+      const k = n > 1 ? 4 : 2;
+      for (let i = 0; i < k; i++) burst(t0 + i * 0.045 + Math.random() * 0.015, 0.025, 3200 + Math.random() * 1200, 3, 0.1 + Math.random() * 0.05);
+    },
+    // удар кубика о стол: щелчок кости, отзвук и глухой стук дерева; s — сила удара (0…1)
+    hit(s = 1, at = 0) {
+      if (!ac()) return; const t = ctx.currentTime + 0.005 + at;
+      const j = 0.85 + Math.random() * 0.3;
+      burst(t, 0.035, 2300 * j, 3, 0.6 * s);
+      burst(t + 0.003, 0.07, 760 * j, 1.4, 0.32 * s);
+      thump(t, 175 * j, 0.09, 0.26 * s);
+    },
+    // кубик лёг в итог броска: короткий мягкий щелчок
+    tick(at = 0) { if (!ac()) return; const t = ctx.currentTime + 0.01 + at; burst(t, 0.03, 1800, 2, 0.12); thump(t, 320, 0.05, 0.06); },
     // монета: два металлических призвука
     coin(k = 0) {
       if (!ac()) return; const t = ctx.currentTime + 0.01 + k * 0.06;
@@ -6825,6 +6867,7 @@ if (typeof module !== 'undefined') module.exports = Music;
   const pops = {};      // всплывающие +N/−N у золота: игрок → { d, t }
   let rollView = null;  // итог последнего броска: кто бросил, что выпало, кто что получил
   let oppMoments = [];  // доход соперников для «Стола»: начало их хода и последний бросок — какие карты сработали
+  let chipRoll = null, chipPulse = 0; // итог последнего броска в шапке: кубики после показа уезжают сюда
   const turnKey = () => (S ? S.round * 100 + S.cur : 0);
   let turnRec = null;   // что соперник делает в этот ход — для сводки
   let lastRec = null;   // сводка последнего хода соперника, показана до «Дальше»
@@ -7088,11 +7131,13 @@ if (typeof module !== 'undefined') module.exports = Music;
         diceSeq++;
         if (!d.final && !d.adj) {
           const key = `${S.round}:${d.p}`;
-          if (throwKey !== key) { throwKey = key; startThrow(d.n || d.vals.length, oppEl(d.p), null, d); }
-          else if (stg && !stg.waiting) stageUpdate(d); // переброс и прочее: кубики снова в воздухе посреди экрана
+          // новый бросок (в том числе в дополнительном ходе того же игрока): кубики летят заново
+          if (throwKey !== key || !stg || stg.final) { throwKey = key; startThrow(d.n || d.vals.length, oppEl(d.p), null, d); }
+          else if (!stg.waiting) stageUpdate(d); // переброс и прочее: кубики снова в воздухе посреди экрана
         }
         diceView = d;
         if (d.final) {
+          rollPrev = rollView;
           rollView = { a: d.p, r: d.total, vals: d.vals, n: d.n, adj: d.adj || 0, ev: [], plots: [] };
           oppMoments = oppMoments.filter(m => m.kind === 'dawn' && m.tk === turnKey()); // на «Столе» — только этот ход и этот бросок
           stageFinal(d);
@@ -7230,7 +7275,11 @@ if (typeof module !== 'undefined') module.exports = Music;
   const FACE_ROT = { 1: [0, 0], 2: [-90, 0], 3: [0, -90], 4: [0, 90], 5: [90, 0], 6: [0, 180] };
   const D3 = 60; // ребро кубика, px
   const stgK = () => (reduceMotion() ? 0 : speed === 'slow' ? 1.25 : speed === 'fast' ? 0.8 : 1);
-  let stg = null; // сцена: { el, res, dice, p, chain, waiting, hideT, gone, goneRes }
+  let stg = null; // сцена: { el, res, dice, p, chain, waiting, busy, hold, final, hideT, gone, goneRes }
+  let rollPrev = null; // прошлый бросок
+  // что показывать на столе: пока новые кубики в воздухе — прошлый бросок (итог не раскрываем раньше, чем лягут кубики)
+  const rvShown = () => (stg && stg.hold ? rollPrev : rollView);
+  const diceBusy = () => !!(stg && (stg.busy || stg.hold));
   const stageGone = () => (stg ? stg.gone : Promise.resolve());
   const rotOf = (x) => `rotateZ(${x.rz}deg) rotateX(${x.rx}deg) rotateY(${x.ry}deg)`;
   // анимация, которая по окончании оставляет конечное положение в стиле элемента (следующая начнётся с него)
@@ -7240,7 +7289,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     return a.finished.then(() => { const f = frames[frames.length - 1]; if (f.transform) el.style.transform = f.transform; if (f.opacity != null) el.style.opacity = f.opacity; a.cancel(); }).catch(() => {});
   }
   function stgOpen(p) {
-    if (stg && stg.el.isConnected) { clearTimeout(stg.hideT); stg.el.classList.remove('out'); stg.p = p; return stg; }
+    if (stg) stgKill(); // прошлый бросок ещё на экране или уезжает — убрать сразу
     const el = document.createElement('div'); el.className = 'dstage'; el.setAttribute('aria-hidden', 'true');
     el.innerHTML = '<div class="ds-res"></div>';
     document.body.appendChild(el);
@@ -7252,12 +7301,54 @@ if (typeof module !== 'undefined') module.exports = Music;
   function stgClose(delay) {
     const s = stg; if (!s) return;
     clearTimeout(s.hideT);
-    s.hideT = setTimeout(() => {
-      s.el.classList.add('out');
-      setTimeout(() => { s.el.remove(); if (stg === s) stg = null; s.goneRes(); schedule(); }, reduceMotion() ? 0 : 260);
-    }, delay);
+    s.hideT = setTimeout(() => stgLeave(s), delay);
   }
-  function stgKill() { if (!stg) return; const s = stg; stg = null; clearTimeout(s.hideT); s.el.remove(); s.goneRes(); }
+  // куда кладём кубики после показа: «Итог броска» на столе, если он виден, иначе — итог в шапке
+  function rollTargets(n) {
+    const top = app.querySelector('.top'), hh = top ? top.getBoundingClientRect().bottom : 0;
+    const bot = barEl.hidden ? innerHeight : barEl.getBoundingClientRect().top;
+    const vis = (el) => { const r = el.getBoundingClientRect(); return r.width > 0 && r.top >= hh && r.bottom <= bot; };
+    const rc = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width }; };
+    const side = [...document.querySelectorAll('.table .dice .die')];
+    if (side.length >= n && side.slice(0, n).every(vis)) return side.slice(0, n).map(rc);
+    const ds = [...document.querySelectorAll('.top .rollchip .die')];
+    if (!ds.length) return null;
+    const out = ds.slice(0, n).map(rc);
+    while (out.length < n) { const a = out[out.length - 1]; out.push({ x: a.x + a.w + 3, y: a.y, w: a.w }); }
+    return out;
+  }
+  function stgLeave(s) {
+    if (s.leaving) return;
+    s.leaving = true;
+    let ended = false;
+    const done = () => {
+      if (ended) return; ended = true;
+      s.el.remove(); if (stg === s) stg = null; s.goneRes();
+      if (s.final) { chipRoll = s.final; chipPulse = performance.now(); }
+      schedule();
+    };
+    const K = stgK(), tg = s.dice.length ? rollTargets(s.dice.length) : null;
+    if (!tg || !K) { s.el.classList.add('out'); setTimeout(done, K ? 260 : 0); return; }
+    s.el.classList.add('leave');
+    const ms = Math.round(560 * K);
+    const ps = s.dice.map((x, k) => {
+      const home = { x: parseFloat(x.w.style.left) + D3 / 2, y: parseFloat(x.w.style.top) + D3 / 2 };
+      const T = toPage(tg[k]), dx = T.x - home.x, dy = T.y - home.y, sc = Math.max(0.2, tg[k].w / D3);
+      const from = rotOf(x);
+      x.rz = 360 * Math.round(x.rz / 360); // грань — ровно, как на маленьком кубике
+      anim(x.sh, [{ opacity: 1 }, { opacity: 0 }], { duration: Math.round(ms * 0.4) });
+      anim(x.w.querySelector('.d3-t'), [{ transform: 'rotateX(-20deg) rotateY(24deg)' }, { transform: 'rotateX(0deg) rotateY(0deg)' }], { duration: ms, delay: k * 70, easing: 'ease-in-out' });
+      anim(x.c, [{ transform: from }, { transform: rotOf(x) }], { duration: ms, delay: k * 70, easing: 'ease-in-out' });
+      return anim(x.w, [
+        { transform: `translate(${x.sx}px, ${x.sy}px) scale(1)` },
+        { transform: `translate(${(x.sx + dx) / 2}px, ${(x.sy + dy) / 2 - 40}px) scale(${(1 + sc) / 2})`, offset: 0.45 },
+        { transform: `translate(${dx}px, ${dy}px) scale(${sc})` },
+      ], { duration: ms, delay: k * 70, easing: 'cubic-bezier(.45,.05,.3,1)' });
+    });
+    Promise.all(ps).then(() => { if (sound && stg === s) Sfx.tick(); done(); });
+    setTimeout(done, ms + 600); // страховка
+  }
+  function stgKill() { if (!stg) return; const s = stg; stg = null; clearTimeout(s.hideT); s.el.remove(); s.goneRes(); if (s.final) chipRoll = s.final; }
   // кто бросил и что выпало — под кубиками
   function stgLabel(p, vals, what, adj) {
     if (!stg) return;
@@ -7287,6 +7378,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     ], { duration: ms, easing: 'cubic-bezier(.3,.55,.35,1)' });
     anim(x.sh, [{ transform: `translate(${dx * 0.6}px, ${dy * 0.6}px) scale(.3)`, opacity: 0 }, { transform: `translate(${dx * 0.2}px, ${dy * 0.2}px) scale(.55)`, opacity: 0.15, offset: 0.6 }, { transform: 'translate(0px, 0px) scale(1)', opacity: 1 }], { duration: ms, easing: 'ease-in' });
     x.fly = anim(x.c, [{ transform: x.c.style.transform }, { transform: rotOf(x) }], { duration: ms, easing: 'linear' });
+    if (sound) Sfx.hit(0.85 + Math.random() * 0.15, ms / 1000 + k * 0.035 + Math.random() * 0.02); // удар о стол
     return x;
   }
   // кубик подпрыгивает (переброс): снова в воздух, кувыркается
@@ -7298,6 +7390,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     anim(x.w, [{ transform: `translate(${x.sx}px, ${x.sy}px) scale(1)` }, { transform: `translate(${(x.sx + nx) / 2}px, ${(x.sy + ny) / 2 - 120}px) scale(1.42)`, offset: 0.48 }, { transform: `translate(${nx}px, ${ny}px) scale(1)` }], { duration: ms, easing: 'cubic-bezier(.3,.6,.4,1)' });
     anim(x.sh, [{ transform: `translate(${x.sx}px, ${x.sy}px) scale(1)`, opacity: 1 }, { transform: `translate(${(x.sx + nx) / 2}px, ${(x.sy + ny) / 2}px) scale(.5)`, opacity: 0.25, offset: 0.48 }, { transform: `translate(${nx}px, ${ny}px) scale(1)`, opacity: 1 }], { duration: ms });
     x.sx = nx; x.sy = ny;
+    if (sound) Sfx.hit(0.8 + Math.random() * 0.15, ms / 1000 + Math.random() * 0.03);
     return anim(x.c, [{ transform: from }, { transform: rotOf(x) }], { duration: ms, easing: 'linear' });
   }
   // кубик ложится нужной гранью: отскок, докатывается, замирает
@@ -7317,17 +7410,18 @@ if (typeof module !== 'undefined') module.exports = Music;
     ], { duration: ms, easing: 'ease-out' });
     anim(x.sh, [{ transform: `translate(${x.sx}px, ${x.sy}px) scale(1)`, opacity: 1 }, { transform: `translate(${(x.sx + ex) / 2}px, ${(x.sy + ey) / 2}px) scale(.8)`, opacity: 0.7, offset: 0.34 }, { transform: `translate(${ex}px, ${ey}px) scale(1)`, opacity: 1 }], { duration: ms, easing: 'ease-out' });
     x.sx = ex; x.sy = ey; x.v = v;
+    if (sound && ms) { const j = Math.random() * 0.02; Sfx.hit(0.45, ms * 0.6 / 1000 + j); Sfx.hit(0.16, ms / 1000 + j); } // отскок и последний стук
     return anim(x.c, [{ transform: from }, { transform: rotOf(x) }], { duration: ms, easing: 'cubic-bezier(.12,.75,.25,1)' });
   }
   // бросок: кубики летят от бросающего (fromEl — кнопка броска или герб соперника); числа — сразу (d) или когда их пришлёт движок
   function startThrow(n, fromEl, fl, d) {
     n = Math.max(1, Math.min(2, n || 1));
-    if (sound) Sfx.dice(n);
+    if (sound) Sfx.shake(n);
     if (!S) return;
     const pi = d ? d.p : S.cur;
     const s = stgOpen(pi);
-    for (const x of s.dice) { x.w.remove(); x.sh.remove(); }
-    s.dice = []; s.res.classList.remove('in'); s.res.innerHTML = '';
+    s.prevChip = chipRoll; chipRoll = null; // итог в шапке пуст, пока новые кубики не лягут в него
+    s.busy = true; s.logLen = S.log.length; // пока кубики в воздухе, стол и журнал итог не показывают
     const seq0 = diceSeq;
     let from0 = fromEl && fromEl.getBoundingClientRect().width ? ctr(fromEl) : null;
     if (!from0 || from0.y < 0 || from0.y > innerHeight) from0 = { x: from0 ? Math.max(30, Math.min(innerWidth - 30, from0.x)) : innerWidth / 2, y: pi === ME && !WATCH ? innerHeight + 50 : -50 };
@@ -7338,13 +7432,20 @@ if (typeof module !== 'undefined') module.exports = Music;
     const run = (async () => {
       await Promise.all(s.dice.map(x => x.fly));
       let vals = d ? d.vals : null;
-      if (!vals) { for (let w = 0; w < 45 && diceSeq === seq0; w++) await wait(60); vals = diceView && diceView.vals ? diceView.vals : [1]; }
+      if (!vals) {
+        for (let w = 0; w < 50 && diceSeq === seq0; w++) await wait(60);
+        if (diceSeq === seq0) { // бросок не состоялся (нет связи, ход уже не ваш): убрать кубики, чисел не показывать
+          if (stg === s) { s.busy = false; s.waiting = false; s.el.classList.add('out'); await wait(260); if (stg === s) { stgKill(); chipRoll = s.prevChip; } }
+          return;
+        }
+        vals = diceView && diceView.vals ? diceView.vals : [1];
+      }
       s.waiting = false;
       if (stg !== s) return;
       // движок мог оставить один кубик (беда «Сглаз») — лишний убираем
       while (s.dice.length > vals.length) { const x = s.dice.pop(); anim(x.w, [{ opacity: 1 }, { opacity: 0 }], { duration: 200 }).then(() => { x.w.remove(); x.sh.remove(); }); }
       await Promise.all(s.dice.map((x, k) => stgSettle(x, vals[k] || 1)));
-      if (sound) Sfx.card();
+      s.busy = false; s.settledAt = performance.now();
       stgLabel(pi, vals, '');
     })();
     s.chain = run;
@@ -7361,12 +7462,13 @@ if (typeof module !== 'undefined') module.exports = Music;
       while (s.dice.length < n) { const k = s.dice.length; const from0 = { x: innerWidth / 2, y: d.p === ME && !WATCH ? innerHeight + 50 : -50 }; const x = stgAdd(s, n, k, toPage(from0)); s.dice.push(x); added.push(x); }
       const hop = s.dice.filter((x, k) => k < n && !added.includes(x) && (d.re === 'all' || d.re === k || x.v !== vals[k]));
       if (!hop.length && !added.length) return;
-      if (sound) Sfx.dice(Math.max(1, hop.length + added.length));
+      s.busy = true; schedule();
+      if (sound) Sfx.shake(Math.max(1, hop.length + added.length));
       s.res.classList.remove('in');
       await Promise.all(hop.map(x => stgHop(x)).concat(added.map(x => x.fly)));
       if (stg !== s) return;
       await Promise.all(s.dice.map((x, k) => (k < n && (hop.includes(x) || added.includes(x) || x.v !== vals[k]) ? stgSettle(x, vals[k]) : null)));
-      if (sound) Sfx.card();
+      s.busy = false; s.settledAt = performance.now();
       stgLabel(d.p, vals, d.re != null ? 'Переброс' : '');
     });
     s.chain = run;
@@ -7375,11 +7477,16 @@ if (typeof module !== 'undefined') module.exports = Music;
   }
   // окончательный бросок: показать итог (со сдвигом) и убрать кубики
   function stageFinal(d) {
-    const s = stg; if (!s) return;
+    const s = stg;
+    const fin = { vals: d.vals.slice(), total: d.total, p: d.p, adj: d.adj || 0 };
+    if (!s) { chipRoll = fin; return; }
+    s.final = fin; s.hold = true;
     s.chain.then(() => {
       if (stg !== s) return;
+      s.hold = false; schedule(); // кубики легли — стол показывает, что сработало
       if (d.adj) stgLabel(d.p, d.vals, '', d.adj);
-      stgClose(Math.round((d.adj ? 1300 : 850) * (stgK() || 0.8)));
+      const seen = performance.now() - (s.settledAt || performance.now());
+      stgClose(Math.round((d.adj ? 1200 : seen > 600 ? 220 : 700) * (stgK() || 0.8)));
     });
   }
   // встряхнуть устройство — бросок (на iPhone и iPad нужно разрешение, его спрашивают в настройках)
@@ -8479,7 +8586,10 @@ if (typeof module !== 'undefined') module.exports = Music;
   function header() {
     const info = `<b>Круг ${S.round}</b><span>Цель — ${goalLine()}.</span>`;
     const net = NETG ? `<span class="netdot${NETG.room && NETG.room.online && !hostLost() ? ' on' : ''}" role="img" aria-label="${esc(hostLost() ? 'нет связи с хозяином' : netStatusLine())}" title="${esc(netStatusLine())}"></span>` : '';
-    return `<header class="top"><div class="season">${info}</div>${net}
+    const rc = chipRoll, rp = rc && S.players[rc.p];
+    const pend = !rc && stg && stg.final && !stg.hold ? stg.final : null; // кубики вот-вот прилетят: места под них — ровно как в итоге
+    const chip = `<button class="rollchip${rc ? '' : ' empty'}${rc && performance.now() - chipPulse < 700 ? ' pulse' : ''}" data-act="rollsum" aria-label="${rc ? `Итог броска: ${rc.total}${rp ? `, ${rp.i === ME && !WATCH ? 'ваш' : esc(H(rp).short)}` : ''}` : 'Итог броска'}">${(rc ? rc.vals : pend ? pend.vals.map(() => 0) : [0, 0]).map(v => die(v, 'mini')).join('')}${rc ? `<b>${rc.total}</b>` : pend ? `<b class="ghost">${pend.total}</b>` : ''}</button>`;
+    return `<header class="top"><div class="season">${info}</div>${net}${chip}
       <button class="icon-btn" data-act="log" aria-label="Журнал">🗒</button><button class="icon-btn" data-act="menu" aria-label="Меню">☰</button></header>`;
   }
   function oppsHtml() {
@@ -8520,18 +8630,20 @@ if (typeof module !== 'undefined') module.exports = Music;
   const estGuard = (q) => q.estates.reduce((a, e) => a + ((D.ESTATES[e.id] || {}).guard || 0), 0);
   function tableHtml() {
     const dv = diceView;
+    const busy = diceBusy(), rl = rolling || busy;
     let dice, who;
     if (!dv) { dice = die(0) + die(0); who = `<b>Кубики ещё не бросали</b><span class="muted">Первый ход: ${pname(S.players[S.first])}</span>`; }
     else {
-      const cls = rolling ? 'rolling' : '';
-      dice = dv.vals.map(v => die(v, cls)).join('');
+      const cls = rl ? 'rolling' : '';
+      dice = dv.vals.map(v => die(busy ? 0 : v, cls)).join('');
       const raw = dv.vals.reduce((a, b) => a + b, 0);
       const tot = Math.max(1, Math.min(12, raw + (dv.adj || 0)));
       const how = dv.vals.length > 1 || dv.adj ? `<span class="muted how">${dv.vals.join(' + ')}${dv.adj ? ` ${dv.adj > 0 ? '+' : '−'} ${Math.abs(dv.adj)} (сдвиг)` : ''}</span>` : '';
-      who = `<b>${pname(S.players[dv.p])} ${dv.final ? 'выбросили' : 'бросают…'}</b><span class="tot">${rolling ? '…' : tot}</span>${rolling ? '' : how}`;
+      who = `<b>${pname(S.players[dv.p])} ${dv.final && !busy ? 'выбросили' : 'бросают…'}</b><span class="tot">${rl ? '…' : tot}</span>${rl ? '' : how}`;
     }
-    const feed = nextReq ? '' : `<ul class="feed" data-act="log">${S.log.slice(-3).map(l => `<li class="${l.p === ME ? 'me' : ''}">${esc(l.t.trim())}</li>`).join('')}</ul>`;
-    return `<div class="table"><div class="dice">${dice}</div><div class="who">${who}</div></div>${rollHtml(rollView, rolling)}${feed}`;
+    const lg = busy && stg.logLen != null ? S.log.slice(0, stg.logLen) : S.log;
+    const feed = nextReq ? '' : `<ul class="feed" data-act="log">${lg.slice(-3).map(l => `<li class="${l.p === ME ? 'me' : ''}">${esc(l.t.trim())}</li>`).join('')}</ul>`;
+    return `<div class="table"><div class="dice">${dice}</div><div class="who">${who}</div></div>${rollHtml(rvShown(), rl)}${feed}`;
   }
   // ---------- итог броска: кто что получил ----------
   const NOFIRE = { craft: 'Ремесло платит только в свой ход', raid: 'Набег не срабатывает в свой ход', hold: 'Твердыня платит только в свой ход', bad: 'беда срабатывает только в ход того, у кого лежит' };
@@ -8859,8 +8971,9 @@ if (typeof module !== 'undefined') module.exports = Music;
     return xs.length > 1 ? `${body} =${NB}${tot}` : body;
   };
   function incCaption(uids) {
-    if (!rollView || !rollView.ev) return '';
-    const xs = rollView.ev.filter(x => x.amt > 0 && uids.includes(x.uid) && x.parts && (x.parts.length > 1 || x.parts[0].l));
+    const rv = rvShown();
+    if (!rv || !rv.ev) return '';
+    const xs = rv.ev.filter(x => x.amt > 0 && uids.includes(x.uid) && x.parts && (x.parts.length > 1 || x.parts[0].l));
     const cnt = new Map(); for (const x of xs) { const k = JSON.stringify(x.parts); cnt.set(k, (cnt.get(k) || 0) + 1); }
     return [...cnt.entries()].map(([k, n]) => esc(fmtParts(JSON.parse(k), n))).join('<br>');
   }
@@ -8909,7 +9022,7 @@ if (typeof module !== 'undefined') module.exports = Music;
       const pv = D.PROV[k], c = u.counts[k], left = E.unionNeed(p, k);
       return `<div class="union ${u[k] ? 'done' : ''}"><b>${pv.icon} ${pv.name}: ${u[k] ? `союз${u[k] > 1 ? ` ×${u[k]}` : ''}` : `${c}/${c + left}`}</b><br><span class="muted">${u[k] ? `сейчас ${D.SYM[pv.sym].repeat(u[k] * R.unionSyms)}` : `союз даёт ${pv.union} и ${R.unionGold}🪙${!(S.unionFirst || {})[k] ? `, первому за столом ещё ${R.unionFirst}🪙` : ''}`}; ещё ${left} ${D.plural(left, 'владение', 'владения', 'владений')} до ${u[k] ? 'следующего' : 'союза'}</span></div>`;
     }).join('')}</div>`;
-    const hit = hitsOf(rollView);
+    const hit = hitsOf(rvShown());
     const mine = p.i === ME;
     // доход начала хода: за что именно его дают карты (подпись под картой)
     const dp = E.dawnParts(S, p) || [];
@@ -8925,7 +9038,7 @@ if (typeof module !== 'undefined') module.exports = Music;
     const takeNow = mine ? cardCoins(c => c.kind === 'roll' && c.to === ME) : [];
     out += `<div class="sec-h"><h3>Ваши владения</h3><span>${p.estates.length} шт., по числам</span></div>`;
     if (takeNow.length) out += `<p class="note">Нажмите на подсвеченные владения — монеты пойдут в казну. Под картой — из чего сложился доход.</p>`;
-    else if (rollView) out += `<p class="note">Подсвечено то, что сработало на последнем броске (${rollView.r}). Под картой — из чего сложился доход.</p>`;
+    else if (rvShown()) out += `<p class="note">Подсвечено то, что сработало на последнем броске (${rvShown().r}). Под картой — из чего сложился доход.</p>`;
     out += `<div class="pgrid lands">${estStacks(p.estates, hit).map(g => {
       const pend = mine ? cardCoins(c => (c.kind === 'roll' && c.to === ME && g.uids.includes(c.uid)) || (c.kind === 'dawn' && g.uids.some(u => c.ck === 'est:' + u))) : [];
       const card = pend.length ? pcard('estate', g.id, { cls: ['coin-take', g.n > 1 ? 'stack' : '', g.ruined ? 'ruined' : ''].filter(Boolean).join(' '), badge: (g.n > 1 ? `<span class="pcb n">×${g.n}</span>` : '') + `<span class="pcb coin">+${pend.reduce((a, c) => a + c.amt, 0)}🪙</span>`, coins: pend }) : stackCard(g);
@@ -9129,8 +9242,8 @@ if (typeof module !== 'undefined') module.exports = Music;
   // ---------- игра: запуск ----------
   function resetTable() {
     endTurnResolve = null; adjustReq = null; busy = false; diceView = null; paused = false; coverReq = null;
-    rollView = null; turnRec = null; lastRec = null; nextReq = null;
-    coinQ = []; coinWaiters.splice(0); throwKey = null; handOpen = false; stgKill(); oppMoments = []; throwP = null; if (stepReq) { const r = stepReq; stepReq = null; r.res(); }
+    rollView = null; rollPrev = null; turnRec = null; lastRec = null; nextReq = null;
+    coinQ = []; coinWaiters.splice(0); throwKey = null; handOpen = false; stgKill(); oppMoments = []; throwP = null; chipRoll = null; if (stepReq) { const r = stepReq; stepReq = null; r.res(); }
     for (const k in goldSeen) delete goldSeen[k];
     for (const k in pops) delete pops[k];
   }
@@ -9548,7 +9661,7 @@ if (typeof module !== 'undefined') module.exports = Music;
   function infoOpp(i) {
     const q = S.players[i];
     const pr = E.prod(S, q);
-    const hit = hitsOf(rollView);
+    const hit = hitsOf(rvShown());
     const u = E.unionsOf(q);
     // защита: против чего нападать на них бесполезно или труднее — и какая карта это даёт
     const qm = E.mods(S, q), prot = [];
@@ -10369,6 +10482,19 @@ if (typeof module !== 'undefined') module.exports = Music;
       case 'refresh-all': if (stepReq && stepReq.d.kind === 'refresh') { e.stopPropagation(); rfAll = S.round; stepDone(); } break;
       case 'xaction': if (isMyTurn()) { e.stopPropagation(); if (guest()) netDo('xaction', {}); else { const r = E.buyAction(S, p); if (!r.ok) toast(esc(r.why || 'Нельзя')); else { if (sound) Sfx.coin && Sfx.coin(); toast(`Второе действие: −${R.extraAction}🪙`); } schedule(); } } break;
       case 'retire': if (isMyTurn()) { e.stopPropagation(); const i = +el.dataset.i; if (!armedOn('retire:' + p.hand[i] + ':' + i)) { arm('retire:' + p.hand[i] + ':' + i); break; } armed = null; if (guest()) netDo('retire', { i }); else guarded(async () => { await E.retire(S, p, i); }); } break;
+      case 'rollsum': {
+        const t = app.querySelector('.table') || app.querySelector('.rollsum');
+        if (t) {
+          const top = app.querySelector('.top'), hh = top ? top.getBoundingClientRect().bottom : 0;
+          const how = reduceMotion() ? 'auto' : 'smooth';
+          if (document.body.classList.contains('face')) t.scrollIntoView({ block: 'start', behavior: how });
+          else window.scrollBy({ top: t.getBoundingClientRect().top - hh - 8, behavior: how });
+          // «Итог броска» вспыхивает (без перерисовки — она оборвала бы прокрутку)
+          const rs = app.querySelector('.rollsum');
+          if (rs && rs.animate && !reduceMotion()) { const c = getComputedStyle(rs).getPropertyValue('--or-line').trim() || '#c9a24a'; rs.animate([{ boxShadow: `0 0 0 3px ${c}` }, { boxShadow: `0 0 0 3px ${c}`, offset: 0.35 }, { boxShadow: `0 0 0 0 ${c}` }], { duration: 1300, easing: 'ease-out' }); }
+        }
+        break;
+      }
       case 'strips': { e.stopPropagation(); stripsOpen = !stripsOpen; try { localStorage.setItem('vd-strips', stripsOpen ? '1' : '0'); } catch (x) { /* нет хранилища */ } schedule(); } break;
       case 'purge': if (isMyTurn()) { e.stopPropagation(); const uid = +el.dataset.uid; if (guest()) netDo('purge', { uid }); else guarded(async () => { const r = await E.purgeBad(S, p, uid); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
       case 'res': { e.stopPropagation(); const q = S.players[+el.dataset.i]; if (q) showRes(q, el.dataset.s); } break;
