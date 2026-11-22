@@ -1,0 +1,4 @@
+node_modules/
+.work/
+src/dist/*.html
+.DS_Store

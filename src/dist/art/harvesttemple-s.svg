@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 84" preserveAspectRatio="xMidYMid slice"><defs>
+<radialGradient id="bg" cx="50%" cy="50%" r="60%"><stop offset="0" stop-color="#4c9466"/><stop offset="1" stop-color="#1c5131"/></radialGradient>
+<pattern id="dia" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 7H14M7 0V14" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/></pattern>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.6" stdDeviation="1.3" flood-color="#000" flood-opacity=".42"/></filter></defs>
+<rect width="330" height="84" fill="url(#bg)"/><rect width="330" height="84" fill="url(#dia)"/><g transform="translate(136.11 12.53) scale(0.11285)" filter="url(#sh)"><path d="M256 26.2L52 135h408L256 26.2zM73 153v14h366v-14H73zm16 32v206h30V185H89zm101.334 0v206h30V185h-30zm101.332 0v206h30V185h-30zM393 185v206h30V185h-30zM73 409v30h366v-30H73zm-32 48v30h430v-30H41z" fill="#fbf3df"/></g></svg>

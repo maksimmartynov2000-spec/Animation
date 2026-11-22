@@ -1,0 +1,14 @@
+{
+  "name": "pretendenty",
+  "private": true,
+  "description": "Претенденты — карточная игра в браузере. Сайт — один index.html (GitHub Pages), исходники — в src/.",
+  "scripts": {
+    "build": "python3 src/build.py",
+    "test:engine": "node tests/fxtest.js",
+    "test:page": "python3 tests/make-page.py"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "playwright": "1.63.0"
+  }
+}
