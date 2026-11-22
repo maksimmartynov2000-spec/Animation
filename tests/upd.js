@@ -68,7 +68,10 @@ function broker() {
   // 5. сетевая комната: версии разные — предупреждение у обоих
   const br = await broker();
   const fileNew = SP + 'test-embed.html', fileOld = SP + 'test-embed-old.html';
-  fs.writeFileSync(fileOld, fs.readFileSync(fileNew, 'utf8').replace("const VERSION = '10.7'", "const VERSION = '10.6'"));
+  // версию берём из собранной страницы: тест не должен ломаться при каждом выпуске (раньше здесь было зашито 10.7)
+  const CUR = (fs.readFileSync(fileNew, 'utf8').match(/const VERSION = '([^']+)'/) || [])[1], OLD = '9.9', rx = (v) => String(v).replace(/\./g, '\\.');
+  if (!CUR) throw new Error('не нашёл const VERSION в ' + fileNew);
+  fs.writeFileSync(fileOld, fs.readFileSync(fileNew, 'utf8').replace(`const VERSION = '${CUR}'`, `const VERSION = '${OLD}'`));
   const mk = async (file, prefs, vp) => { const c = await b.newContext({ viewport: vp, deviceScaleFactor: 1, hasTouch: true, isMobile: true, reducedMotion: 'reduce' }); const q = await c.newPage(); q.errs = []; q.on('pageerror', e => errs.push(e.message)); await q.addInitScript(([prefs, port]) => { window.PRETENDENTY_NET = { brokers: ['ws://127.0.0.1:' + port] }; try { localStorage.setItem('velikie-doma-prefs-v1', JSON.stringify(prefs)); } catch (e) {} }, [prefs, br.port]); await q.goto('file://' + file); await q.waitForSelector('#splash', { state: 'detached', timeout: 5000 }).catch(() => {}); return q; };
   const host = await mk(fileNew, { v2: 1, v3: 1, v10: 1, house: 'deer', speed: 'turbo', mods: ['lords'], coins: false }, { width: 393, height: 852 });
   const guest = await mk(fileOld, { v2: 1, v3: 1, v10: 1, house: 'owl', opps: 1, speed: 'turbo', mods: ['lords'], coins: false }, { width: 393, height: 852 });
@@ -79,8 +82,8 @@ function broker() {
   await guest.fill('#jcode', code); await guest.fill('#jname', 'Аня'); await guest.click('[data-act="join-go"]'); await guest.waitForTimeout(2200);
   const noteOf = (q) => q.evaluate(() => ({ note: (document.querySelector('.verdiff') || {}).innerText || '', toast: [...document.querySelectorAll('.toast')].map(t => t.innerText).join(' | ') }));
   const nh = await noteOf(host), ng = await noteOf(guest);
-  ok('хозяин видит: у второго устройства 10.6', /у второго устройства версия 10\.6/.test(nh.note) && /10\.6/.test(nh.toast), JSON.stringify(nh));
-  ok('гость видит: у второго устройства 10.7', /у вас 10\.6, у второго устройства версия 10\.7/.test(ng.note), JSON.stringify(ng));
+  ok(`хозяин видит: у второго устройства ${OLD}`, new RegExp(`у второго устройства версия ${rx(OLD)}`).test(nh.note) && new RegExp(rx(OLD)).test(nh.toast), JSON.stringify(nh));
+  ok(`гость видит: у второго устройства ${CUR}`, new RegExp(`у вас ${rx(OLD)}, у второго устройства версия ${rx(CUR)}`).test(ng.note), JSON.stringify(ng));
   await host.screenshot({ path: SP + 'v10/upd-room.png' });
   // те же версии — предупреждения нет
   const g2 = await mk(fileNew, { v2: 1, v3: 1, v10: 1, house: 'owl', opps: 1, speed: 'turbo', mods: ['lords'], coins: false }, { width: 393, height: 852 });
