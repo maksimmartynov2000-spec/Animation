@@ -22,7 +22,7 @@
 
 ## Проверка
 - **Перед каждым PR — `npm run check`**: сборка (и лимит 2 МБ), движок и основные браузерные тесты по очереди; в конце — «ИТОГ: всё прошло»
-  или список упавших, полные логи — в `.work/check/`. Идёт около 20 минут. По ходу работы — `npm run check -- quick` (несколько минут)
+  или список упавших, полные логи — в `.work/check/`. Идёт около 15 минут. По ходу работы — `npm run check -- quick` (несколько минут)
   или только нужные тесты: `npm run check -- info cards`. Новый основной тест — добавить в список `FULL` в `tests/check.js`.
 - `npm run test:engine` — движок: каждое свойство карт (должно быть «0 не прошли»).
 - Браузерные тесты (Playwright): при необходимости `npx playwright install chromium`, затем `python3 tests/make-page.py` и `node tests/<имя>.js`. Основные: `info.js`, `kb.js`, `buy.js i15|mini|mac`, `buy2.js`, `handplay.js`, `faith.js i15|mini|mac`, `tab.js i15|mini`, `tut.js i15|mini`, `fly.js`, `head.js`, `headbig.js`, `cards.js`, `upd.js`, `prefs.js`, `pair.js`, `net2.js`, `table3.js`, `standalone.js`. Прогон целой партии: `node tests/monkey.js games=1 turns=100` (размер окна — `w= h=`). Скриншоты и рабочие файлы — в `.work/`.
