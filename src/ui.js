@@ -53,7 +53,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.7'; // игра сама обновляется с GitHub Pages (вне партии); предупреждение о разных версиях в сетевой комнате
+  const VERSION = '10.8'; // длинная партия: 12 флажков знамён на узком телефоне больше не налезают на «Двор»
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -3288,7 +3288,7 @@
     const c = D.COURT[id], role = c.role ? D.ROLES[c.role] : null;
     const rows = [['Сыграть', `${D.fxText(c.fx)}.`]];
     const atk = attackOf(id);
-    if (atk) rows.push(['Нападение', atk === 'siege' ? 'Эта карта начинает осаду. Сыграйте её в свой ход — игра спросит, кого осаждаем. Без такой карты осаду не начать.' : 'Эта карта подсылает шпиона. Сыграйте её в свой ход — игра спросит, к кому. Без такой карты шпионить нельзя.', 'hl']);
+    if (atk) rows.push(['Нападение', atk === 'siege' || atk === 'raze' ? 'Эта карта начинает осаду. Сыграйте её в свой ход — игра спросит, кого осаждаем. Без такой карты осаду не начать.' : 'Эта карта подсылает шпиона. Сыграйте её в свой ход — игра спросит, к кому. Без такой карты шпионить нельзя.', 'hl']);
     const notes = fxNotes(c.fx, q);
     if (notes.length) rows.push(['Подробно', notes.join('<br>')]);
     if (c.ally && c.allyBy && D.COURT[c.allyBy]) {

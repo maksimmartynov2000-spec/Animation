@@ -71,6 +71,11 @@ body[data-view="game"] #bar, body[data-view="game"] #tabbar { display: none !imp
 .pips i { width: 9px; height: 12px; border-radius: 1.5px 1.5px 5px 5px; background: transparent; box-shadow: inset 0 0 0 1.2px rgba(246, 238, 218, .34); transition: background-color .3s ease, transform .3s ease; }
 .pips i.l { width: 11px; height: 14px; } .pips i.g { width: 13px; height: 16px; box-shadow: inset 0 0 0 1.4px rgba(246, 213, 129, .6); }
 .pips u { width: 1px; height: 12px; margin: 0 2px; background: rgba(246, 238, 218, .3); text-decoration: none; }
+/* v10.8: в длинной партии (12 флажков) полоса на узком телефоне налезала на «Двор» — теперь флажки сужаются по месту (не уже 5–7px) */
+.pbar.own .pipsb { grid-template-columns: minmax(0, max-content); }
+.pbar.own .pips { display: flex; max-width: 100%; min-width: 0; }
+.pbar.own .pips i { flex: 0 1 auto; min-width: 5px; } .pbar.own .pips i.l { min-width: 6px; } .pbar.own .pips i.g { min-width: 7px; }
+.pbar.own .pips u { flex: none; }
 .pips i.on { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .35); animation: pipin .5s cubic-bezier(.2, 1.4, .4, 1) both; }
 @keyframes pipin { from { transform: scale(2.2); filter: brightness(1.8); } to { transform: none; filter: none; } }
 .d-trade { background: var(--d-trade) !important; } .d-sci { background: var(--d-sci) !important; } .d-war { background: var(--d-war) !important; } .d-int { background: var(--d-int) !important; } .d-faith { background: var(--d-faith) !important; }
