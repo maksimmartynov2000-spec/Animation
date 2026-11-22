@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="48 24 124 124"><defs>
+<radialGradient id="bg" cx="50%" cy="48%" r="72%"><stop offset="0" stop-color="#6f7fd0"/><stop offset="1" stop-color="#2a3166"/></radialGradient>
+<radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".7" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<pattern id="dia" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 7H14M7 0V14" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/></pattern>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000" flood-opacity=".42"/></filter></defs>
+<rect width="220" height="164" fill="url(#bg)"/><rect width="220" height="164" fill="url(#dia)"/>
+<circle cx="110" cy="86" r="64" fill="url(#gl)"/><circle cx="110" cy="86" r="58" fill="none" stroke="#fbf3df" stroke-opacity=".22" stroke-width="1.6"/>
+<g transform="translate(52.29 28.69) scale(0.22339)" filter="url(#sh)"><path d="M92.656 19.188v41.5h331.72v-41.5H92.655zM119.5 79.374V433.53h22.28V79.376H119.5zm46.594 0c3.212 43.324 13.312 82.022 27.78 110.906 17.685 35.304 40.845 54.75 64.064 54.75 23.218 0 46.346-19.446 64.03-54.75 14.47-28.883 24.57-67.58 27.782-110.905H166.094zm209.156 0V433.53h22.28V79.376h-22.28zm-117.313 185.22c-23.218 0-46.378 19.415-64.062 54.717-14.835 29.614-25.098 69.562-28.03 114.22H350c-2.933-44.658-13.197-84.606-28.03-114.22-17.686-35.302-40.814-54.718-64.033-54.718zM92.657 452.218v41.467h331.718V452.22H92.655z" fill="#fbf3df"/></g></svg>

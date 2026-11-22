@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="48 24 124 124"><defs>
+<radialGradient id="bg" cx="50%" cy="48%" r="72%"><stop offset="0" stop-color="#56679f"/><stop offset="1" stop-color="#1f2747"/></radialGradient>
+<radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".7" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<pattern id="dia" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 7H14M7 0V14" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/></pattern>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000" flood-opacity=".42"/></filter></defs>
+<rect width="220" height="164" fill="url(#bg)"/><rect width="220" height="164" fill="url(#dia)"/>
+<circle cx="110" cy="86" r="64" fill="url(#gl)"/><circle cx="110" cy="86" r="58" fill="none" stroke="#fbf3df" stroke-opacity=".22" stroke-width="1.6"/>
+<g transform="translate(48.53 28.86) scale(0.22236)" filter="url(#sh)"><path d="M253.125 18.563c-131.53 0-238.375 106.813-238.375 238.343 0 131.53 106.846 238.344 238.375 238.344 131.53 0 238.344-106.815 238.344-238.344 0-131.528-106.816-238.344-238.345-238.344zm-23.938 52.093c40.517 0 77.988 12.904 108.532 34.813-5.597-.624-11.302-.97-17.064-.97-84.157 0-152.375 68.25-152.375 152.406 0 84.157 68.22 152.375 152.376 152.375 5.762 0 11.467-.313 17.063-.936-30.545 21.91-68.016 34.812-108.533 34.812-102.98 0-186.28-83.272-186.28-186.25 0-102.977 83.3-186.25 186.28-186.25z" fill="#fbf3df"/></g></svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 164"><defs>
+<radialGradient id="bg" cx="50%" cy="48%" r="72%"><stop offset="0" stop-color="#4f84cc"/><stop offset="1" stop-color="#1d3f72"/></radialGradient>
+<radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".7" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<pattern id="dia" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 7H14M7 0V14" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/></pattern>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000" flood-opacity=".42"/></filter></defs>
+<rect width="220" height="164" fill="url(#bg)"/><rect width="220" height="164" fill="url(#dia)"/>
+<circle cx="110" cy="86" r="64" fill="url(#gl)"/><circle cx="110" cy="86" r="58" fill="none" stroke="#fbf3df" stroke-opacity=".22" stroke-width="1.6"/>
+<g transform="translate(62.26 29.10) scale(0.22311)" filter="url(#sh)"><path d="M18.906 18.06v369.23C112.4 252.618 269.43 157.82 430.37 133.76L228.42 18.06H18.906zM325.72 179.327C200.38 223.948 86.405 311.052 18.157 422.568v33.602c113.074-111.488 277-176.38 434.373-175.25L325.72 179.326zm25.56 128.682c-125.218 21.642-246.974 83.6-333.124 174.812v10.297h58.916c113.9-65.58 251.166-95.325 379.492-80.814L351.28 308.008zm-2.253 120.96c-80.122 5.884-160.432 27.957-232.61 64.15h266.42l-33.81-64.15z" fill="#fbf3df"/></g></svg>
