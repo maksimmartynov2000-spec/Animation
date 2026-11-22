@@ -53,7 +53,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.9'; // листы карт двора: только то, чего нет на карте (нападение — одна строка, беды — три коротких)
+  const VERSION = '10.10'; // листы владений и знамён: только то, чего нет на карте; «Длинная» партия запоминается после перезапуска
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -145,7 +145,7 @@
 
   // ---------- настройки ----------
   function loadPrefs() {
-    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) { if (!x.v3) { /* настройки v1: «Полная» → «Полная», остальное → «Базовая» */ setup.mods = (x.mods.includes('foreign') && x.mods.includes('sieges') ? D.PRESETS.full : D.PRESETS.basic).modules.slice(); } else setup.mods = x.mods.flatMap(k => D.modMembers(k)).filter(k => D.MODULE_KEYS.includes(k) && !(D.MODULES[k] || {}).hidden || ['lords', 'sieges', 'spy', 'plots', 'seats'].includes(k)); } pauseBots = x.v10 ? x.pause === true : false; if (x.hint === false) hintOn = false; if (E.SKILL_NAMES && E.SKILL_NAMES[x.skill]) setup.skill = x.skill; if (x.sound === false) sound = false; if (x.music === false) music = false; if (x.sfxVol >= 0 && x.sfxVol <= 100) sfxVol = +x.sfxVol; if (x.musVol >= 0 && x.musVol <= 100) musVol = +x.musVol; if (x.coins === false) manualCoins = false; if (x.rowTap === false) rowTap = false; } } catch (e) { /* хранилище недоступно */ }
+    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) { if (!x.v3) { /* настройки v1: «Полная» → «Полная», остальное → «Базовая» */ setup.mods = (x.mods.includes('foreign') && x.mods.includes('sieges') ? D.PRESETS.full : D.PRESETS.basic).modules.slice(); } else setup.mods = x.mods.flatMap(k => D.modMembers(k)).filter(k => D.MODULE_KEYS.includes(k) && !(D.MODULES[k] || {}).hidden || ['lords', 'great', 'sieges', 'spy', 'plots', 'seats'].includes(k)); } pauseBots = x.v10 ? x.pause === true : false; if (x.hint === false) hintOn = false; if (E.SKILL_NAMES && E.SKILL_NAMES[x.skill]) setup.skill = x.skill; if (x.sound === false) sound = false; if (x.music === false) music = false; if (x.sfxVol >= 0 && x.sfxVol <= 100) sfxVol = +x.sfxVol; if (x.musVol >= 0 && x.musVol <= 100) musVol = +x.musVol; if (x.coins === false) manualCoins = false; if (x.rowTap === false) rowTap = false; } } catch (e) { /* хранилище недоступно */ }
     fixSetup();
     // сохранение старой версии правил (v1) с новым движком несовместимо — забываем его
     try { const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (g && g.S) { const x = JSON.parse(g.S); if (x.v === 2 && saveFits(x)) savedGame = g; else localStorage.removeItem(SAVE_KEY); } } catch (e) { try { localStorage.removeItem(SAVE_KEY); } catch (e2) { /* нет доступа */ } }
@@ -3172,64 +3172,18 @@
     return `<div class="fcards"><div class="fch"><b>Карты веры</b><span>замешаются в колоду принявшего</span></div><div class="pgrid">${cards}</div></div>`
       + exHtml([['Кому', who], ['Отречение', 'Кто отрёкся — эти карты уходят из его колоды обратно к вере. Их получит следующий, кто её примет.']]);
   }
-  const subj = (o) => (!S ? null : o != null && o !== '' && S.players[+o] ? S.players[+o] : S.players[ME !== null ? ME : S.cur] || null);
-  const atWho = (q) => (q.i === ME ? 'у вас' : `у ${esc(E.shortG(q))}`);
-  const up1 = (t) => t.charAt(0).toUpperCase() + t.slice(1);
-  const nOf = (n, a, b, c) => `${n} ${D.plural(n, a, b, c)}`;
   const exHtml = (rows) => !rows.filter(Boolean).length ? '' : `<div class="ex">${rows.filter(Boolean).map(([k, v, cls]) => `<div class="ex-r${cls ? ' ' + cls : ''}"><div class="ex-k">${k}</div><div class="ex-v">${v}</div></div>`).join('')}</div>`;
 
-  function estateRows(id, q) {
-    const d = D.ESTATES[id], nm = `«${esc(d.name)}»`, n = D.numText(d.n), n0 = d.n[0];
-    const m = q ? E.mods(S, q) : {};
-    const rows = [];
-    if (d.t === 'wall') {
-      rows.push(['Как работает', `От кубика не срабатывает. Даёт 🧱 +${d.walls} к обороне от осад: осаждающему нужно перебить ваши ⚔️ + 🧱 + кубик. Саму стену захватить нельзя.`]);
-      if (!modOn('sieges')) rows.push(['В этой партии', 'Осады выключены — стена ничего не даёт.']);
-    } else if (d.t === 'bad') {
-      rows.push(['Что это', 'Беда: её покупают для соперника и сразу подбрасывают нападением +2. Удача — беда у него; провал — замешивается обратно в колоду владений.']);
-      rows.push(['Когда', d.bad === 'walls' ? 'Действует всегда, пока лежит у вас.' : d.bad === 'quarantine' ? `Выпало ${n} в ход того, у кого она лежит.` : `Выпало ${n} в ход любого игрока.`]);
-      rows.push(['Что делает', esc(d.badText)]);
-      if (d.n.length) { const p1 = d.n.reduce((t, r) => t + E.pRoll(1, r), 0), p2 = d.n.reduce((t, r) => t + E.pRoll(2, r), 0); rows.push(['Шанс на броске', `один кубик — ${Math.round(p1 * 100)}%, два кубика — ${Math.round(p2 * 100)}%. Выбирайте кубики, чтобы обойти её числа.`, 'hl']); }
-      rows.push(['Как избавиться', `В свой ход, после броска: действие и ${R.purgeCost || 2}🪙 — беда уходит обратно в колоду владений.`]);
-    } else {
-      const live = (x) => x.estates.filter(e => !e.ruined).map(e => D.ESTATES[e.id]).filter(Boolean);
-      const cnt = d.per === 'land' ? (x) => live(x).filter(e => e.t === 'land').length
-        : d.per === 'raid' ? (x) => live(x).filter(e => e.t === 'raid').length
-        : d.per === 'provS' ? (x) => live(x).filter(e => e.p === 'S').length
-        : d.per === 'prov' ? (x) => new Set(live(x).map(e => e.p).filter(Boolean)).size
-        : d.per ? (x) => E.prod(S, x)[d.per] : null;
-      const perTxt = d.per === 'land' ? 'за каждую вашу 🟦 Землю' : d.per === 'raid' ? 'за каждый ваш 🟥 Набег' : d.per === 'provS' ? 'за каждое ваше владение Юга (сам Порт тоже считается)' : d.per === 'prov' ? 'за каждую провинцию, где у вас есть владение' : d.per ? `за каждый ваш значок ${D.SYM[d.per]}` : '';
-      const perIf = d.per === 'land' ? 'у вас 3 Земли' : d.per === 'raid' ? 'у вас 3 Набега' : d.per === 'provS' ? 'у вас 3 владения Юга' : d.per === 'prov' ? 'у вас владения в 3 провинциях' : d.per ? `у вас ${D.SYM[d.per]} 3` : '';
-      let v = null, now = '';
-      if (d.t === 'land' || d.t === 'craft') {
-        if (q) {
-          v = E.estateIncome(S, q, d, m);
-          const bon = [];
-          if (d.t === 'land' && m.blueBonus) bon.push(`+${m.blueBonus} с каждой Земли`);
-          if (d.t === 'land' && m.landOthers) bon.push(`ещё +${m.landOthers} в чужой ход`);
-          if (d.t === 'land' && m.landOwn) bon.push(`ещё +${m.landOwn} на вашем броске`);
-          if (d.t === 'land' && m.winter && d.p !== 'N') bon.push('−1 зимой');
-          if (d.t === 'craft' && m.greenBonus) bon.push(`+${m.greenBonus} с каждого Ремесла`);
-          if (cnt) { const k = cnt(q); now = `${up1(atWho(q))} ${d.per === 'land' ? nOf(k, 'Земля', 'Земли', 'Земель') : d.per === 'raid' ? nOf(k, 'Набег', 'Набега', 'Набегов') : d.per === 'provS' ? nOf(k, 'владение Юга', 'владения Юга', 'владений Юга') : d.per === 'prov' ? nOf(k, 'провинция', 'провинции', 'провинций') : `${D.SYM[d.per]} ${k}`}${bon.length ? `, бонусы: ${bon.join(', ')}` : ''} → ${v}🪙.`; }
-          else if (bon.length) now = `С бонусами (${bon.join(', ')}) → ${v}🪙.`;
-        }
-      } else if (d.t === 'raid') {
-        v = Math.max(0, d.inc + (m.redBonus || 0));
-        if (q && m.redBonus) now = `С бонусом +${m.redBonus} к Набегам → ${v}🪙.`;
-      } else {
-        v = Math.max(0, d.inc + (m.holdBonus || 0));
-        if (q && m.holdBonus) now = `С бонусом сезона → ${v}🪙 с каждого.`;
-      }
-      const v0 = v != null ? v : d.per ? d.perN * 3 : d.inc;
-      const per0 = d.per && !q ? ` (если ${perIf})` : '';
-      // v10.5: на карте всё видно — лист не повторяет её. Твердыне — коротко, что даёт; владению с парой — одна строка про пару
-      if (d.t === 'hold') rows.push(['Что даёт', `Забираете ${d.inc}🪙 у самого богатого соперника.`]);
-      if (d.pair && d.p) rows.push(['Пара', `Ещё +${d.pair}🪙, если у вас есть другое владение ${D.PROV[d.p].gen}.`]);
-    }
-    if (d.sym) rows.push(['Значок', `${D.SYM[d.sym]} ${D.SYM_NAME[d.sym]} +1, пока владение ваше.`]);
-    if (d.walls && d.t !== 'wall' && modOn('sieges')) rows.push(['Стены', `🧱 +${d.walls} к обороне от осад.`]);
-    if (d.t === 'hold') rows.push(['Где взять', `${d.cost}🪙, ряд твердынь. Каждая — у игрока по одной.`]);
-    return rows;
+  // v10.10 (как у карт двора в 10.9): в листе владения — только то, чего нет на карте.
+  // Земли, Ремёсла, Набеги, Твердыни и Каменная стена — без строк: доход, пара, значок, стены, цена напечатаны на карте.
+  // Беды владений — две короткие строки, как у бед двора: как ходят и как избавиться (шанс на броске владелец счёл лишним).
+  function estateRows(id) {
+    const d = D.ESTATES[id];
+    if (!d || d.t !== 'bad') return [];
+    return [
+      ['Что это', 'Купленная беда к вам не идёт — её сразу подбрасывают сопернику. Удача — она у него, провал — обратно в колоду владений.'],
+      ['Как избавиться', `В свой ход после броска: действие и ${R.purgeCost || 2}🪙 — беда уходит в колоду владений.`],
+    ];
   }
 
   // v10.9 (разбор листов с владельцем): в листе карты двора — только то, чего нет на самой карте.
@@ -3249,40 +3203,12 @@
     if (atk) return [['Нападение', 'Начинает осаду: сыграйте в свой ход — игра спросит, кого осаждать.', 'hl']];
     return [];
   }
-  function banRows(id, q, st) {
-    const b = D.BAN[id], rows = [];
-    const sp = CardFX.splitMods(b.mods, modOn);
-    rows.push(['Что даёт', `${D.SYM[b.dir]} ${D.SYM_NAME[b.dir]} +1. ${esc(b.text || '')}${sp.offK.length ? ` <span class="muted">Часть не действует: ${sp.offK.length > 1 ? 'модули' : 'модуль'} ${modList(sp.offK)} в этой партии выключен${sp.offK.length > 1 ? 'ы' : ''}.</span>` : ''}`]);
-    const who = b.heir ? `Наследник ${esc(D.HOUSES[b.heir].name.replace(/^Дом /, 'Дома '))}: нанять его может только этот Дом, он считается одним из ${R.needL} лордов.`
-      : b.tier === 'v' ? `Вассал из общей колоды (ряд из ${R.vRow}). Для победы нужно ${R.needV} вассалов.`
-      : b.tier === 'l' ? `Лорд из своей колоды (ряд из ${R.lRow}). Каждый лорд даёт ещё одно место при дворе. Для победы нужно ${R.needL} лорда.`
-      : `Великий лорд из своей колоды (ряд из ${R.gRow}). Для победы нужно ${R.needG}.`;
-    if (b.tax) rows.push(['Надбавка', `Пока это знамя у вас, ваши следующие ${['v', 'l', 'g'].filter(t => b.tax[t]).map(t => `${TIER_NAME[t]}ы дороже на ${b.tax[t]}🪙`).join(', ')}.`]);
-    if (b.upkeep) rows.push(['Содержание', `${b.upkeep}🪙 в начале вашего хода. Нечем платить — уходит.`]);
-    if (b.take) rows.push(['При найме', CardFX.fxText ? CardFX.fxText(b.take) : D.fxText(b.take)]);
-    if (st === 'built') rows.push(['Сейчас', q ? (q.i === ME ? 'Уже с вами.' : `Уже ${atWho(q)}.`) : 'Нанят.', 'hl']);
-    else if (st === 'taken') rows.push(['Сейчас', 'Уже у другого Дома.', 'hl']);
-    if (q && !st) {
-      const c = E.banCost(S, q, id);
-      const parts = [`${c.base}🪙`];
-      if (c.disc) parts.push(`− ${c.disc}🪙 (${D.SYM[b.dir]} у ${q.i === ME ? 'вас' : atWho(q)}: ${E.sym(S, q, b.dir)}, скидка не больше ${R.discCap[b.tier]})`);
-      if (c.cheap) parts.push(`− ${c.cheap}🪙 (способности)`);
-      if (c.tax) parts.push(`+ ${c.tax}🪙 (надбавки ваших знамён)`);
-      const blk = E.hireBlock(S, q, id);
-      if (blk) rows.push(['Нельзя', esc(blk)]);
-    }
-    return rows;
-  }
   // лист подробностей карты: d — данные карты на столе (act, id / key, kind, o — чей стол, st — состояние знамени)
   function infoParts(d) {
-    if (d.act === 'info-estate') { const x = D.ESTATES[d.id]; if (!x) return null; const T = D.ETYPE[x.t]; return { title: `${T.mark} ${esc(x.name)}`, body: `<div class="ex-pc">${pcard('estate', d.id, { big: true })}</div>${exHtml(estateRows(d.id, subj(d.o)))}` }; }
+    if (d.act === 'info-estate') { const x = D.ESTATES[d.id]; if (!x) return null; const T = D.ETYPE[x.t]; return { title: `${T.mark} ${esc(x.name)}`, body: `<div class="ex-pc">${pcard('estate', d.id, { big: true })}</div>${exHtml(estateRows(d.id))}` }; }
     if (d.act === 'info-court') { const c = D.COURT[d.id]; if (!c) return null; return { title: esc(c.name), body: `<div class="ex-pc">${pcard('court', d.id, { big: true })}</div>${exHtml(courtRows(d.id))}` }; }
-    if (d.act === 'info-ban') {
-      const q = subj(d.o), b = D.BAN[d.key];
-      if (!b) return null;
-      const mine = !b.heir || (q && q.house === b.heir); // чужого Наследника вы не наймёте — цену не считаем
-      return { title: esc(b.name), body: `<div class="ex-pc">${pcard('ban', d.key, { big: true })}</div>${offNote(b.mods)}${exHtml(banRows(d.key, mine ? q : null, d.st || ''))}` };
-    }
+    // v10.10: у знамени всё напечатано на карте (значок, свойство, «При найме», содержание); причину «нанять нельзя» показывает планка покупки
+    if (d.act === 'info-ban') { const b = D.BAN[d.key]; if (!b) return null; return { title: esc(b.name), body: `<div class="ex-pc">${pcard('ban', d.key, { big: true })}</div>${offNote(b.mods)}` }; }
     if (d.act === 'zoom') { const m = d.kind === 'house' ? D.HOUSES[d.id].mods : d.kind === 'faith' ? D.FAITHS[d.id].mods : null; return { title: esc(pcName(d.kind, d.id)), body: `<div class="ex-pc">${pcard(d.kind, d.id, { big: true })}</div>${m ? offNote(m) : ''}${d.kind === 'faith' && D.FAITHS[d.id] ? faithCardsHtml(d.id) : ''}` }; }
     return null;
   }
