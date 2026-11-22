@@ -15,11 +15,12 @@
 3. Собрать и проверить (ниже).
 4. Ветка и PR с понятным описанием на русском. **Не мержить** — мержит владелец.
 
-После мержа GitHub Pages обновит сайт за 1–2 минуты. В `index.html` есть метка сборки `<meta name="pretendenty-build">`: игра на устройствах сама находит новую сборку и обновляется — на главном экране сразу, на итогах и в сетевой комнате кнопкой, во время партии молчит.
+После мержа GitHub Pages обновит сайт за 1–2 минуты. Проверить, что сайт обновился (доступ к github.io открыт в среде «Журнал»):
+`curl -s -r 0-8191 "https://maksimmartynov2000-spec.github.io/Animation/?chk=$(date +%s)" | grep -o 'pretendenty-build" content="[^"]*'` — метка должна совпасть с `index.html` из `main`. В `index.html` есть метка сборки `<meta name="pretendenty-build">`: игра на устройствах сама находит новую сборку и обновляется — на главном экране сразу, на итогах и в сетевой комнате кнопкой, во время партии молчит.
 
 ## Проверка
 - `npm run test:engine` — движок: каждое свойство карт (должно быть «0 не прошли»).
-- Браузерные тесты (Playwright): при необходимости `npx playwright install chromium`, затем `python3 tests/make-page.py` и `node tests/<имя>.js`. Основные: `info.js`, `kb.js`, `buy.js i15|mini|mac`, `buy2.js`, `handplay.js`, `faith.js i15|mini|mac`, `tab.js i15|mini`, `tut.js i15|mini`, `fly.js`, `head.js`, `headbig.js`, `cards.js`, `upd.js`, `pair.js`, `net2.js`, `table3.js`, `standalone.js`. Прогон целой партии: `node tests/monkey.js games=1 turns=100` (размер окна — `w= h=`). Скриншоты и рабочие файлы — в `.work/`.
+- Браузерные тесты (Playwright): при необходимости `npx playwright install chromium`, затем `python3 tests/make-page.py` и `node tests/<имя>.js`. Основные: `info.js`, `kb.js`, `buy.js i15|mini|mac`, `buy2.js`, `handplay.js`, `faith.js i15|mini|mac`, `tab.js i15|mini`, `tut.js i15|mini`, `fly.js`, `head.js`, `headbig.js`, `cards.js`, `upd.js`, `prefs.js`, `pair.js`, `net2.js`, `table3.js`, `standalone.js`. Прогон целой партии: `node tests/monkey.js games=1 turns=100` (размер окна — `w= h=`). Скриншоты и рабочие файлы — в `.work/`.
 - Главные устройства: iPhone 15 (393×852) и iPad mini (744×1133); ещё iPhone 12 Pro Max, iPad 11", MacBook (1512×900), любая ориентация. Настоящий Safari в песочнице не проверить — для этого в игре есть «Меню → Проверка устройства» (отчёт одной кнопкой).
 
 ## Как работать с владельцем
