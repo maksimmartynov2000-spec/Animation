@@ -39,6 +39,7 @@
   let joinDraft = { code: '', name: '' };
   let rq = false;
   let savedGame = null;
+  let saveGone = false; // сохранение было, но из прошлой версии (в нём карты, которых больше нет) — скажем об этом на главном экране
   let modsOpen = false; // раскрыт ли список модулей на экране новой партии
   let view = 'home';    // экран без партии: 'home' — главное меню, 'setup' — новая партия
   let lastView = null;  // для перехода между экранами
@@ -53,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.10'; // листы владений и знамён: только то, чего нет на карте; «Длинная» партия запоминается после перезапуска
+  const VERSION = '10.11'; // беды двора: остались Сглаз, Проклятая реликвия и Заговор, по 2 копии; партия из прошлой версии не ломает игру
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -148,7 +149,7 @@
     try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) { if (!x.v3) { /* настройки v1: «Полная» → «Полная», остальное → «Базовая» */ setup.mods = (x.mods.includes('foreign') && x.mods.includes('sieges') ? D.PRESETS.full : D.PRESETS.basic).modules.slice(); } else setup.mods = x.mods.flatMap(k => D.modMembers(k)).filter(k => D.MODULE_KEYS.includes(k) && !(D.MODULES[k] || {}).hidden || ['lords', 'great', 'sieges', 'spy', 'plots', 'seats'].includes(k)); } pauseBots = x.v10 ? x.pause === true : false; if (x.hint === false) hintOn = false; if (E.SKILL_NAMES && E.SKILL_NAMES[x.skill]) setup.skill = x.skill; if (x.sound === false) sound = false; if (x.music === false) music = false; if (x.sfxVol >= 0 && x.sfxVol <= 100) sfxVol = +x.sfxVol; if (x.musVol >= 0 && x.musVol <= 100) musVol = +x.musVol; if (x.coins === false) manualCoins = false; if (x.rowTap === false) rowTap = false; } } catch (e) { /* хранилище недоступно */ }
     fixSetup();
     // сохранение старой версии правил (v1) с новым движком несовместимо — забываем его
-    try { const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (g && g.S) { const x = JSON.parse(g.S); if (x.v === 2 && saveFits(x)) savedGame = g; else localStorage.removeItem(SAVE_KEY); } } catch (e) { try { localStorage.removeItem(SAVE_KEY); } catch (e2) { /* нет доступа */ } }
+    try { const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (g && g.S) { const x = JSON.parse(g.S); if (x.v === 2 && saveFits(x)) savedGame = g; else { saveGone = x.v === 2; localStorage.removeItem(SAVE_KEY); } } } catch (e) { try { localStorage.removeItem(SAVE_KEY); } catch (e2) { /* нет доступа */ } }
   }
   function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ v2: 1, v3: 1, house: setup.house, opps: setup.seats.length, seats: setup.seats, speed, mods: setup.mods, skill: setup.skill, v10: 1, pause: pauseBots, hint: hintOn, sound, music, sfxVol, musVol, coins: manualCoins, rowTap })); } catch (e) { /* ignore */ } }
   function saveSafe() {
@@ -2493,9 +2494,9 @@
       const st = `left:${(x0 + i * step).toFixed(1)}px;--r:${(off * a).toFixed(2)}deg;--y:${(off * off * 1.3).toFixed(1)}px;z-index:${i + 1}${pw ? `;--dx:${(deckX - (x0 + i * step)).toFixed(0)}px` : ''}`;
       if (hidden) return `<span class="hcard back" style="${st}"><img src="${backSrc('court')}" alt=""></span>`;
       const c = D.COURT[id], f = CardFX.court(c);
-      const nRole = c.role ? (p.turn.roles[c.role] || 0) : 0, noAlly = E.isCursed(p, 'impostor');
-      const allyOn = !noAlly && !!(c.role && (nRole >= 1 || (c.role === 'scholar' && E.mods(S, p).allyScholar)) && c.ally);
-      const bigOn = !noAlly && !!(c.role && nRole >= 2 && c.ally);
+      const nRole = c.role ? (p.turn.roles[c.role] || 0) : 0;
+      const allyOn = !!(c.role && (nRole >= 1 || (c.role === 'scholar' && E.mods(S, p).allyScholar)) && c.ally);
+      const bigOn = !!(c.role && nRole >= 2 && c.ally);
       const fd = dealOf(fh[i]); if (fd != null) dealing = true;
       const idx = miniChips(f.play, 3) + ((allyOn || bigOn) && f.ally ? miniChips(f.ally, 1, 'al') : '');
       const tags = [c.plot && modOn('plots') ? gico(c.plot === 'dice' ? 'dice' : 'plot') : '', E.canSeat(S, id) ? gico('seat') : ''].filter(Boolean).map(x => `<span>${x}</span>`).join('');
@@ -4508,10 +4509,15 @@
     setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), reduceMotion() ? 0 : 420); }, reduceMotion() ? 250 : 1000);
   }
   // сохранённая партия из прошлой версии может ссылаться на убранные Дома и карты — такую не открываем
+  // сохранение подходит, только если все его карты есть в этой версии игры — во всех стопках, а не только у игроков
+  // (v10.11: шесть бед двора убраны; беда на рынке или в колоде двора раньше проходила проверку и могла сломать партию)
   function saveFits(x) {
     try {
-      const ok = (id) => !!(D.COURT[id] || D.ESTATES[id] || D.BAN[id]);
-      return (x.players || []).every(p => D.HOUSES[p.house] && [...(p.hand || []), ...(p.deck || []), ...(p.discard || []), ...(p.vassals || []), ...(p.lords || []), ...(p.greats || [])].every(ok) && (p.estates || []).every(e => D.ESTATES[e.id]));
+      const card = (v) => { const id = v && typeof v === 'object' ? v.id : v; return !!(D.COURT[id] || D.ESTATES[id] || D.BAN[id]); };
+      const all = (a) => a == null || (Array.isArray(a) && a.every(card));
+      const rows = ['courtDeck', 'courtRow', 'estateDeck', 'estateRow', 'holdDeck', 'holdRow', 'vDeck', 'vRow', 'lDeck', 'lRow', 'gDeck', 'gRow', 'destroyed'];
+      const own = ['hand', 'deck', 'discard', 'inPlay', 'plots', 'seats', 'trashed', 'vassals', 'lords', 'greats', 'estates'];
+      return rows.every(k => all(x[k])) && Object.values(x.faithPool || {}).every(all) && (x.players || []).every(p => D.HOUSES[p.house] && own.every(k => all(p[k])));
     } catch (e) { return false; }
   }
   // если игра не смогла открыться — не оставлять пустой зелёный экран: показать ошибку и дать сбросить сохранения
@@ -4596,8 +4602,9 @@
     Sfx.set(sound); Music.set(music); Sfx.vol(sfxVol / 100); Music.vol(musVol / 100);
     applyTheme();
     splash();
-    if (data && data.save) { savedGame = { S: data.save, ME: data.ME, WATCH: data.WATCH }; resumeGame(savedGame); return; }
+    if (data && data.save) { let fits = false; try { fits = saveFits(JSON.parse(data.save)); } catch (e) { /* испорчено */ } if (fits) { savedGame = { S: data.save, ME: data.ME, WATCH: data.WATCH }; resumeGame(savedGame); return; } saveGone = true; }
     render();
+    if (saveGone) setTimeout(() => toast('Незаконченная партия была из прошлой версии игры — начните новую', 4200), 1200);
   }
   try { window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(() => ({ save: S && S.winner === null ? lastSafe : null, ME, WATCH })); } catch (e) { /* нет хука */ }
   const hot = window.claude && window.claude.hot;

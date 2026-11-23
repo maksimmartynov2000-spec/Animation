@@ -422,7 +422,6 @@ const Engine = (() => {
     { const gf = faithBan(S, p, 'gift'); if (gf && p.gold > 0) { let poor = null; for (const o of opps(S, p)) if (!poor || o.gold < poor.gold) poor = o; const v = Math.min(p.gold, D.FAITHS[gf].oathN || 1); if (poor && v) { p.gold -= v; poor.gold += v; log(S, `${nm(p)}: щедрость «${D.FAITHS[gf].name}» — ${v}🪙 ${nmD(poor)}`, p.i, 'faith'); } } }
     // беды в руке срабатывают в начале хода и действуют весь ход
     for (const id of p.hand) { const c = D.COURT[id]; if (!c || !c.bad || p.turn.curse[id]) continue; p.turn.curse[id] = 1; log(S, `${nm(p)}: беда «${c.name}» — ${c.badText.replace(/\.$/, '').replace(/^(.)/, (x) => x.toLowerCase())}`, p.i, 'envy'); }
-    if (isCursed(p, 'debt')) { const v = Math.min(2, p.gold); p.gold -= v; if (v) log(S, `   ${nm(p)} отдают ${v}🪙 в банк`, p.i, 'envy'); }
     if (Object.keys(p.turn.curse).length) emit(S, 'curse', { p: p.i, ids: Object.keys(p.turn.curse) });
     const m = mods(S, p);
     const counts = S.players.map(regCount);
@@ -568,7 +567,6 @@ const Engine = (() => {
           for (const e of p.estates) {
             const d = ES(e); if (d.t !== a) continue;
             if (e.ruined) { repair(S, p, e, ev); continue; }
-            if (d.t === 'craft' && isCursed(p, 'strike')) continue;
             g += estateIncome(S, p, d, m);
           }
           if (g) { p.gold += g; log(S, `   ${a === 'craft' ? 'Ремёсла' : 'Земли'} принесли +${g}🪙`, p.i, 'gold'); }
@@ -629,10 +627,8 @@ const Engine = (() => {
   // перемирие: общая вера, которая запрещает единоверцам нападать (у Пламени, Клинка, Тени и Круга перемирия нет)
   const truce = (S, a, t) => faithsOf(S, a).some(f => D.FAITHS[f].truce !== false && faithsOf(S, t).includes(f));
   const targetsOf = (S, a) => opps(S, a).filter(o => !truce(S, a, o));
-  // «Подмётное письмо» в руке: ваши нападения слабее на 2
-  const letterPen = (p) => (isCursed(p, 'letter') ? 2 : 0);
   function siegeOdds(S, a, t, bonus) {
-    const A = sym(S, a, 'war') + bonus + (mods(S, a).siege || 0) - letterPen(a);
+    const A = sym(S, a, 'war') + bonus + (mods(S, a).siege || 0);
     const Dv = sym(S, t, 'war') + walls(S, t) + (mods(S, t).defense || 0) + (mods(S, t).shield || 0);
     return { A, D: Dv, p: attackOdds(A, Dv) };
   }
@@ -702,7 +698,7 @@ const Engine = (() => {
     return t.estates.filter(e => { const d = ES(e); if (d.bad) return false; if (d.fixed && flag !== 'wall') return false; return d.cost <= maxCost; });
   }
   function razeOdds(S, a, t, bonus, flag) {
-    const A = sym(S, a, 'war') + bonus + (mods(S, a).siege || 0) - letterPen(a);
+    const A = sym(S, a, 'war') + bonus + (mods(S, a).siege || 0);
     const Dv = sym(S, t, 'war') + (flag === 'nowalls' ? 0 : walls(S, t)) + (mods(S, t).defense || 0) + (mods(S, t).shield || 0);
     return { A, D: Dv, p: attackOdds(A, Dv) };
   }
@@ -778,7 +774,7 @@ const Engine = (() => {
   const spyWalls = (S, t) => walls(S, t) - Math.ceil((R.baseWalls || 0) * (1 - (R.spyCastle == null ? 1 : R.spyCastle))); // 🧱 против шпиона: замок — вполовину
   const guardOf = (S, t) => spyWalls(S, t) + (mods(S, t).guard || 0) + (mods(S, t).shield || 0);
   function spyInfo(S, a, t, bonus) {
-    const A = sym(S, a, 'int') + bonus + (mods(S, a).spy || 0) - letterPen(a);
+    const A = sym(S, a, 'int') + bonus + (mods(S, a).spy || 0);
     const G = sym(S, t, 'int') + guardOf(S, t);
     const p = attackOdds(A, G);
     return { A, G, p, ok: p >= 0.5 };
@@ -1213,13 +1209,11 @@ const Engine = (() => {
     p.inPlay.push(id); // сыгранная карта — сразу в сброс (лежит сверху, в замес посреди хода не идёт)
     if (p.turn.played) p.turn.played.push(id);
     const before = c.role ? (p.turn.roles[c.role] || 0) : 0;
-    // Самозванец в руке: свита не срабатывает
-    const noAlly = isCursed(p, 'impostor');
     // свита: в этот ход уже сыграна карта той же роли; у Сборщика податей свиту запускает сыгранная до него «Подать» (allyBy)
     // «большая» свита (дважды) — у всех одинаково: до карты сыграны две другие карты её роли (у Сборщика — два других Купца)
     const by = c.allyBy ? playedOf(p).slice(0, -1).includes(c.allyBy) : null;
-    const ally = !noAlly && (by != null ? (by || !!m.allyAll) : !!(c.role && (before >= 1 || (c.role === 'scholar' && m.allyScholar) || m.allyAll)));
-    const big = !noAlly && ally && !!(c.role && c.ally && before >= 2) && (by == null || R.allyByDouble !== false);
+    const ally = (by != null ? (by || !!m.allyAll) : !!(c.role && (before >= 1 || (c.role === 'scholar' && m.allyScholar) || m.allyAll)));
+    const big = ally && !!(c.role && c.ally && before >= 2) && (by == null || R.allyByDouble !== false);
     if (c.role) p.turn.roles[c.role] = before + 1;
     const g0 = p.gold, h0 = p.hand.length, t0 = { ...p.temp };
     log(S, `${nm(p)} сыграли «${c.name}»${big ? ' с большой свитой' : ally && c.ally ? ' со свитой' : ''}`, p.i, 'play');
@@ -1403,7 +1397,6 @@ const Engine = (() => {
         // Земля: в ход любого игрока (старый вариант: в свой ход и в ход того, кто ходит перед вами)
         if ((d.t === 'land' && (q === a || R.landNeighbor === false || prevOf(S, q) === a)) || (d.t === 'craft' && (q === a || m.craftAny))) { // Праздник Урожая II: Ремёсла и в чужой ход
           if (e.ruined) { repair(S, q, e, ev); continue; }
-          if (d.t === 'craft' && isCursed(q, 'strike')) { ev.push({ to: q.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: d.t, zero: true }); continue; } // беда «Бунт подмастерьев»
           let v = estateIncome(S, q, d, m);
           if (d.t === 'land' && q !== a && m.landOthers) v += m.landOthers; // на чужих бросках
           if (d.t === 'land' && q === a && m.landOwn) v += m.landOwn;       // на своём броске (Медовар)
@@ -1489,9 +1482,8 @@ const Engine = (() => {
   function marketPrice(S, p, base, court = false) {
     const m = mods(S, p);
     // общее правило: скидки складываются, но цена на рынке не бывает ниже 1🪙
-    const rumor = isCursed(p, 'rumor') ? 2 : 0; // беда «Дурной слух»: в этот ход рынок дороже на 2🪙
     const torg = R.tradeStep ? Math.floor(sym(S, p, 'trade') / R.tradeStep) : 0; // ⚖️ Торг
-    return Math.max(1, base - (m.marketDiscount || 0) - torg - (court ? (m.courtCheap || 0) : 0) - p.turn.discount + rumor);
+    return Math.max(1, base - (m.marketDiscount || 0) - torg - (court ? (m.courtCheap || 0) : 0) - p.turn.discount);
   }
   const buysLeft = (S, p) => 1 + p.turn.buys + (mods(S, p).buys || 0) - p.turn.buysUsed;
   // второе действие: раз в ход можно заплатить R.extraAction🪙 в банк и сделать ещё одно действие
@@ -1626,7 +1618,7 @@ const Engine = (() => {
     if (!b) return { total: Infinity, ok: false };
     const m = mods(S, p);
     const disc = Math.min(R.discCap[b.tier] || 0, Math.max(0, sym(S, p, b.dir)));
-    let tax = isCursed(p, 'usurer') ? 2 : 0; // беда «Ростовщик у ворот» в руке: знамёна дороже на 2🪙
+    let tax = 0;
     for (const x of allBans(p)) { const t = D.BAN[x].tax; if (t && t[b.tier]) tax += t[b.tier]; }
     const cheap = (m.regCheap || 0) + (b.tier === 'v' ? (m.vasCheap || 0) : b.tier === 'l' ? (m.lordCheap || 0) : (m.greatCheap || 0)) + (p.turn ? p.turn.regDiscount : 0);
     const base = R.costScale ? Math.round(b.cost * (R.costScale[b.tier] || 1)) : b.cost; // costScale — только для подбора цен в лаборатории
