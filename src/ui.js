@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.12'; // главный экран: «Шесть Домов…» с новой строки, внизу только номер версии
+  const VERSION = '10.12'; // главный экран: «Шесть Домов…» с новой строки, внизу только номер версии; без слова «прототип»
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -3453,7 +3453,7 @@
       <h2 class="lbl">Если что-то не так</h2>
       <nav class="list"><button class="li" data-set="check"><span class="gear" aria-hidden="true">🩺</span><span>Проверка устройства</span><i aria-hidden="true">›</i></button></nav>
       <h2 class="lbl">Об игре</h2>
-      <div class="about"><img src="${IMG('icons/i_crown.svg')}" alt=""><span><b>Претенденты</b><span class="muted">Карточная игра · прототип · версия ${VERSION}. Партия и настройки хранятся в этом браузере.</span></span></div>
+      <div class="about"><img src="${IMG('icons/i_crown.svg')}" alt=""><span><b>Претенденты</b><span class="muted">Карточная игра · версия ${VERSION}. Партия и настройки хранятся в этом браузере.</span></span></div>
       <p class="muted credit">Рисунки на картах собраны из значков <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a> (авторы — Lorc, Delapouite и другие), лицензия <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>. Цвета, фон и компоновка изменены.</p>
     </div>`;
   }
