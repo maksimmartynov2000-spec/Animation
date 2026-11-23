@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.11'; // беды двора: остались Сглаз, Проклятая реликвия и Заговор, по 2 копии; партия из прошлой версии не ломает игру
+  const VERSION = '10.12'; // главный экран: «Шесть Домов…» с новой строки, внизу только номер версии
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -2915,7 +2915,7 @@
         <span class="kicker">Карточная игра</span>
         <h1>Претенденты</h1>
         <div class="orn" aria-hidden="true"><i></i><b>◆</b><i></i></div>
-        <p>Король умер без наследника. ${({6:'Шесть',7:'Семь',8:'Восемь',9:'Девять',10:'Десять'}[hs.length] || hs.length)} Домов спорят за трон.</p>
+        <p>Король умер без наследника.<br>${({6:'Шесть',7:'Семь',8:'Восемь',9:'Девять',10:'Десять'}[hs.length] || hs.length)} Домов спорят за трон.</p>
         <div class="crests">${hs.map(h => `<img src="${IMG(`icons/h_${h}.svg`)}" alt="${esc(D.HOUSES[h].name)}" title="${esc(D.HOUSES[h].name)}">`).join('')}</div>
       </div>
       <div class="home-acts">
@@ -2934,7 +2934,7 @@
         <button class="ht" data-act="settings"><span class="hti" aria-hidden="true">⚙︎</span><span>Настройки</span></button>
       </nav>
       ${LINKS.tutorial || LINKS.catalog ? `<nav class="list" aria-label="Ссылки">${LINKS.tutorial ? `<a class="li" href="${LINKS.tutorial}" target="_blank" rel="noopener">${gico('dawn')}<span>Учебник</span><i aria-hidden="true">↗</i></a>` : ''}${LINKS.catalog ? `<a class="li" href="${LINKS.catalog}" target="_blank" rel="noopener">${gico('banner')}<span>Каталог карт</span><i aria-hidden="true">↗</i></a>` : ''}</nav>` : ''}
-      <p class="foot">версия ${VERSION} · прототип: правила и баланс ещё меняются</p>
+      <p class="foot">версия ${VERSION}</p>
     </section>`;
   }
 
