@@ -5,6 +5,7 @@
   "scripts": {
     "build": "python3 src/build.py",
     "test:engine": "node tests/fxtest.js",
+    "check": "node tests/check.js",
     "test:page": "python3 tests/make-page.py"
   },
   "devDependencies": {

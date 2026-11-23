@@ -29,14 +29,16 @@ const dev = process.argv[2] || 'i15';
   await shot('b1');
   // сыграть карту: летит на стол и в сброс
   const s0 = await stt();
-  await p.click('.handz .hcard[data-act="sel"]'); await p.waitForTimeout(250);
+  // берём карту без «возьмите карту»: иначе рука не уменьшится и проверка ложно упадёт (раздача случайная)
+  const pk = await p.evaluate(() => { const hs = [...document.querySelectorAll('.handz .hcard[data-act="sel"]')]; const dr = (h) => ((DATA.COURT[h.dataset.id] || {}).fx || []).filter(o => o[0] === 'draw').reduce((t, o) => t + (o[1] || 1), 0); const i = Math.max(0, hs.findIndex(h => !dr(h))); return { i, draw: hs[i] ? dr(hs[i]) : 0, id: hs[i] ? hs[i].dataset.id : '' }; });
+  await p.click(`.handz .hcard[data-act="sel"] >> nth=${pk.i}`); await p.waitForTimeout(250);
   await p.evaluate(() => { window.__maxPlay = 0; window.__ivP = setInterval(() => { window.__maxPlay = Math.max(window.__maxPlay, document.querySelectorAll('.board > .hcard').length); }, 16); });
   await p.click('.abar [data-act="play"]');
   await p.waitForTimeout(260); await shot('p1'); const fl1 = await p.evaluate(() => window.__maxPlay);
   await p.waitForTimeout(330); await shot('p2');
   await p.waitForTimeout(900); const fl2 = await p.evaluate(() => { clearInterval(window.__ivP); return document.querySelectorAll('.board > .hcard').length; });
   const s1 = await stt();
-  ok('карта летит из руки и долетает', fl1 === 1 && fl2 === 0 && s1.hand === s0.hand - 1 && s1.disc === s0.disc + 1, `в полёте ${fl1}, после ${fl2}; сброс ${s0.disc}→${s1.disc}`);
+  ok('карта летит из руки и долетает', fl1 === 1 && fl2 === 0 && s1.hand === s0.hand - 1 + pk.draw && s1.disc === s0.disc + 1, `«${pk.id}»: в полёте ${fl1}, после ${fl2}; рука ${s0.hand}→${s1.hand}; сброс ${s0.disc}→${s1.disc}`);
   // бросок, конец хода: остаток руки — в сброс, новые карты — из колоды
   await p.click('.abar [data-act="roll"]'); await p.waitForTimeout(2600);
   for (let i = 0; i < 12; i++) { const s = await stt(); if (!s.coins) break; await p.evaluate(() => { const b = document.querySelector('[data-act="coin-all"]'); if (b) b.click(); }); await p.waitForTimeout(250); }
