@@ -179,15 +179,9 @@ const DATA = (() => {
     // ---------- беды двора: купили — сразу подсуньте сопернику (шпионаж +3). Удача — беда в его сбросе, провал — замешайте её обратно в колоду двора.
     // Беда у вас в руке в начале хода срабатывает и действует весь ход (даже если вы её потом сыграли).
     // Сыграть беду — подсунуть её дальше. bad — ключ эффекта, badText — что она делает (человеческим языком)
-    debt: { name: 'Долговая расписка', role: null, cost: 1, bad: 'debt', fx: [['plant', 3]], copies: 1, badText: 'Отдайте 2🪙 в банк.' },
-    rumor: { name: 'Дурной слух', role: null, cost: 1, bad: 'rumor', fx: [['plant', 3]], copies: 1, badText: 'В этот ход всё на рынке вам на 2🪙 дороже.' },
-    impostor: { name: 'Самозванец', role: null, cost: 1, bad: 'impostor', fx: [['plant', 3]], copies: 1, badText: 'В этот ход у ваших карт двора нет свиты.' },
-    letter: { name: 'Подмётное письмо', role: null, cost: 1, bad: 'letter', fx: [['plant', 3]], copies: 1, badText: 'В этот ход ваши нападения и шпионы слабее на 2.' },
-    evileye: { name: 'Сглаз', role: null, cost: 1, bad: 'evileye', fx: [['plant', 3]], copies: 1, badText: 'В этот ход бросайте только один кубик.' },
-    strike: { name: 'Бунт подмастерьев', role: null, cost: 2, bad: 'strike', fx: [['plant', 3]], copies: 1, badText: 'В этот ход ваши 🟩 Ремёсла не приносят дохода.' },
-    usurer: { name: 'Ростовщик у ворот', role: null, cost: 2, bad: 'usurer', fx: [['plant', 3]], copies: 1, badText: 'В этот ход знамёна вам на 2🪙 дороже.' },
-    cursedrelic: { name: 'Проклятая реликвия', role: null, cost: 2, bad: 'relic', fx: [['plant', 3]], copies: 1, badText: 'В этот ход ваша вера не действует: ни ступени, ни обряд, ни карты веры.' },
-    schemer: { name: 'Заговор', role: null, cost: 3, bad: 'schemer', fx: [['plant', 3]], copies: 1, badText: 'В этот ход нельзя нанимать знамёна.' },
+    evileye: { name: 'Сглаз', role: null, cost: 1, bad: 'evileye', fx: [['plant', 3]], badText: 'В этот ход бросайте только один кубик.' },
+    cursedrelic: { name: 'Проклятая реликвия', role: null, cost: 2, bad: 'relic', fx: [['plant', 3]], badText: 'В этот ход ваша вера не действует: ни ступени, ни обряд, ни карты веры.' },
+    schemer: { name: 'Заговор', role: null, cost: 3, bad: 'schemer', fx: [['plant', 3]], badText: 'В этот ход нельзя нанимать знамёна.' },
 
     // ---------- Жрецы (направление «Вера»): Реликварий на рынке; карты вер — ниже ----------
     reliquary: { name: 'Реликварий', role: 'priest', cost: 4, fx: [['goldPerSym', 'faith', 1, 99]], plot: 'timed', pfx: [['goldPerSym', 'faith', 2, 99]] },
@@ -569,7 +563,7 @@ const DATA = (() => {
     house: { wolf: 'sieges', rose: 'spy', moon: 'plots', eagle: 'unions', sun: 'faith' },
     court: { siegeband: 'sieges', wolfpack: 'sieges', sappers: 'sieges', pickpocket: 'spy', saboteur: 'spy', blackmailer: 'spy', briber: 'spy',
       ballista: 'sieges', ram: 'sieges', catapult: 'sieges', siegetower: 'sieges', trebuchet: 'sieges', interceptor: 'spy', torchman: 'spy', courtesan: 'spy', agitator: 'spy', recruiter: 'spy',
-      debt: 'spy', impostor: 'spy', letter: 'spy', rumor: 'spy', cursedrelic: 'spy&faith', pr_grain: 'faith', pr_bounty: 'faith', pr_star: 'faith', pr_seer: 'faith', pr_flame: 'faith', pr_blade: 'faith', pr_shade: 'faith', pr_circle: 'faith', pr_cathedral: 'faith', pr_ash: 'faith', pr_harvest: 'faith', pr_mercy: 'faith',
+      cursedrelic: 'spy&faith', pr_grain: 'faith', pr_bounty: 'faith', pr_star: 'faith', pr_seer: 'faith', pr_flame: 'faith', pr_blade: 'faith', pr_shade: 'faith', pr_circle: 'faith', pr_cathedral: 'faith', pr_ash: 'faith', pr_harvest: 'faith', pr_mercy: 'faith',
       keeper: 'seats', fairwarden: 'seats', taxfarmer: 'seats', tutor: 'seats', physician: 'seats', dreamer: 'seats', captain: 'seats', huntsman: 'seats', bannerman: 'seats', favorite: 'seats', schemer: 'seats', gossip: 'seats',
       seneschal: 'seats', tollman: 'seats', bookman: 'seats', clockmaker: 'seats', armsmaster: 'seats', centurion: 'seats', ladyinwaiting: 'seats', confidante: 'seats', boatswain: 'seats', fence: 'seats', seeress: 'seats', sorceress: 'seats', meadmaker: 'seats', forester: 'seats', steward: 'seats', chamberlain: 'seats', envoyfam: 'seats', inspector: 'seats', harvestpriestess: 'seats', bellringer: 'seats' },
     ban: {},
@@ -578,7 +572,7 @@ const DATA = (() => {
   };
   for (const id in BAN) if (BAN[id].needs) NEEDS.ban[id] = BAN[id].needs;
   for (const id in COURT) if (COURT[id].faith) NEEDS.court[id] = 'faith';
-  Object.assign(NEEDS.court, { impostor: 'spy', letter: 'spy', usurer: 'spy', schemer: 'spy', evileye: 'spy', strike: 'spy', cursedrelic: 'spy&faith', courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats',
+  Object.assign(NEEDS.court, { schemer: 'spy', evileye: 'spy', cursedrelic: 'spy&faith', courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats',
     chamberlain: 'seats', revels: 'seats', augur: 'seats', gatekeeper: 'seats', huntsman: 'seats', cupbearer: 'seats', confessor: 'seats', gossip: 'seats' });
   // убранные карты — убрать и из списка зависимостей
   { const SRC = { court: COURT, estate: ESTATES, ban: BAN, house: HOUSES }; for (const k in SRC) for (const id in NEEDS[k] || {}) if (!SRC[k][id]) delete NEEDS[k][id]; }
