@@ -3674,9 +3674,12 @@
     const st = modOn(k) ? `Модуль включён ${S ? 'в этой партии' : 'в выбранном наборе'}.` : `Модуль выключен ${S ? 'в этой партии' : 'в выбранном наборе'} — эти правила сейчас не действуют.`;
     openPage({ title: `${pg.icon} ${pg.name}`, body: `<div class="rules"><p class="note">${st}</p>${pg.html}</div>` });
   }
-  // «Все карты»: весь набор, как в печати. Фильтр по модулям — как набор партии: основа + отмеченные модули.
-  // catSel: null — весь набор (карты выключенных в партии модулей помечены), Set — показать только такой набор
+  // «Все карты»: весь набор, как в печати. Фильтр — по наборам: основа, модули и великие лорды включаются по отдельности (v10.13).
+  // catSel: null — весь набор (карты выключенных в партии модулей помечены), Set наборов ('base', модули, 'great') — только они.
+  // Карта видна, если все её наборы отмечены: карта Вражды — при «Вражде», карта «Вражда + Вера» — когда отмечены обе.
   let catSel = null;
+  const CAT_SETS = () => [['base', '🏰', 'Основа'], ...MODK.map(k => [k, D.MODULES[k].icon, D.MODULES[k].short || D.MODULES[k].name]), ['great', D.MODULES.great.icon, 'Великие']];
+  const gameSets = () => new Set(['base', ...MODK.filter(modOn), ...(modOn('great') ? ['great'] : [])]);
   // фильтры внутри вкладок: тип владения, роль карты двора, уровень знамени и направление (значок)
   const catSub = { estates: 'all', court: 'all', bans: 'all' };
   let catDir = 'all';
@@ -3715,8 +3718,10 @@
     };
     const metIn = (k, has) => k.split('|').some(x => x.split('&').every(has));
     const okIn = (kind, id, has) => reqs(kind, id).every(k => metIn(k, has));
-    const inSel = (m) => m === 'lords' || catSel.has(m) || !!(D.MODULES[m] && D.MODULES[m].member && catSel.has(D.MODULES[m].member)); // лорды — в основе; части «Вражды» и «Двора» — по общему модулю
-    const show = (kind, id) => !catSel || okIn(kind, id, inSel);
+    // набор карты: лорды — в основе; части «Вражды» и «Двора» — по общему модулю
+    const setOf = (m) => (m === 'lords' ? 'base' : (D.MODULES[m] && D.MODULES[m].member) || m);
+    const inSel = (m) => catSel.has(setOf(m));
+    const show = (kind, id) => { if (!catSel) return true; const r = reqs(kind, id); return r.length ? r.every(k => metIn(k, inSel)) : catSel.has('base'); };
     const offOf = (kind, id) => [...new Set(reqs(kind, id).filter(k => !metIn(k, modOn)).flatMap(k => k.split('|')[0].split('&').filter(x => !modOn(x))))];
     const offTxt = (ks) => `${ks.length > 1 ? 'модули' : 'модуль'} ${modList(ks)} ${ks.length > 1 ? 'выключены' : 'выключен'} ${where}`;
     const off = (kind, id) => { if (catSel) return ''; const ks = offOf(kind, id); return ks.length ? `<span class="miss">${offTxt(ks)}</span>` : ''; };
@@ -3732,7 +3737,7 @@
         const order = { null: 0, merchant: 1, scholar: 2, knight: 3, spy: 4, priest: 5 };
         const ids = Object.keys(D.COURT).filter(id => !D.COURT[id].sig && !D.COURT[id].start && show('court', id) && subOk('court', id));
         ids.sort((a, b) => (D.COURT[a].bad ? 9 : order[D.COURT[a].role]) - (D.COURT[b].bad ? 9 : order[D.COURT[b].role]) || D.COURT[a].cost - D.COURT[b].cost);
-        return [...Object.keys(D.COURT).filter(id => D.COURT[id].start && catSub.court === 'all'), ...ids];
+        return [...Object.keys(D.COURT).filter(id => D.COURT[id].start && catSub.court === 'all' && show('court', id)), ...ids];
       },
       houses: () => Object.keys(D.HOUSES).filter(h => show('house', h)),
       houseCards: (h) => { const x = D.HOUSES[h]; return [['house', h], ...x.estates.filter(id => D.ESTATES[id].house).map(id => ['estate', id]), ...famOf(x).map(id => ['court', id]), ['ban', x.heir]].filter(([k, id]) => show(k, id)); },
@@ -3741,14 +3746,15 @@
     };
     const count = () => L.estates().length + L.court().length + ['v', 'l', 'g'].reduce((a, t) => a + L.bans(t).length, 0) + L.houses().reduce((a, h) => a + L.houseCards(h).length, 0) + L.table().length + 1;
     const TOTAL = (() => { const s = catSel; catSel = null; const n = count(); catSel = s; return n; })();
-    const isGame = (s) => s && MODK.every(k => s.has(k) === !!modOn(k));
+    const isGame = (s) => { if (!s) return false; const g = gameSets(); return s.size === g.size && [...g].every(k => s.has(k)); };
     const head = () => {
       const chip = (attr, label, on) => `<button class="chip${on ? ' on' : ''}" ${attr}>${label}</button>`;
-      const presets = chip('data-cf="all"', 'Весь набор', !catSel) + chip('data-cf="game"', S ? 'Эта партия' : 'Выбранный набор', isGame(catSel)) + chip('data-cf="base"', 'Основа', catSel && !catSel.size);
-      const mods = MODK.map(k => chip(`data-cm="${k}"`, `${D.MODULES[k].icon} ${D.MODULES[k].short || D.MODULES[k].name}`, catSel && catSel.has(k))).join('');
+      const presets = chip('data-cf="all"', 'Весь набор', !catSel) + chip('data-cf="game"', S ? 'Эта партия' : 'Выбранный набор', isGame(catSel));
+      const mods = CAT_SETS().map(([k, ic, nm]) => chip(`data-cm="${k}"`, `${ic} ${nm}`, catSel && catSel.has(k))).join('');
       const offMods = MODK.filter(k => !modOn(k));
-      const note = !catSel ? `Все ${TOTAL} разных карт игры — как в печатном наборе.${offMods.length ? ` Карты модулей, выключенных ${where}, помечены красным.` : ''}`
-        : `Набор: основа${catSel.size ? ' + ' + MODK.filter(k => catSel.has(k)).map(k => D.MODULES[k].short || D.MODULES[k].name).join(', ') : ''} — ${count()} из ${TOTAL} карт. Отметьте модули, чтобы добавить их карты.`;
+      const picked = CAT_SETS().filter(([k]) => catSel && catSel.has(k)).map(([, , nm]) => nm);
+      const note = !catSel ? `Все ${TOTAL} разных карт игры — как в печатном наборе.${offMods.length ? ` Карты модулей, выключенных ${where}, помечены красным.` : ''} Нажмите на набор, чтобы смотреть только его карты.`
+        : picked.length ? `Показаны: ${picked.join(' + ')} — ${count()} из ${TOTAL} карт. Нажимайте на наборы, чтобы добавить или убрать их карты.` : 'Ничего не отмечено — выберите хотя бы один набор.';
       return `<div class="modf"><div class="chips">${presets}</div><div class="chips">${mods}</div></div><p class="note">${note}</p>`;
     };
     const content = (w) => subRow(w) + contentInner(w);
@@ -3795,8 +3801,9 @@
       const sb = e.target.closest('[data-sub]'), dr = e.target.closest('[data-dir]');
       if (sb) { catSub[which] = sb.dataset.sub; redraw(); return; }
       if (dr) { catDir = dr.dataset.dir; redraw(); return; }
-      if (f) { const v = f.dataset.cf; catSel = v === 'all' ? null : v === 'base' ? new Set() : new Set(MODK.filter(modOn)); redraw(); return; }
-      if (m) { const k = m.dataset.cm; catSel = new Set(catSel || []); if (catSel.has(k)) catSel.delete(k); else catSel.add(k); redraw(); return; }
+      if (f) { catSel = f.dataset.cf === 'all' ? null : gameSets(); redraw(); return; }
+      // из «Весь набор» первое нажатие на набор показывает только его; дальше — добавить или убрать
+      if (m) { const k = m.dataset.cm; catSel = catSel ? new Set(catSel) : new Set(); if (catSel.has(k)) catSel.delete(k); else catSel.add(k); redraw(); return; }
       if (!b) return;
       which = b.dataset.seg;
       pg.el.querySelectorAll('[data-seg]').forEach(x => x.classList.toggle('on', x === b));

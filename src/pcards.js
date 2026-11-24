@@ -64,6 +64,8 @@
   const dz = (key) => (FIT[key] >= 10 ? ' pc-dense' : '');
 
   const mtagOf = (need) => { if (!need) return ''; const ks = [...new Set(String(need).split(/[|&]/).filter(k => D.MODULES[k]).map(k => D.MODULES[k].member || k))]; if (!ks.length) return ''; return `<span class="pc-mtag">${ks.map(k => `${D.MODULES[k].icon} ${D.MODULES[k].short}`).join(String(need).includes('&') ? ' + ' : ' / ')}</span>`; };
+  // v10.13: у карт основы — такая же плашка, как у модулей: «🏰 Основа» (раньше — «×2 в колоде», «вассал», «дом»)
+  const BASE_TAG = '<span class="pc-mtag pc-base">🏰 Основа</span>';
   // плашка внизу: герб Дома + «Старт · Олени» — копия из набора Дома, не из колоды рынка
   const startTag = (h, word = 'Старт') => `<span class="pc-stag" style="--hc:${HOUSE[h][1]}">${D.HOUSES[h].sigil} ${word ? `${word} · ` : ''}${D.HOUSES[h].short}</span>`;
   const houseOfSig = (id) => Object.keys(D.HOUSES).find(h => D.HOUSES[h].deck.includes(id) || D.HOUSES[h].courtier === id || D.HOUSES[h].courtier2 === id);
@@ -82,8 +84,8 @@
     const onBuy = f.perm.filter(x => x.buy), keep = f.perm.filter(x => !x.buy);
     const perm = (keep.length ? `<div class="pc-perm"><span class="pc-lbl">Постоянно</span>${chips(keep)}</div>` : '') + (onBuy.length ? `<div class="pc-perm"><span class="pc-lbl">При покупке</span>${chips(onBuy)}</div>` : '');
     const need = D.NEEDS.estate[id];
-    const copies = d.basic ? `всего ×${(D.RULES.basicStock || {})[id] || '∞'}` : d.t === 'hold' ? `×${d.copies || 4} · по 1 на игрока` : need ? `×${d.copies || 3}` : `×${d.copies || 3} в колоде`;
-    const left = o.start ? startTag(o.start) : d.house ? startTag(d.house) : `<span class="pc-fl">${need ? mtagOf(need) : ''}<span class="pc-basic">${copies}</span></span>`;
+    const copies = d.basic ? `всего ×${(D.RULES.basicStock || {})[id] || '∞'}` : d.t === 'hold' ? `×${d.copies || 4} · по 1 на игрока` : `×${d.copies || 3}`;
+    const left = o.start ? startTag(o.start) : d.house ? startTag(d.house) : `<span class="pc-fl">${need ? mtagOf(need) : BASE_TAG}<span class="pc-basic">${copies}</span></span>`;
     return iconize(root('pc-est' + dz('e:' + id), T.c, T.dark, o, `
       <div class="pc-art"><img src="${CFG.art('e', id)}" alt="">${shield}</div>
       <div class="pc-name">${d.name}</div>
@@ -117,7 +119,7 @@
     const spyRole = c.role === 'spy' && D.RULES.spyBuyoff && on(o, 'spy') && (c.fx || []).some(op => op[0] === 'spy');
     const mtag = mtagOf(D.NEEDS.court[id] || (sigH && D.NEEDS.house[sigH]));
     // низ: сколько копий — на каждой карте; у карт модулей рядом значок модуля; у карт веры — одинаковая подпись
-    const left = c.faith ? `<span class="pc-basic">карта веры · ×${c.copies || 1}</span>` : o.start ? startTag(o.start) : sigH ? startTag(sigH, '') : c.start ? `<span class="pc-basic">×${D.RULES.startTax} у каждого</span>` : `<span class="pc-fl">${mtag || ''}<span class="pc-basic">×${c.copies || 2}${mtag ? '' : ' в колоде'}</span></span>`;
+    const left = c.faith ? `<span class="pc-basic">карта веры · ×${c.copies || 1}</span>` : o.start ? startTag(o.start) : sigH ? startTag(sigH, '') : c.start ? `<span class="pc-basic">×${D.RULES.startTax} у каждого</span>` : `<span class="pc-fl">${mtag || BASE_TAG}<span class="pc-basic">×${c.copies || 2}</span></span>`;
     const right = c.faith ? mtag || '<span></span>' : sigH && mtag ? mtag : c.start || c.sig ? '<span></span>' : `<span class="pc-cost">${c.cost}${coin(1)}</span>`;
     return iconize(root('pc-crt' + dz('c:' + id), R.c, R.dark, o, `
       <div class="pc-art"><img src="${CFG.art(c.sig ? 'f' : 'c', id)}" alt=""><div class="pc-shield"><span>${icon}</span></div>${tag}</div>
@@ -154,7 +156,7 @@
       const H = D.HOUSES[id];
       const extra = [on(o, 'faith') ? `<b>Вера:</b> ${H.dir === 'faith' ? 'любая' : D.SYM[H.dir]} — на 1🕯 проще` : ''].filter(Boolean).join(' · ');
       return { key: `h_${id}`, c: HOUSE[id], icon: H.sigil, name: H.name, type: `Дом · ${H.path}`, fx: (o && o.mod) ? chips([{ v: '+1', i: H.dir, c: 'родной значок' }]) + modChips(H.mods, null, o) : chips([{ v: '+1', i: H.dir, c: 'родной значок' }, ...FX.mods(H.mods, null)]),
-        post: `${extra}<br><b>Старт:</b> ${D.RULES.startGold + (H.gold || 0)}🪙; ${H.estates.map(e => `${D.ETYPE[est(e).t].mark} ${est(e).name}`).join(', ')}.<br><b>Колода:</b> Подать ×${D.RULES.startTax}, ${startDeck(H)}`, left: mtag(D.NEEDS.house[id]) || 'дом' };
+        post: `${extra}<br><b>Старт:</b> ${D.RULES.startGold + (H.gold || 0)}🪙; ${H.estates.map(e => `${D.ETYPE[est(e).t].mark} ${est(e).name}`).join(', ')}.<br><b>Колода:</b> Подать ×${D.RULES.startTax}, ${startDeck(H)}`, left: mtag(D.NEEDS.house[id]) || BASE_TAG };
     }
     if (kind === 'ban') {
       const b = D.BAN[id], T = TIERM[b.tier];
@@ -172,7 +174,7 @@
       const take = terms.length ? `<div class="pc-terms2">${terms.join('')}</div>` : '', upk = '', tax = '';
       const seat = b.tier === 'l' && on(o, 'seats') ? chips([{ v: '+1', i: 'seat', c: 'место при дворе' }]) : '';
       const need = D.NEEDS.ban[id];
-      const left = b.heir ? startTag(b.heir, 'Наследник') : mtag(b.tier === 'l' ? 'lords' : b.tier === 'g' ? 'great' : null, need && !need.includes('|') && !need.includes('&') ? need : null) || `<span class="pc-basic">${T.name.toLowerCase()}</span>`;
+      const left = b.heir ? startTag(b.heir, 'Наследник') : mtag(b.tier === 'l' ? 'lords' : b.tier === 'g' ? 'great' : null, need && !need.includes('|') && !need.includes('&') ? need : null) || BASE_TAG;
       return { key: `b_${id}`, c: DIRC[b.dir], icon: D.SYM[b.dir], tier: b.tier, tag: T.icon, name: b.name, type: `${T.name} · ${b.title}`.length > 30 ? b.title : `${T.name} · ${b.title}`, fx: modChips(b.mods, pr, o) + seat + take + upk + tax, left, cost: b.cost };
     }
     if (kind === 'faith') {
