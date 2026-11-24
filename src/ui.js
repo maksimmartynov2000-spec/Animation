@@ -3678,8 +3678,9 @@
   // catSel: null — весь набор (карты выключенных в партии модулей помечены), Set наборов ('base', модули, 'great') — только они.
   // Карта видна, если все её наборы отмечены: карта Вражды — при «Вражде», карта «Вражда + Вера» — когда отмечены обе.
   let catSel = null;
-  const CAT_SETS = () => [['base', '🏰', 'Основа'], ...MODK.map(k => [k, D.MODULES[k].icon, D.MODULES[k].short || D.MODULES[k].name]), ['great', D.MODULES.great.icon, 'Великие']];
-  const gameSets = () => new Set(['base', ...MODK.filter(modOn), ...(modOn('great') ? ['great'] : [])]);
+  // «Вражда» в фильтре — двумя кнопками: осады и шпионаж (в настройках партии она включается целиком)
+  const CAT_SETS = () => [['base', '🏰', 'Основа'], ...MODK.flatMap(k => (D.MODULES[k].group && k === 'conflict' ? D.MODULES[k].group.map(m => [m, D.MODULES[m].ownIcon || D.MODULES[m].icon, D.MODULES[m].name]) : [[k, D.MODULES[k].icon, D.MODULES[k].short || D.MODULES[k].name]])), ['great', D.MODULES.great.icon, 'Великие']];
+  const gameSets = () => new Set(['base', ...CAT_SETS().map(([k]) => k).filter(k => k !== 'base' && k !== 'great' && modOn(k)), ...(modOn('great') ? ['great'] : [])]);
   // фильтры внутри вкладок: тип владения, роль карты двора, уровень знамени и направление (значок)
   const catSub = { estates: 'all', court: 'all', bans: 'all' };
   let catDir = 'all';
@@ -3719,7 +3720,7 @@
     const metIn = (k, has) => k.split('|').some(x => x.split('&').every(has));
     const okIn = (kind, id, has) => reqs(kind, id).every(k => metIn(k, has));
     // набор карты: лорды — в основе; части «Вражды» и «Двора» — по общему модулю
-    const setOf = (m) => (m === 'lords' ? 'base' : (D.MODULES[m] && D.MODULES[m].member) || m);
+    const setOf = (m) => (m === 'lords' ? 'base' : m === 'sieges' || m === 'spy' ? m : (D.MODULES[m] && D.MODULES[m].member) || m);
     const inSel = (m) => catSel.has(setOf(m));
     const show = (kind, id) => { if (!catSel) return true; const r = reqs(kind, id); return r.length ? r.every(k => metIn(k, inSel)) : catSel.has('base'); };
     const offOf = (kind, id) => [...new Set(reqs(kind, id).filter(k => !metIn(k, modOn)).flatMap(k => k.split('|')[0].split('&').filter(x => !modOn(x))))];
