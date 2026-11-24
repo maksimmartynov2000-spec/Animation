@@ -1,5 +1,5 @@
 // v10.11: незаконченная партия из прошлой версии (в ней карта, которой больше нет) не ломает игру — сохранение сбрасывается,
-// на главном экране сообщение. Карту ищем во всех стопках: у игрока, на рынке, в колоде двора. node save.js [file]
+// на главном экране сообщение. Карту ищем во всех стопках: у игрока, на рынке, в колоде двора; v10.14 — и по виду карты. node save.js [file]
 const { chromium } = require('playwright');
 const SP = require('path').join(__dirname, '..', '.work') + '/';
 const FILE = process.argv[2] || (SP + 'test-embed.html');
@@ -18,7 +18,7 @@ const SAVE_KEY = 'velikie-doma-save-v1';
   const toastSeen = async () => { for (let i = 0; i < 30; i++) { const t = await p.evaluate(() => [...document.querySelectorAll('.toast')].map(x => x.innerText).join(' | ')); if (/прошлой версии/.test(t)) return t; await p.waitForTimeout(150); } return ''; };
   const saved = () => p.evaluate((k) => localStorage.getItem(k), SAVE_KEY);
   // испортить сохранение: вписать карту, которой нет в игре, в нужную стопку
-  const spoil = (save, where) => { const g = JSON.parse(save); const S = JSON.parse(g.S); if (where === 'hand') S.players[0].hand.push('debt'); else S[where].unshift('debt'); g.S = JSON.stringify(S); return JSON.stringify(g); };
+  const spoil = (save, where, id = 'debt') => { const g = JSON.parse(save); const S = JSON.parse(g.S); if (where === 'hand') S.players[0].hand.push(id); else S[where].unshift(id); g.S = JSON.stringify(S); return JSON.stringify(g); };
   const openWith = async (save) => { await p.goto('about:blank'); await p.goto('file://' + FILE + '#inject=' + encodeURIComponent(save)); await home(); };
 
   await p.goto('file://' + FILE); await home();
@@ -31,8 +31,9 @@ const SAVE_KEY = 'velikie-doma-save-v1';
   ok('обычное сохранение: на главном экране «Продолжить партию»', await hasCont());
   ok('обычное сохранение: сообщения о прошлой версии нет', !(await toastSeen()));
   // 2–4. карта из прошлой версии в разных стопках — сохранение сбрасывается, игра говорит почему
-  for (const [where, name] of [['hand', 'в руке игрока'], ['courtRow', 'на рынке'], ['courtDeck', 'в колоде двора']]) {
-    await openWith(spoil(s0, where));
+  // v10.14: и карта, которая сменила вид — беда двора «Сглаз» стала проклятием-владением
+  for (const [where, name, id] of [['hand', 'в руке игрока'], ['courtRow', 'на рынке'], ['courtDeck', 'в колоде двора'], ['hand', 'в руке игрока («Сглаз» — теперь проклятие)', 'evileye']]) {
+    await openWith(spoil(s0, where, id));
     const t = await toastSeen();
     ok(`карта из прошлой версии ${name}: «Продолжить» нет, сохранение убрано`, !(await hasCont()) && !(await saved()));
     ok(`карта из прошлой версии ${name}: сообщение на главном экране`, !!t, t);

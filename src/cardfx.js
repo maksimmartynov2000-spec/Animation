@@ -16,16 +16,24 @@
 
   // ---------- владения ----------
   const WHO = { land: ['any', 'в ход любого игрока'], craft: ['own', 'в свой ход'], raid: ['other', 'в ход другого игрока'], hold: ['own', 'в свой ход'], bad: ['other', 'в ход другого игрока'] };
+  // v10.14: проклятия — что делают, пока лежат у того, кому их подбросили (крупно на карте)
+  const CURSE = {
+    tax: () => ({ v: '0', i: 'gold', c: 'доход его 🟩 Ремёсел получает тот, кто подбросил', big: true }),
+    blight: () => ({ v: '0', i: 'gold', c: 'его 🟦 Земли не приносят дохода', big: true }),
+    quarantine: () => ({ c: 'он не покупает владения', big: true }),
+    bandits: () => ({ v: '0', i: 'gold', c: 'его 🟥 Набеги и 🟪 Твердыни не приносят дохода', big: true }),
+    walls: (d) => ({ v: `−${Math.abs(d.walls || 0)}`, i: 'wall', c: 'его 🧱 Стены слабее', big: true }),
+    evileye: () => ({ v: '1', i: 'dice', c: 'он бросает только один кубик', big: true }),
+    relic: () => ({ v: '✕', i: 'faith', c: 'его вера не действует: ни ступени, ни обряд, ни карты веры', big: true }),
+    schemer: () => ({ v: '✕', i: 'banner', c: 'он не нанимает знамёна', big: true }),
+  };
   function estate(d) {
-    const trig = d.t === 'wall' || d.bad === 'walls' ? { who: 'none', label: d.t === 'wall' ? 'от кубика не срабатывает' : 'действует всегда', nums: [] } : d.bad === 'quarantine' ? { who: 'own', label: 'в ход того, у кого лежит', nums: d.n } : d.bad ? { who: 'any', label: 'в ход любого игрока', nums: d.n } : { who: WHO[d.t][0], label: WHO[d.t][1], nums: d.n };
+    const trig = d.t === 'wall' || d.bad ? { who: 'none', label: d.t === 'wall' ? 'от кубика не срабатывает' : 'действует всегда', nums: [] } : { who: WHO[d.t][0], label: WHO[d.t][1], nums: d.n };
     let main;
     if (d.t === 'wall') main = [{ v: `+${d.walls}`, i: 'wall', big: true }];
     else if (d.t === 'raid') main = [{ v: `+${d.inc}`, i: 'gold', c: 'заберите у того, чей ход', big: true }];
     else if (d.t === 'hold') main = [{ v: `+${d.inc}`, i: 'gold', c: 'заберите у самого богатого соперника', big: true }];
-    else if (d.bad === 'toll') main = [{ v: `−${d.inc}`, i: 'gold', c: 'тот, у кого оно лежит, отдаёт подбросившему; в свой ход — в банк', big: true }];
-    else if (d.bad === 'blight') main = [{ v: '0', i: 'gold', c: 'в этот бросок его Земли и Ремёсла не приносят дохода', big: true }];
-    else if (d.bad === 'quarantine') main = [{ v: '✕', i: 'banner', c: 'до конца хода нельзя нанимать знамёна', big: true }];
-    else if (d.bad === 'walls') main = [{ v: `${d.walls}`, i: 'wall', c: 'у того, у кого оно лежит', big: true }];
+    else if (d.bad) main = [CURSE[d.bad] ? CURSE[d.bad](d) : { c: d.badText, big: true }];
     else if (d.perProv) main = [{ v: `+${d.perN}`, i: 'gold', x: 'prov' + d.perProv, c: `за каждое ваше владение ${PGEN[d.perProv]}`, big: true }];
     else if (d.per) {
       const x = d.per === 'land' ? 'land' : d.per === 'raid' ? 'raid' : d.per === 'provS' ? 'provS' : d.per === 'prov' ? null : d.per;
@@ -40,7 +48,7 @@
     if (d.guard) perm.push({ v: `+${d.guard}`, i: 'guard' });
     if (d.mods) perm.push(...mods(d.mods));
     if (d.fixed) perm.push({ c: 'захватить нельзя; разрушить — только Тараном' });
-    if (d.bad) perm.push({ v: '+2', i: 'war', c: 'купили — сразу подбросьте сопернику, нападение: удача — владение у него, провал — замешайте в колоду владений', buy: true });
+    if (d.bad) perm.push({ v: '+3', i: 'int', c: 'купили — сразу подбросьте сопернику, шпионаж: удача — проклятие у него, провал — замешайте в колоду владений', buy: true });
     return { trig, main, perm, note: '' };
   }
 
@@ -58,6 +66,10 @@
     if (eff === 'tax') return `он отдаёт в банк ${p}🪙 за каждое своё знамя`;
     if (eff === 'distract') return 'его лорд на ваш выбор не действует до конца его следующего хода';
     if (eff === 'riot') return `в его следующий ход содержание его великих лордов на ${p}🪙 дороже`;
+    if (eff === 'arson') return `соперник теряет ${p}🪙`;
+    if (eff === 'denounce') return `соперник сбрасывает ${p} ${plural(p, 'случайную карту', 'случайные карты', 'случайных карт')} из руки`;
+    if (eff === 'slander') return 'в свой следующий ход он не покупает карты двора';
+    if (eff === 'feast') return `он сбрасывает случайную карту из руки и теряет ${p}🪙`;
     return '';
   }
   function fx(list) {

@@ -29,7 +29,7 @@
     raid: { c: '#ab3434', dark: '#7a2222', label: 'Набег' },
     hold: { c: '#683c88', dark: '#48295f', label: 'Твердыня' },
     wall: { c: '#5d6470', dark: '#3e434c', label: 'Укрепление' },
-    bad: { c: '#3b3436', dark: '#221d1e', label: 'Беда' },
+    bad: { c: '#3b3436', dark: '#221d1e', label: 'Проклятие' },
   };
   const ROLE = {
     merchant: { c: '#a8781c', dark: '#6e4d0c', label: 'Купец', icon: '⚖️' },
@@ -57,7 +57,7 @@
   const MOD_CARDS = ['sets', ...(D.MODULE_PICK || D.MODULE_KEYS)]; // лорды — в основе, «Баланс» убран
   const PROV = { N: 'Север', S: 'Юг', E: 'Восток', W: 'Запад' };
   // плотные карты: мелкий текст эффектов ужат, чтобы влезло с запасом 3% (считает cards/fit.js)
-  const FIT = {"e:shrine":0.86,"e:citadel":10.99,"e:harvesttemple":0.86,"e:granary":0.89,"e:runestone":0.86,"e:chancery":11,"e:port":0.86,"e:thieves":0.89,"e:embassy":0.89,"e:falsetax":10.86,"e:blight":10.88,"e:plaguehouse":10.88,"e:banditpost":10.86,"e:ashes":10.97,"c:sappers":0.88,"c:siegeband":11,"c:blackmailer":10.97,"c:ram":0.88,"c:recruiter":11,"c:cursedrelic":0.91,"c:dreamer":0.91,"c:astrologer":0.99,"c:chronicler":10.9,"c:augur":0.99,"c:huntsman":0.97,"c:cupbearer":0.93,"c:bearhoard":0.98,"h:deer":11,"h:owl":11,"h:wolf":0.91,"h:serpent":10.85,"h:bear":11,"h:lion":11,"b:martin":11,"b:anselm":0.91,"b:alberich":11,"b:albin":0.9,"b:theodor":11,"b:gottfried":10.85,"b:bertrand":0.9,"b:robert":0.9,"b:hagen":11,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:rowena":11,"b:irmina":0.9,"b:bruno":11,"b:warden":0.9,"b:gregory":11,"b:sebastian":11,"b:heir_deer":0.9,"b:heir_owl":0.91,"b:heir_wolf":11,"b:heir_serpent":0.9,"b:heir_bear":11,"b:heir_lion":11,"b:aldo":10.99,"b:edward":10.93,"b:otto":10.99,"b:oberon":0.95,"f:grain":10.84,"f:harvest":10.84,"f:seer":10.8,"f:star":10.8,"f:flame":10.96,"f:blade":10.8,"f:shade":10.84,"f:cathedral":10.87,"p:N":10.94,"p:S":10.86,"p:E":10.94,"p:W":10.9,"m:sets":0.89,"m:faith":0.85,"m:conflict":10.88,"m:court":0.84};
+  const FIT = {"e:shrine":0.86,"e:citadel":10.99,"e:harvesttemple":0.86,"e:granary":0.89,"e:runestone":0.86,"e:chancery":11,"e:port":0.86,"e:thieves":0.89,"e:embassy":0.89,"e:falsetax":10.82,"e:blight":10.82,"e:plaguehouse":10.95,"e:banditpost":10.82,"e:ashes":10.82,"c:sappers":0.88,"c:siegeband":11,"c:blackmailer":10.97,"c:ram":0.88,"c:recruiter":11,"c:dreamer":0.91,"c:astrologer":0.99,"c:chronicler":10.9,"c:augur":0.99,"c:huntsman":0.97,"c:cupbearer":0.93,"c:bearhoard":0.98,"h:deer":11,"h:owl":11,"h:wolf":0.91,"h:serpent":10.85,"h:bear":11,"h:lion":11,"b:martin":11,"b:anselm":0.91,"b:alberich":11,"b:albin":0.9,"b:theodor":11,"b:gottfried":10.85,"b:bertrand":0.9,"b:robert":0.9,"b:hagen":11,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:rowena":11,"b:irmina":0.9,"b:bruno":11,"b:warden":0.9,"b:gregory":11,"b:sebastian":11,"b:heir_deer":0.9,"b:heir_owl":0.91,"b:heir_wolf":11,"b:heir_serpent":0.9,"b:heir_bear":11,"b:heir_lion":11,"b:aldo":10.99,"b:edward":10.93,"b:otto":10.99,"b:oberon":0.95,"f:grain":10.84,"f:harvest":10.84,"f:seer":10.8,"f:star":10.8,"f:flame":10.96,"f:blade":10.8,"f:shade":10.84,"f:cathedral":10.87,"p:N":10.94,"p:S":10.86,"p:E":10.94,"p:W":10.9,"m:sets":0.89,"m:faith":0.85,"m:conflict":10.88,"m:court":0.84,"e:evileye":10.82,"e:cursedrelic":10.82,"e:schemer":10.82};
   // FIT[key]: k — ужать текст эффектов; k + 10 — плотная карта: рисунок ниже, текст ужат на k
   const fitK = (key) => { const v = FIT[key]; return v ? (v >= 10 ? +(v - 10).toFixed(2) : v) : 0; };
   const fit = (key) => (fitK(key) ? ` style="--k:${fitK(key)}"` : '');
@@ -79,10 +79,11 @@
     if (!on(o, 'sieges')) f.perm = f.perm.filter(x => x.i !== 'wall'); // без осад стены ничего не дают
     const num = d.n.length ? D.numText(d.n) : '';
     const fsz = num.length <= 3 ? 5.2 : num.length === 4 ? 4.6 : 4.0; // «11–12» должно влезть в щит
-    const shield = num ? `<div class="pc-shield${num.length >= 4 ? ' pc-wide' : ''}"><span style="font-size:${u(fsz)}">${num}</span></div>` : `<div class="pc-shield"><span class="pc-sic">${ico('wall')}</span></div>`;
+    const shield = num ? `<div class="pc-shield${num.length >= 4 ? ' pc-wide' : ''}"><span style="font-size:${u(fsz)}">${num}</span></div>` : `<div class="pc-shield"><span class="pc-sic">${ico(d.t === 'bad' ? 'none' : 'wall')}</span></div>`;
     const prov = d.p ? `<span class="pc-pv">·</span>${ico('prov' + d.p)}${PROV[d.p]}` : ''; // провинция: для «пар» и карт «за каждое владение провинции»
     const onBuy = f.perm.filter(x => x.buy), keep = f.perm.filter(x => !x.buy);
-    const perm = (keep.length ? `<div class="pc-perm"><span class="pc-lbl">Постоянно</span>${chips(keep)}</div>` : '') + (onBuy.length ? `<div class="pc-perm"><span class="pc-lbl">При покупке</span>${chips(onBuy)}</div>` : '');
+    const perm = (keep.length ? `<div class="pc-perm"><span class="pc-lbl">Постоянно</span>${chips(keep)}</div>` : '') + (onBuy.length ? `<div class="pc-perm"><span class="pc-lbl">При покупке</span>${chips(onBuy)}</div>` : '')
+      + (d.t === 'bad' ? `<div class="pc-perm"><span class="pc-lbl">Снять</span>${chips([{ v: `${D.RULES.purgeCost || 2}`, i: 'gold', c: 'и действие в свой ход — карта уходит в колоду владений' }])}</div>` : ''); // как снять проклятие
     const need = D.NEEDS.estate[id];
     const copies = d.basic ? `всего ×${(D.RULES.basicStock || {})[id] || '∞'}` : d.t === 'hold' ? `×${d.copies || 4} · по 1 на игрока` : `×${d.copies || 3}`;
     const left = o.start ? startTag(o.start) : d.house ? startTag(d.house) : `<span class="pc-fl">${need ? mtagOf(need) : BASE_TAG}<span class="pc-basic">${copies}</span></span>`;
@@ -97,15 +98,15 @@
   // ---------- карта двора: что даёт сразу → свита → замысел ----------
   function court(id, o = {}) {
     const c = D.COURT[id];
-    const R = c.bad ? { c: TYPE.bad.c, dark: TYPE.bad.dark, label: TYPE.bad.label, icon: 'none' } : ROLE[c.role || 'none']; // беда — тёмная рамка, как у бед-владений
+    const R = c.scheme ? { c: TYPE.bad.c, dark: TYPE.bad.dark, label: 'Козни', icon: 'none' } : ROLE[c.role || 'none']; // козни — тёмная рамка, как у проклятий
     const f = FX.court(c);
     if (!on(o, 'plots')) f.plot = null; // без замыслов карту можно только сыграть
     const icon = R.icon === 'coin' ? coin(1.05) : R.icon === 'none' ? ico('none', { em: 1.05 }) : `<span class="pc-emo">${R.icon}</span>`;
     const pnT = Array.isArray(c.pn) ? c.pn.join('·') : c.pn;
     const tag = c.plot && f.plot ? `<div class="pc-corner">${c.plot === 'dice' ? `${ico('dice')}${pnT}` : `${ico('plot')}замысел`}</div>` : '';
     const has = (k) => (c.fx || []).some(op => op[0] === k);
-    const atk = has('siege') ? 'захват' : has('raze') ? 'разрушение' : has('plant') ? 'подсунуть' : has('spy') ? 'шпионаж' : null;
-    const type = (c.bad ? 'Беда' : c.start ? 'Стартовая · без роли' : c.sig ? `Фамильная · ${R.label}` : c.faith ? `${R.label} · ${D.FAITHS[c.faith].name}` : R.label) + (atk ? `<span class="pc-atk">Нападение: ${atk}</span>` : '');
+    const atk = has('siege') ? 'захват' : has('raze') ? 'разрушение' : has('spy') ? 'шпионаж' : null;
+    const type = (c.scheme ? 'Козни' : c.start ? 'Стартовая · без роли' : c.sig ? `Фамильная · ${R.label}` : c.faith ? `${R.label} · ${D.FAITHS[c.faith].name}` : R.label) + (atk ? `<span class="pc-atk">Нападение: ${atk}</span>` : '');
     const play = f.play.length === 1 && f.play[0].i === 'gold' ? [Object.assign({}, f.play[0], { big: true })] : f.play;
     const blocks = [];
     // блок: метка слева, справа — условие словами (мелко) и что даёт
@@ -114,7 +115,6 @@
     if (f.seat && on(o, 'seats')) blocks.push(`<div class="pc-blk pc-seat${o.seatOn ? ' pc-on' : ''}"><span class="pc-lbl">При дворе<br>${ico('seat')}</span>${bx('', chips(f.seat))}</div>`);
     if (f.plot) blocks.push(`<div class="pc-blk"><span class="pc-lbl">${f.plot.kind === 'dice' ? `Замысел<br>${ico('dice')} <b>${pnT}</b>` : `Замысел<br>${ico('plot')}`}</span>${bx('', chips(f.plot.chips))}</div>`);
     if (c.faith && c.ffx && on(o, 'faith')) blocks.push(`<div class="pc-blk pc-faith${o.faithOn ? ' pc-on' : ''}"><span class="pc-lbl">Ваша вера —<br>${D.FAITHS[c.faith].name}</span>${bx('', chips(FX.fx(c.ffx)))}</div>`);
-    if (c.bad) blocks.push(`<div class="pc-blk pc-bad"><span class="pc-lbl">Беда<br>в руке</span>${bx('в начале вашего хода:', `<span class="pc-fxs"><span class="pc-fx pc-txt"><span class="pc-fx-c">${c.badText}</span></span></span>`)}</div>`);
     const sigH = c.sig && houseOfSig(id);
     const spyRole = c.role === 'spy' && D.RULES.spyBuyoff && on(o, 'spy') && (c.fx || []).some(op => op[0] === 'spy');
     const mtag = mtagOf(D.NEEDS.court[id] || (sigH && D.NEEDS.house[sigH]));
@@ -125,7 +125,7 @@
       <div class="pc-art"><img src="${CFG.art(c.sig ? 'f' : 'c', id)}" alt=""><div class="pc-shield"><span>${icon}</span></div>${tag}</div>
       <div class="pc-name">${c.name}</div>
       <div class="pc-type">${type}</div>
-      <div class="pc-eff"${fit('c:' + id)}>${c.bad ? blocks.join('') + chips(play) : chips(play) + (spyRole ? `<div class="pc-stn">откуп: ${D.RULES.spyBuyoff}🪙 × разница 🔗</div>` : '') + blocks.join('')}</div>
+      <div class="pc-eff"${fit('c:' + id)}>${chips(play) + (c.scheme ? '<div class="pc-stn">сыграли — карта уходит в колоду двора</div>' : '') + (spyRole ? `<div class="pc-stn">откуп: ${D.RULES.spyBuyoff}🪙 × разница 🔗</div>` : '') + blocks.join('')}</div>
       <div class="pc-foot">${left}${right}</div>`));
   }
 
