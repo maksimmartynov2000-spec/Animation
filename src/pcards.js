@@ -57,7 +57,7 @@
   const MOD_CARDS = ['sets', ...(D.MODULE_PICK || D.MODULE_KEYS)]; // лорды — в основе, «Баланс» убран
   const PROV = { N: 'Север', S: 'Юг', E: 'Восток', W: 'Запад' };
   // плотные карты: мелкий текст эффектов ужат, чтобы влезло с запасом 3% (считает cards/fit.js)
-  const FIT = {"e:shrine":0.86,"e:citadel":10.99,"e:harvesttemple":0.86,"e:granary":0.89,"e:runestone":0.86,"e:chancery":11,"e:port":0.86,"e:thieves":0.89,"e:embassy":0.89,"e:falsetax":10.82,"e:blight":10.82,"e:plaguehouse":10.95,"e:banditpost":10.82,"e:ashes":10.82,"c:sappers":0.88,"c:siegeband":11,"c:blackmailer":10.97,"c:ram":0.88,"c:recruiter":11,"c:dreamer":0.91,"c:astrologer":0.99,"c:chronicler":10.9,"c:augur":0.99,"c:huntsman":0.97,"c:cupbearer":0.93,"c:bearhoard":0.98,"h:deer":11,"h:owl":11,"h:wolf":0.91,"h:serpent":10.85,"h:bear":11,"h:lion":11,"b:martin":11,"b:anselm":0.91,"b:alberich":11,"b:albin":0.9,"b:theodor":11,"b:gottfried":10.85,"b:bertrand":0.9,"b:robert":0.9,"b:hagen":11,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:rowena":11,"b:irmina":0.9,"b:bruno":11,"b:warden":0.9,"b:gregory":11,"b:sebastian":11,"b:heir_deer":0.9,"b:heir_owl":0.91,"b:heir_wolf":11,"b:heir_serpent":0.9,"b:heir_bear":11,"b:heir_lion":11,"b:aldo":10.99,"b:edward":10.93,"b:otto":10.99,"b:oberon":0.95,"f:grain":10.84,"f:harvest":10.84,"f:seer":10.8,"f:star":10.8,"f:flame":10.96,"f:blade":10.8,"f:shade":10.84,"f:cathedral":10.87,"p:N":10.94,"p:S":10.86,"p:E":10.94,"p:W":10.9,"m:sets":0.89,"m:faith":0.85,"m:conflict":10.88,"m:court":0.84,"e:evileye":10.82,"e:cursedrelic":10.82,"e:schemer":10.82};
+  const FIT = {"e:shrine":0.86,"e:citadel":10.99,"e:harvesttemple":0.86,"e:granary":0.89,"e:runestone":0.86,"e:chancery":11,"e:port":0.86,"e:thieves":0.89,"e:embassy":0.89,"e:falsetax":10.82,"e:blight":10.82,"e:plaguehouse":10.95,"e:banditpost":10.82,"e:ashes":10.82,"c:sappers":0.88,"c:siegeband":11,"c:blackmailer":10.97,"c:ram":0.88,"c:recruiter":11,"c:dreamer":0.91,"c:astrologer":0.99,"c:chronicler":10.9,"c:augur":0.99,"c:huntsman":0.97,"c:cupbearer":0.93,"c:bearhoard":0.98,"h:deer":11,"h:owl":11,"h:wolf":0.91,"h:serpent":10.85,"h:bear":11,"h:lion":11,"b:martin":11,"b:anselm":0.91,"b:alberich":11,"b:albin":0.9,"b:theodor":11,"b:gottfried":10.85,"b:bertrand":0.9,"b:robert":0.9,"b:hagen":11,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:rowena":11,"b:irmina":0.9,"b:bruno":11,"b:warden":0.9,"b:gregory":11,"b:sebastian":11,"b:heir_deer":0.9,"b:heir_owl":0.91,"b:heir_wolf":11,"b:heir_serpent":0.9,"b:heir_bear":11,"b:heir_lion":11,"b:aldo":10.99,"b:edward":10.93,"b:otto":10.99,"b:oberon":0.95,"f:grain":10.84,"f:harvest":10.84,"f:seer":10.8,"f:star":10.8,"f:flame":10.96,"f:blade":10.8,"f:shade":10.84,"f:cathedral":10.87,"p:N":10.94,"p:S":10.86,"p:E":10.94,"p:W":10.9,"m:sets":0.89,"m:faith":0.85,"m:conflict":10.88,"m:court":0.84,"e:evileye":10.82,"e:cursedrelic":10.82,"e:schemer":10.82,"c:sin_pride":10.95,"c:sin_wrath":10.95,"c:sin_envy":10.95,"c:sin_sloth":10.95,"c:penance":10.9};
   // FIT[key]: k — ужать текст эффектов; k + 10 — плотная карта: рисунок ниже, текст ужат на k
   const fitK = (key) => { const v = FIT[key]; return v ? (v >= 10 ? +(v - 10).toFixed(2) : v) : 0; };
   const fit = (key) => (fitK(key) ? ` style="--k:${fitK(key)}"` : '');
@@ -98,7 +98,8 @@
   // ---------- карта двора: что даёт сразу → свита → замысел ----------
   function court(id, o = {}) {
     const c = D.COURT[id];
-    const R = c.scheme ? { c: TYPE.bad.c, dark: TYPE.bad.dark, label: 'Козни', icon: 'none' } : ROLE[c.role || 'none']; // козни — тёмная рамка, как у проклятий
+    const R = c.sin ? { c: '#7a1f2b', dark: '#4a1018', label: 'Грех', icon: 'none' } : c.rule ? { c: '#4b3a63', dark: '#2e2240', label: 'Покаяние', icon: 'none' } // грех — тёмно-красная рамка, покаяние — фиолетовая
+      : c.scheme ? { c: TYPE.bad.c, dark: TYPE.bad.dark, label: 'Козни', icon: 'none' } : ROLE[c.role || 'none']; // козни — тёмная рамка, как у проклятий
     const f = FX.court(c);
     if (!on(o, 'plots')) f.plot = null; // без замыслов карту можно только сыграть
     const icon = R.icon === 'coin' ? coin(1.05) : R.icon === 'none' ? ico('none', { em: 1.05 }) : `<span class="pc-emo">${R.icon}</span>`;
@@ -106,7 +107,7 @@
     const tag = c.plot && f.plot ? `<div class="pc-corner">${c.plot === 'dice' ? `${ico('dice')}${pnT}` : `${ico('plot')}замысел`}</div>` : '';
     const has = (k) => (c.fx || []).some(op => op[0] === k);
     const atk = has('siege') ? 'захват' : has('raze') ? 'разрушение' : has('spy') ? 'шпионаж' : null;
-    const type = (c.scheme ? 'Козни' : c.start ? 'Стартовая · без роли' : c.sig ? `Фамильная · ${R.label}` : c.faith ? `${R.label} · ${D.FAITHS[c.faith].name}` : R.label) + (atk ? `<span class="pc-atk">Нападение: ${atk}</span>` : '');
+    const type = (c.sin ? 'Грех' : c.rule ? 'Покаяние · только в вере' : c.scheme ? 'Козни' : c.start ? 'Стартовая · без роли' : c.sig ? `Фамильная · ${R.label}` : c.faith ? `${R.label} · ${D.FAITHS[c.faith].name}` : R.label) + (atk ? `<span class="pc-atk">Нападение: ${atk}</span>` : '');
     const play = f.play.length === 1 && f.play[0].i === 'gold' ? [Object.assign({}, f.play[0], { big: true })] : f.play;
     const blocks = [];
     // блок: метка слева, справа — условие словами (мелко) и что даёт
@@ -115,6 +116,10 @@
     if (f.seat && on(o, 'seats')) blocks.push(`<div class="pc-blk pc-seat${o.seatOn ? ' pc-on' : ''}"><span class="pc-lbl">При дворе<br>${ico('seat')}</span>${bx('', chips(f.seat))}</div>`);
     if (f.plot) blocks.push(`<div class="pc-blk"><span class="pc-lbl">${f.plot.kind === 'dice' ? `Замысел<br>${ico('dice')} <b>${pnT}</b>` : `Замысел<br>${ico('plot')}`}</span>${bx('', chips(f.plot.chips))}</div>`);
     if (c.faith && c.ffx && on(o, 'faith')) blocks.push(`<div class="pc-blk pc-faith${o.faithOn ? ' pc-on' : ''}"><span class="pc-lbl">Ваша вера —<br>${D.FAITHS[c.faith].name}</span>${bx('', chips(FX.fx(c.ffx)))}</div>`);
+    // грех: «Сейчас» и «До конца игры»; покаяние: 4 шага и итог (v10.15)
+    const txtB = (t) => `<span class="pc-fxs"><span class="pc-fx pc-txt"><span class="pc-fx-c">${t}</span></span></span>`;
+    if (c.sin) { blocks.push(`<div class="pc-blk"><span class="pc-lbl">Сейчас</span>${bx('купили — сразу:', txtB(c.now))}</div>`); blocks.push(`<div class="pc-blk pc-bad"><span class="pc-lbl">До конца<br>игры</span>${bx('пока грех лежит перед вами:', txtB(c.pen))}</div>`); }
+    if (c.steps) { blocks.push(`<div class="pc-blk"><span class="pc-lbl">4 хода<br>подряд</span>${bx('по шагу в начале хода, до броска:', txtB(c.steps.map((x, k) => `${k + 1}. ${x}`).join('<br>')))}</div>`); blocks.push(`<div class="pc-blk pc-faith pc-on"><span class="pc-lbl">Итог</span>${bx('', txtB(c.result))}</div>`); }
     const sigH = c.sig && houseOfSig(id);
     const spyRole = c.role === 'spy' && D.RULES.spyBuyoff && on(o, 'spy') && (c.fx || []).some(op => op[0] === 'spy');
     const mtag = mtagOf(D.NEEDS.court[id] || (sigH && D.NEEDS.house[sigH]));
@@ -125,8 +130,8 @@
       <div class="pc-art"><img src="${CFG.art(c.sig ? 'f' : 'c', id)}" alt=""><div class="pc-shield"><span>${icon}</span></div>${tag}</div>
       <div class="pc-name">${c.name}</div>
       <div class="pc-type">${type}</div>
-      <div class="pc-eff"${fit('c:' + id)}>${chips(play) + (c.scheme ? '<div class="pc-stn">сыграли — карта уходит в колоду двора</div>' : '') + (spyRole ? `<div class="pc-stn">откуп: ${D.RULES.spyBuyoff}🪙 × разница 🔗</div>` : '') + blocks.join('')}</div>
-      <div class="pc-foot">${left}${right}</div>`));
+      <div class="pc-eff"${fit('c:' + id)}>${chips(play) + (c.scheme ? '<div class="pc-stn">сыграли — карта уходит в колоду двора</div>' : '') + (spyRole ? `<div class="pc-stn">откуп: ${D.RULES.spyBuyoff}🪙 × разница 🔗</div>` : '') + blocks.join('') + (c.sin ? '<div class="pc-stn">снять — только покаянием (нужна вера)</div>' : c.steps ? '<div class="pc-stn">шаг не выполнить — покаяние сорвано, всё заново</div>' : '')}</div>
+      <div class="pc-foot">${c.rule ? `<span class="pc-fl">${mtagOf('faith')}<span class="pc-basic">у каждой веры</span></span><span></span>` : left + right}</div>`));
   }
 
   // ---------- Дома, вассалы, лорды, сезоны, титулы, провинции — общий шаблон ----------

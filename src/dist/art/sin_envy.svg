@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 164"><defs>
+<radialGradient id="bg" cx="50%" cy="48%" r="72%"><stop offset="0" stop-color="#7a2c37"/><stop offset="1" stop-color="#2a0d12"/></radialGradient>
+<radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".7" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<pattern id="dia" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 7H14M7 0V14" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/></pattern>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000" flood-opacity=".42"/></filter></defs>
+<rect width="220" height="164" fill="url(#bg)"/><rect width="220" height="164" fill="url(#dia)"/>
+<circle cx="110" cy="86" r="64" fill="url(#gl)"/><circle cx="110" cy="86" r="58" fill="none" stroke="#fbf3df" stroke-opacity=".22" stroke-width="1.6"/>
+<g filter="url(#sh)">
+<path fill="#fbf3df" d="M110 134 C72 108 62 80 80 64 C92 54 106 58 110 72 C114 58 128 54 140 64 C158 80 148 108 110 134 Z"/>
+<path fill="#3d141b" d="M110 120 C82 100 76 82 87 72 C94 66 104 68 107 78 L110 86 L113 78 C116 68 126 66 133 72 C144 82 138 100 110 120 Z" opacity=".0"/>
+<g transform="rotate(-38 110 88)">
+<path fill="#fbf3df" stroke="#3d141b" stroke-width="2.6" stroke-linejoin="round" d="M110 136 L104 120 L104 62 L116 62 L116 120 Z"/>
+<path stroke="#3d141b" stroke-width="1.8" d="M110 118 V66"/>
+<rect x="92" y="52" width="36" height="10" rx="4" fill="#fbf3df" stroke="#3d141b" stroke-width="2.4"/>
+<rect x="105" y="30" width="10" height="22" fill="#fbf3df" stroke="#3d141b" stroke-width="2.4"/>
+<circle cx="110" cy="26" r="6" fill="#fbf3df" stroke="#3d141b" stroke-width="2.4"/>
+</g>
+<g fill="#fbf3df"><path d="M74 128 C70 134 70 138 74 140 C78 138 78 134 74 128 Z"/><path d="M84 138 C81 142 81 145 84 146 C87 145 87 142 84 138 Z"/></g>
+</g>
+</svg>
