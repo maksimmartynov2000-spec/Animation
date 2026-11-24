@@ -62,34 +62,78 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   }
   /* убрано: карта или правило изменены */
   { const S = mk(), [a, b] = S.players; est(S, b, 'wall', 'wall'); const w = E.razeOdds(S, a, b, 3, 'nowalls'), w2 = E.razeOdds(S, a, b, 3, null); eq(w.D, w2.D - E.walls(S, b), 'Осадная башня: стены цели не в счёт'); }
-  { // беда двора: сыграть — подсунуть
-    const S = mk(), [a, b] = S.players; a.temp.int = 60; a.hand = ['evileye']; ans = (q) => (q.type === 'target' ? 1 : null);
-    await E.play(S, a, 0); ok(b.discard.includes('evileye') && !a.inPlay.includes('evileye'), 'Сглаз подсунут: в сбросе соперника'); ans = null;
-    b.hand = ['evileye']; S.cur = 1; await E.startOfTurn(S, b);
-    ok(E.isCursed(b, 'evileye'), 'беда в руке в начале хода — действует весь ход'); E.endTurn(S, b); ok(!E.isCursed(b, 'evileye'), 'после хода беда больше не действует');
+  { // правила модулей открываются все (v10.14: «Вражда» падала — раздел о шпионаже ссылался на убранную в v10.11 беду «Долг»)
+    const M = require(G + 'modrules.js'), bad = [];
+    for (const k of (M.ORDER || D.MODULE_KEYS)) { try { M.page(D, k, () => true); } catch (e) { bad.push(`${k}: ${e.message}`); } }
+    ok(!bad.length, `правила модулей: ${bad.join('; ') || 'все открываются'}`);
   }
-  { // купленная беда сразу уходит к сопернику
-    const S = mk(), [a, b] = S.players; a.turn.rolled = true; a.temp.int = 60; S.courtRow = ['evileye']; ans = (q) => (q.type === 'target' ? 1 : null);
-    const r = await E.buy(S, a, 'court', 0); ans = null;
-    ok(r.ok && b.discard.includes('evileye') && !a.discard.includes('evileye') && !a.hand.includes('evileye'), 'купленная беда: сразу в сбросе соперника, у покупателя её нет');
+  { // v10.14: беды двора убраны, их место заняли козни; 8 проклятий — владения по одной копии, действуют всегда
+    const curses = Object.keys(D.ESTATES).filter(id => D.ESTATES[id].t === 'bad').sort();
+    eq(curses.join(','), 'ashes,banditpost,blight,cursedrelic,evileye,falsetax,plaguehouse,schemer', 'проклятия: 8 видов');
+    ok(curses.every(id => D.ESTATES[id].copies === 1 && !D.ESTATES[id].n.length), 'проклятия: по одной копии, без чисел кубика');
+    ok(!Object.keys(D.COURT).some(id => D.COURT[id].bad || (D.COURT[id].fx || []).some(o => o[0] === 'plant')), 'бед двора больше нет');
+    const schemes = Object.keys(D.COURT).filter(id => D.COURT[id].scheme).sort();
+    eq(schemes.join(','), 'arson,denounce,poisonfeast,slander', 'козни: Поджог, Донос, Клевета, Отравленный пир');
+    ok(schemes.every(id => (D.COURT[id].copies || 2) === 2 && D.NEEDS.court[id] === 'spy'), 'козни: по 2 копии, модуль «Шпионаж»');
+    const S = mk(); eq([...S.estateDeck, ...S.estateRow].filter(x => D.ESTATES[x].t === 'bad').length, 8, 'в колоде и ряду владений 8 проклятий');
+    const S2 = mk(['tA', 'tB'], FULL.filter(k => k !== 'spy')); eq([...S2.estateDeck, ...S2.estateRow].filter(x => D.ESTATES[x].t === 'bad').length, 0, 'без «Шпионажа» проклятий нет');
   }
-  { // провал — беда из игры
-    const S = mk(), [a, b] = S.players; a.turn.rolled = true; est(S, b, 'wall', 'wall', 'wall'); b.temp.int = 60; S.courtRow = ['evileye']; ans = (q) => (q.type === 'target' ? 1 : null);
-    await E.buy(S, a, 'court', 0); ans = null; ok(!b.discard.includes('evileye') && !a.discard.includes('evileye'), 'беда не подсунута — уходит из игры');
+  { // купленное проклятие сразу подбрасывают шпионажем (+3🔗): удача — у соперника на столе, by — кто подбросил
+    const S = mk(), [a, b] = S.players; a.turn.rolled = true; a.temp.int = 60; S.estateRow = ['plaguehouse']; let seen = null; ans = (q) => (q.type === 'target' ? (seen = q, 1) : q.type === 'buyoff' ? false : null);
+    const r = await E.buy(S, a, 'estate', 0); ans = null;
+    ok(r.ok && seen && seen.kind === 'plantEstate' && seen.bonus === 3, 'проклятие: подбрасывают шпионажем +3');
+    ok(b.estates.some(e => e.id === 'plaguehouse' && e.by === 0) && !a.estates.length, 'проклятие у соперника, у покупателя его нет');
   }
-  { // v10.11: беды двора — только Сглаз, Проклятая реликвия и Заговор, по 2 копии
-    const bads = Object.keys(D.COURT).filter(id => (D.COURT[id].fx || []).some(o => o[0] === 'plant')).sort();
-    eq(bads.join(','), 'cursedrelic,evileye,schemer', 'беды двора: Сглаз, Проклятая реликвия, Заговор');
-    ok(bads.every(id => (D.COURT[id].copies || 2) === 2), 'каждая беда двора — в 2 копиях');
+  { // провал или откуп — проклятие замешивается в колоду владений
+    const S = mk(), [a, b] = S.players; a.turn.rolled = true; b.temp.int = 60; S.estateRow = ['blight']; const n0 = S.estateDeck.filter(x => x === 'blight').length; ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? false : null);
+    await E.buy(S, a, 'estate', 0); ok(!b.estates.length && S.estateDeck.filter(x => x === 'blight').length === n0 + 1, 'провал: проклятие в колоде владений');
+    const S2 = mk(), [c, d] = S2.players; c.turn.rolled = true; c.temp.int = 3; d.gold = 60; S2.estateRow = ['blight']; const m0 = S2.estateDeck.filter(x => x === 'blight').length, gd = d.gold; ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? true : null);
+    await E.buy(S2, c, 'estate', 0); ans = null;
+    ok(!d.estates.length && d.gold < gd && S2.estateDeck.filter(x => x === 'blight').length === m0 + 1, 'откуп от проклятия: оно в колоде владений');
   }
-  { const S = mk(), [a] = S.players; a.hand = ['schemer']; S.cur = 0; await E.startOfTurn(S, a); ok(!!E.hireBlock(S, a, 'gunnar'), 'Заговор: нанимать нельзя'); }
-  { const S = mk(), [a] = S.players; a.hand = ['evileye']; S.cur = 0; await E.startOfTurn(S, a); a.hand = []; await E.roll(S, a, 2); eq(S.lastRoll.n, 1, 'Сглаз: только один кубик'); }
-  { // новые беды-владения
-    const S = mk(), [a, b] = S.players; addEst(S, b, 'falsetax', { by: 0 }); let ga = a.gold, gb = b.gold;
-    await T.resolveRoll(S, a, 1); ok(gb - b.gold === 3 && a.gold - ga === 3, 'Самозваный мытарь: на 1 в чужой ход — 3🪙 подбросившему');
-    ga = a.gold; gb = b.gold; await T.resolveRoll(S, b, 2); ok(gb - b.gold === 3 && a.gold === ga, 'Самозваный мытарь: на 2 в свой ход — 3🪙 в банк');
-    ga = a.gold; gb = b.gold; await T.resolveRoll(S, b, 9); ok(b.gold === gb && a.gold === ga, 'Самозваный мытарь: на 9 — ничего');
-    const w0 = E.walls(S, b); addEst(S, b, 'ashes', { by: 0 }); eq(E.walls(S, b), w0 - 2, 'Пепелище: стены −2');
+  { // Неурожай: Земли молчат в любой ход, Ремёсла приносят
+    const S = mk(), [a, b] = S.players; addEst(S, b, 'field'); addEst(S, b, 'bakery'); addEst(S, b, 'blight', { by: 0 }); const gb = b.gold;
+    await T.resolveRoll(S, a, 1); eq(b.gold, gb, 'Неурожай: Пашня в чужой ход не приносит');
+    await T.resolveRoll(S, b, 1); eq(b.gold, gb, 'Неурожай: Пашня в свой ход не приносит');
+    await T.resolveRoll(S, b, 2); eq(b.gold, gb + 1, 'Неурожай: Пекарня приносит как обычно');
+  }
+  { // Самозваный мытарь: доход Ремёсел — тому, кто подбросил; Земли приносят
+    const S = mk(), [a, b] = S.players; addEst(S, b, 'bakery'); addEst(S, b, 'field'); addEst(S, b, 'falsetax', { by: 0 }); const ga = a.gold; let gb = b.gold;
+    await T.resolveRoll(S, b, 2); ok(b.gold === gb && a.gold === ga + 1, 'Самозваный мытарь: доход Пекарни — подбросившему');
+    gb = b.gold; await T.resolveRoll(S, b, 1); eq(b.gold, gb + 1, 'Самозваный мытарь: Пашня приносит как обычно');
+  }
+  { // Разбойничий стан: Набеги и Твердыни не срабатывают
+    const S = mk(), [a, b] = S.players; addEst(S, b, 'barracks'); addEst(S, b, 'citadel'); addEst(S, b, 'banditpost', { by: 0 }); const ga = a.gold, gb = b.gold;
+    await T.resolveRoll(S, a, 4); ok(a.gold === ga && b.gold === gb, 'Разбойничий стан: Набег на чужом броске ничего не забирает');
+    await T.resolveRoll(S, b, 4); ok(a.gold === ga && b.gold === gb, 'Разбойничий стан: Твердыня на своём броске ничего не забирает');
+    b.estates = b.estates.filter(e => e.id !== 'banditpost'); await T.resolveRoll(S, a, 4); ok(b.gold > gb && a.gold < ga, 'без Стана Набег снова забирает');
+  }
+  { // Разбойничий стан: Набеги и Твердыни не срабатывают совсем — и руины не отстраиваются
+    const S = mk(), [a, b] = S.players; const r = addEst(S, b, 'outpost', { ruined: true }); const h = addEst(S, b, 'citadel', { ruined: true }); addEst(S, b, 'banditpost', { by: 0 });
+    await T.resolveRoll(S, a, 9); await T.resolveRoll(S, b, 4); ok(r.ruined && h.ruined, 'Разбойничий стан: руины Набега и Твердыни не отстраиваются');
+  }
+  { const B = E.Bot; ok(B.PRANK && B.PRANK.curse === 2.5 && B.PRANK.scheme === 3, 'боты охотнее на пакости: проклятия ×2,5, козни +3'); }
+  { // Чумная слобода: владения не покупает (и проклятия тоже), карты двора — можно
+    const S = mk(), [a, b] = S.players; a.turn.rolled = true; addEst(S, a, 'plaguehouse', { by: 1 }); S.estateRow = ['field', 'blight']; S.courtRow = ['scribe'];
+    const r1 = await E.buy(S, a, 'estate', 0), r2 = await E.buy(S, a, 'estate', 1);
+    ok(!r1.ok && /Чумная/.test(r1.why) && !r2.ok, 'Чумная слобода: владения и проклятия купить нельзя');
+    ok((await E.buy(S, a, 'court', 0)).ok, 'Чумная слобода: карты двора — можно');
+  }
+  { const S = mk(), [a] = S.players; addEst(S, a, 'schemer', { by: 1 }); ok(/Заговор/.test(E.hireBlock(S, a, 'gunnar') || ''), 'Заговор: нанимать нельзя, пока лежит'); a.estates = []; ok(!/Заговор/.test(E.hireBlock(S, a, 'gunnar') || ''), 'Заговор снят — запрета нет'); }
+  { const S = mk(), [a] = S.players; addEst(S, a, 'evileye', { by: 1 }); S.cur = 0; await E.roll(S, a, 2); eq(S.lastRoll.n, 1, 'Сглаз: только один кубик, пока лежит'); }
+  { const S = mk(), [a, b] = S.players; const w0 = E.walls(S, b); addEst(S, b, 'ashes', { by: 0 }); eq(E.walls(S, b), w0 - 2, 'Пепелище: стены −2'); }
+  { const S = mk(), [a] = S.players; a.faiths = ['grain']; addEst(S, a, 'cursedrelic', { by: 1 }); a.hand = ['reaper']; S.cur = 0; await E.startOfTurn(S, a); ok(!E._t.faithActive || !E._t.faithActive(S, a), 'Проклятая реликвия: вера не действует'); ok(!(await E.play(S, a, 0)), 'Проклятая реликвия: карту веры не сыграть'); }
+  { // козни: шпионаж +3; сыграли — карта уходит в колоду двора, и при удаче, и при провале
+    const S = mk(), [a, b] = S.players; a.temp.int = 60; a.hand = ['arson']; b.gold = 10; const n0 = S.courtDeck.filter(x => x === 'arson').length; ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? false : null);
+    await E.play(S, a, 0); ok(b.gold === 6 && !a.inPlay.includes('arson') && !a.discard.includes('arson') && S.courtDeck.filter(x => x === 'arson').length === n0 + 1, 'Поджог: сопернику −4🪙, карта в колоде двора');
+    b.temp.int = 60; a.temp.int = 0; a.hand = ['arson']; const g = b.gold; await E.play(S, a, 0); ok(b.gold === g && !a.inPlay.includes('arson') && S.courtDeck.filter(x => x === 'arson').length === n0 + 2, 'провал: золото на месте, карта всё равно в колоде двора'); ans = null;
+  }
+  { const S = mk(), [a, b] = S.players; a.temp.int = 60; b.hand = ['tax', 'spicer', 'scribe']; ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? false : null);
+    a.hand = ['denounce']; await E.play(S, a, 0); ok(b.hand.length === 1 && b.discard.length === 2, 'Донос: 2 карты из руки — в сброс');
+    a.hand = ['poisonfeast']; b.gold = 10; await E.play(S, a, 0); ok(b.hand.length === 0 && b.discard.length === 3 && b.gold === 8, 'Отравленный пир: карта из руки и −2🪙');
+    a.hand = ['slander']; await E.play(S, a, 0); ans = null; ok(!!b.slanderNext, 'Клевета: отмечена на следующий ход соперника');
+    S.cur = 1; await E.startOfTurn(S, b); b.turn.rolled = true; S.courtRow = ['scribe']; const r = await E.buy(S, b, 'court', 0); ok(!r.ok && /Клевета/.test(r.why), 'Клевета: в свой ход карты двора не покупает');
+    E.endTurn(S, b); ok(!E.isCursed(b, 'slander') && !b.slanderNext, 'Клевета: только на один ход');
   }
   /* убрано: карта или правило изменены */
   /* убрано: карта удалена */
@@ -102,10 +146,6 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     await fx(S, a, D.COURT.blackmailer.fx); ok(b.estates.length === 1 && a.gold - ga === cost && gb - b.gold === cost, `откупились до броска: ${cost}🪙 шпиону, владение осталось`);
     a.temp.int = 1; const c2 = 3 * Math.max(1, E.spyInfo(S, a, b, 2).A - E.spyInfo(S, a, b, 2).G); eq(c2, 3, 'откуп не меньше 3🪙');
     a.temp.int = 60; pay = false; b.estates = []; const g1 = a.gold, g2 = b.gold; await fx(S, a, D.COURT.blackmailer.fx); ok(a.gold === g1 && b.gold === g2, 'Вымогатель: брать нечего — ничего'); ans = null;
-  }
-  { // беда: тоже шпионаж — можно откупиться, тогда беда уходит из игры
-    const S = mk(), [a, b] = S.players; a.temp.int = 5; a.hand = ['evileye']; ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? true : null);
-    const gb = b.gold, n0 = S.courtDeck.filter(x => x === 'evileye').length; await E.play(S, a, 0); ok(!b.discard.includes('evileye') && !a.trashed.includes('evileye') && !a.inPlay.includes('evileye') && S.courtDeck.filter(x => x === 'evileye').length === n0 + 1 && b.gold < gb, 'откуп от беды: беда замешана в колоду двора, шпиону золото'); ans = null;
   }
 
   /* убрано: карта или правило изменены */
@@ -178,44 +218,17 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   /* убрано: карта или правило изменены */
   /* убрано: карта или правило изменены */
   /* убрано: карта или правило изменены */
-  { // беды-владения v8: Чума — без найма в свой ход; Стан — 3🪙 в любой ход (в свой — в банк); Неурожай — бросок без дохода Земель и Ремёсел
-    const S = mk(), [a, b] = S.players; addEst(S, b, 'plaguehouse', { by: 0 }); addEst(S, b, 'banditpost', { by: 0 }); let gb = b.gold;
-    await T.resolveRoll(S, a, 7); ok(b.gold === gb && !E.isCursed(b, 'quarantine'), 'Чумная слобода: в чужой ход — ничего');
-    S.cur = 1; b.turn = E._t.startOfTurn ? b.turn : b.turn; b.turn.curse = {}; await T.resolveRoll(S, b, 7); ok(!!E.hireBlock(S, b, 'gunnar') && /Чумная/.test(E.hireBlock(S, b, 'gunnar')), 'Чумная слобода: на 7 в свой ход нанимать нельзя'); S.cur = 0;
-    gb = b.gold; let ga = a.gold; await T.resolveRoll(S, a, 8); ok(gb - b.gold === 3 && a.gold - ga === 3, 'Разбойничий стан: на 8 в чужой ход — 3🪙 подбросившему');
-    gb = b.gold; ga = a.gold; await T.resolveRoll(S, b, 9); ok(gb - b.gold === 3 && a.gold === ga, 'Разбойничий стан: на 9 в свой ход — 3🪙 в банк');
-    gb = b.gold; await T.resolveRoll(S, a, 6); eq(b.gold, gb, 'Разбойничий стан: на 6 — ничего');
-  }
-  { // втроём: беда на броске третьего игрока — золото тому, кто подбросил
-    const S = mk(['tA', 'tB', 'tC']), [a, b, c] = S.players; addEst(S, b, 'banditpost', { by: 0 }); const ga = a.gold, gb = b.gold, gc = c.gold;
-    await T.resolveRoll(S, c, 9); ok(gb - b.gold === 3 && a.gold - ga === 3 && c.gold === gc, 'Разбойничий стан втроём: на ходу третьего — 3🪙 подбросившему'); }
+  { // втроём: Мытарь у второго, доход его Ремёсел — первому (тому, кто подбросил), третий ни при чём
+    const S = mk(['tA', 'tB', 'tC']), [a, b, c] = S.players; addEst(S, b, 'bakery'); addEst(S, b, 'falsetax', { by: 0 }); const ga = a.gold, gb = b.gold, gc = c.gold;
+    await T.resolveRoll(S, b, 3); ok(b.gold === gb && a.gold === ga + 1 && c.gold === gc, 'Самозваный мытарь втроём: доход — подбросившему'); }
   { // Гильом и Оттон: золото за чужой найм
     const S = mk(['tA', 'tB']), [a, b] = S.players; a.lords = ['guillaume']; a.greats = ['otto']; S.cur = 1; b.turn.rolled = true; b.gold = 50; S.vRow = ['fuller']; const g0 = a.gold;
     ok((await E.hire(S, b, 'fuller')).ok, 'соперник нанял'); eq(a.gold - g0, 3 + 3, 'Гильом +3🪙 и Оттон +3🪙 за чужой найм'); }
-  { // Неурожай: на 4–6 Земли и Ремёсла владельца молчат — в любой ход
-    const S = mk(), [a, b] = S.players; addEst(S, b, 'shop'); addEst(S, b, 'pasture'); addEst(S, b, 'runestone'); addEst(S, b, 'blight', { by: 0 }); let gb = b.gold;
-    await T.resolveRoll(S, b, 4); eq(b.gold, gb, 'Неурожай: Лавка на 4 в свой ход не приносит');
-    await T.resolveRoll(S, a, 5); eq(b.gold, gb, 'Неурожай: Рунный камень на 5 в чужой ход не приносит');
-    await T.resolveRoll(S, a, 2); ok(b.gold > gb, 'Неурожай: Пастбище на 2 приносит как обычно');
-  }
-  { // избавиться от беды: действие + 2🪙, беда — в колоду владений
+  { // снять проклятие: действие + 2🪙, оно — в колоду владений
     const S = mk(), [a, b] = S.players; const e = addEst(S, a, 'banditpost', { by: 1 }); a.turn.rolled = true; const g0 = a.gold, n0 = S.estateDeck.filter(x => x === 'banditpost').length;
-    const r = await E.purgeBad(S, a, e.uid); ok(r.ok && !a.estates.length && a.gold === g0 - 2 && E.buysLeft(S, a) === 0 && S.estateDeck.filter(x => x === 'banditpost').length === n0 + 1, 'Избавиться от беды: −2🪙, действие, беда в колоде владений');
-    const e2 = addEst(S, a, 'falsetax', { by: 1 }); ok(!(await E.purgeBad(S, a, e2.uid)).ok, 'Избавиться: без действия — нельзя');
+    const r = await E.purgeBad(S, a, e.uid); ok(r.ok && !a.estates.length && a.gold === g0 - 2 && E.buysLeft(S, a) === 0 && S.estateDeck.filter(x => x === 'banditpost').length === n0 + 1, 'Снять проклятие: −2🪙, действие, оно в колоде владений');
+    const e2 = addEst(S, a, 'falsetax', { by: 1 }); ok(!(await E.purgeBad(S, a, e2.uid)).ok, 'Снять: без действия — нельзя');
     ok(!!E.purgeBlock(S, a, a.estates.find(x => x.id === 'falsetax')), 'purgeBlock объясняет почему нельзя');
-  }
-  { // провал подбрасывания — беда в колоду владений; провал подсовывания — в колоду двора
-    const S = mk(), [a, b] = S.players; a.turn.rolled = true; S.estateRow = ['plaguehouse']; const n0 = S.estateDeck.filter(x => x === 'plaguehouse').length;
-    b.temp.war = 60; ans = (q) => (q.type === 'target' ? 1 : null); await E.buy(S, a, 'estate', 0);
-    ok(!b.estates.length && S.estateDeck.filter(x => x === 'plaguehouse').length === n0 + 1, 'Провал подбрасывания: беда замешана в колоду владений'); ans = null;
-    const S2 = mk(), [c, d] = S2.players; d.temp.int = 60; c.hand = ['evileye']; const m0 = S2.courtDeck.filter(x => x === 'evileye').length; ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? false : null);
-    await E.play(S2, c, 0); ok(!d.discard.includes('evileye') && !c.trashed.includes('evileye') && S2.courtDeck.filter(x => x === 'evileye').length === m0 + 1, 'Провал подсовывания: беда замешана в колоду двора'); ans = null;
-    const S3 = mk(), [x] = S3.players; x.hand = ['evileye']; const k0 = S3.courtDeck.filter(y => y === 'evileye').length; await E.retire(S3, x, 0);
-    ok(!x.trashed.includes('evileye') && S3.courtDeck.filter(y => y === 'evileye').length === k0 + 1, 'Отставка беды: в колоду двора, не из игры');
-  }
-  { // подбросить беду при покупке
-    const S = mk(), [a, b] = S.players; a.turn.rolled = true; big(a); S.estateRow = ['plaguehouse']; ans = (q) => (q.type === 'target' ? 1 : null);
-    await E.buy(S, a, 'estate', 0); ok(b.estates.some(e => e.id === 'plaguehouse') && !a.estates.length, 'Чумной барак: сразу у соперника'); ans = null;
   }
   { const S = mk(), [a] = S.players; est(S, a, 'wall'); eq(E.walls(S, a), R0.baseWalls + 3, `Каменная стена: +3 к стенам (${R0.baseWalls} от замка)`); eq(E.capturable(S, a, S.players[1]).length, 0, 'Стену нельзя захватить'); }
   /* убрано */
@@ -426,7 +439,6 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { const S = mk(), [a, b] = S.players; a.faiths = ['harvest']; a.temp.faith = 5; est(S, a, 'shop'); const g0 = a.gold; await T.resolveRoll(S, b, 4); eq(a.gold - g0, 2, 'Урожай III: Ремесло в чужой ход (Лавка 1 + ступень I)'); }
   { const S = mk(['tA', 'tB'], FULL.filter(k => k !== 'balance')), [a] = S.players; a.faiths = ['blade']; a.temp.faith = 5; a.vassals = ['gunnar', 'ida', 'sabina', 'emmerich']; S.cur = 0; const g0 = a.gold; await E.startOfTurn(S, a); eq(a.gold - g0, 2, 'Клинок III: +1🪙 за каждые 2 знамени'); }
   { const S = mk(), [a] = S.players; a.faiths = ['cathedral']; a.temp.faith = 3; S.cur = 0; const g0 = a.gold; await E.rite(S, a, 'cathedral'); eq(a.gold - g0, 2, 'Месса: +1🪙 за ступень (II)'); }
-  { const S = mk(), [a] = S.players; a.faiths = ['grain']; a.hand = ['cursedrelic', 'reaper']; S.cur = 0; await E.startOfTurn(S, a); ok(!(await E.play(S, a, 1)), 'Проклятая реликвия: карту веры не сыграть'); }
   { const S = mk(), [a] = S.players; a.faiths = ['cathedral']; eq(await startGain(S, a), 2, 'Собор: +2 в начале хода, десятины больше нет'); }
   /* убрано */
   /* убрано: карта или правило изменены */
@@ -446,7 +458,7 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { const S = mk(), [a] = S.players; est(S, a, 'shrine', 'harvesttemple'); eq(await startGain(S, a), 1, 'Подаяния: 2🕯 — +1🪙 в начале хода'); }
   { const S = mk(), [a] = S.players; est(S, a, 'shop', 'bakery', 'field'); await fx(S, a, [['fire', 'craft']]); eq(a.gold, 20 + 3 + 1, 'Страда: Ремёсла приносят сейчас (Лавка 3 + Пекарня 1)'); await fx(S, a, [['fire', 'land']]); eq(a.gold, 25, 'Крестный ход: Земли приносят сейчас (Пашня 1)'); }
   { const S = mk(), [a] = S.players; a.hand = ['scribe', 'doublegame']; await E.play(S, a, 0); const g = a.gold, h = a.hand.length; await E.play(S, a, a.hand.indexOf('doublegame')); ok(a.gold - g === 1 && a.hand.length === h, 'Двойная игра: ещё раз Писарь (+1🪙 и карта)'); }
-  { const S = mk(), [a, b] = S.players; b.discard = ['spicer', 'evileye']; await fx(S, a, [['snatch']]); ok(a.hand.includes('spicer') && !b.discard.includes('spicer'), 'Перехват: карта из сброса соперника — в руку'); }
+  { const S = mk(), [a, b] = S.players; b.discard = ['spicer']; await fx(S, a, [['snatch']]); ok(a.hand.includes('spicer') && !b.discard.includes('spicer'), 'Перехват: карта из сброса соперника — в руку'); }
   { const S = mk(), [a] = S.players; a.discard = ['spicer']; await fx(S, a, [['fetchOne']]); ok(a.hand.includes('spicer') && !a.discard.length, 'Святые мощи: из своего сброса в руку'); }
   { const S = mk(), [a] = S.players; a.vassals = ['ida', 'gunnar']; a.lords = ['anselm']; await fx(S, a, [['goldPerBanner', 1]]); eq(a.gold, 23, 'Знамя ордена: +1 за каждое знамя'); }
   { const S = mk(['tA', 'tB']), [a, b] = S.players; est(S, b, 'barracks'); a.turn.rolled = true; await fx(S, a, [['shield']]); const g0 = a.gold; await T.resolveRoll(S, a, 4); eq(a.gold, g0, 'Щит ордена: Набег ничего не забирает'); E.endTurn(S, a); E.endTurn(S, a); await T.resolveRoll(S, a, 4); eq(g0 - a.gold, 2, 'щит кончился после следующего хода'); }

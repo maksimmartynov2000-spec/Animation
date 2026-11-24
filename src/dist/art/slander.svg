@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 164"><defs>
+<radialGradient id="bg" cx="50%" cy="48%" r="72%"><stop offset="0" stop-color="#5a5254"/><stop offset="1" stop-color="#221d1e"/></radialGradient>
+<radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".7" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<pattern id="dia" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 7H14M7 0V14" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/></pattern>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000" flood-opacity=".42"/></filter></defs>
+<rect width="220" height="164" fill="url(#bg)"/><rect width="220" height="164" fill="url(#dia)"/>
+<circle cx="110" cy="86" r="64" fill="url(#gl)"/><circle cx="110" cy="86" r="58" fill="none" stroke="#fbf3df" stroke-opacity=".22" stroke-width="1.6"/>
+<g filter="url(#sh)">
+<path fill="#fbf3df" d="M72 34 H148 V80 C148 109 129 127 110 139 C91 127 72 109 72 80 Z"/>
+<path fill="none" stroke="#3b3436" stroke-width="2.6" d="M79.5 41.5 H140.5 V80 C140.5 103 125 118 110 129 C95 118 79.5 103 79.5 80 Z"/>
+<path fill="#3b3436" d="M95 66 L93 50 L102 57 L110 46 L118 57 L127 50 L125 66 Z"/><g fill="#3b3436"><circle cx="93" cy="49" r="2.6"/><circle cx="110" cy="45" r="2.8"/><circle cx="127" cy="49" r="2.6"/></g>
+<g transform="translate(0 6)"><path fill="#3b3436" d="M107.5 70.2 Q110.0 64.7 112.5 70.2 Q112.7 76.9 114.4 75.9 Q118.5 72.8 117.3 77.8 Q117.9 79.1 125.8 75.5 Q132.4 75.8 128.3 81.0 Q121.4 84.4 123.0 85.8 Q127.7 88.6 122.4 89.9 Q118.6 89.9 124.5 94.9 Q126.9 100.7 120.9 99.0 Q115.7 94.8 114.3 95.0 Q114.1 100.0 111.3 95.9 Q110.0 97.5 107.7 103.9 Q103.4 108.6 102.2 102.2 Q104.9 94.0 102.3 95.2 Q97.3 97.0 99.8 92.3 Q100.4 90.4 95.7 90.5 Q90.0 88.9 95.0 85.7 Q98.6 84.4 99.4 83.1 Q95.7 79.5 100.8 79.9 Q102.8 79.8 98.6 73.3 Q97.9 67.2 103.2 70.4 Q107.0 75.9 107.5 70.2 Z"/></g>
+<g transform="translate(0 6)"><g fill="#3b3436"><circle cx="122.4" cy="66.7" r="2.2"/><circle cx="132.8" cy="89.3" r="2.6"/><circle cx="116.8" cy="109.0" r="1.8"/><circle cx="91.9" cy="101.7" r="2.2"/><circle cx="90.9" cy="77.3" r="2.6"/><circle cx="139.1" cy="96.6" r="1.8"/><circle cx="86.0" cy="104.0" r="2.0"/><circle cx="95.8" cy="60.7" r="1.6"/></g></g>
+</g>
+</svg>

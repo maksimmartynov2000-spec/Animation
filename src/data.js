@@ -34,7 +34,7 @@ const DATA = (() => {
     extraAction: 10, extraActionNeeds: 'great', // с «Великими лордами»: раз в ход второе действие за 10🪙
     holdRow: 3,           // твердыни: открытый ряд из 3; купили — открывается следующая из колоды твердынь (копий каждой — по числу игроков); у игрока каждый вид — один
     landNeighbor: false,  // 🟦 Земли — в ход любого игрока
-    raidNeighbor: false,  // 🟥 Набеги и беды — в ход любого другого игрока
+    raidNeighbor: false,  // 🟥 Набеги — в ход любого другого игрока
     courtSeats: 2,        // модуль «Придворные»: 2 места + 1 за каждого лорда
     poachHalf: true,      // Вербовщик: переманенный вассал стоит половину напечатанной цены, золото — в банк
     spyCastle: 0.5,       // от шпиона замок защищает вполовину: в счёт идут 🧱4 из родовых 🧱8 (купленные стены — целиком)
@@ -53,7 +53,8 @@ const DATA = (() => {
     sciStep: 4,           // 📜 Знания: каждые 4📜 — +1 карта в руку
     faithStep: 2,         // 🕯 Подаяния: каждые 2🕯 — +1🪙 в начале хода
     shiftCost: 2,         // Гадатель при дворе: сдвиг суммы броска на 1 стоит 2🪙
-    purgeCost: 2,         // избавиться от беды-владения: действие + 2🪙, беда замешивается в колоду владений
+    purgeCost: 2,         // снять проклятие: действие + 2🪙, проклятие замешивается в колоду владений
+    plantSpy: 3,          // подбросить проклятие: шпионаж +3🔗 (удача — у соперника, провал — в колоду владений)
     spyBuyoff: 3,         // откуп от шпионажа до броска: 3🪙 за каждую 🔗 разницы сил (не меньше 3🪙)
     finishRound: true,    // кто-то собрал цель — круг доигрывается; побеждает тот, у кого цель выполнена в конце круга
   };
@@ -71,7 +72,7 @@ const DATA = (() => {
     raid: { name: 'Набег', mark: '🟥', desc: 'Срабатывает в ход другого игрока: забирает золото у того, чей ход' },
     hold: { name: 'Твердыня', mark: '🟪', desc: 'Срабатывает в ваш ход: забирает золото у самого богатого соперника' },
     wall: { name: 'Укрепление', mark: '🧱', desc: 'Не срабатывает от кубика; защищает от нападений, захватить нельзя' },
-    bad: { name: 'Беда', mark: '⬛', desc: 'Подброшено соперником: вредит владельцу. Избавиться — действие и 2🪙, беда уходит в колоду владений' },
+    bad: { name: 'Проклятие', mark: '⬛', desc: 'Подброшено соперником: вредит, пока лежит. Снять — действие и 2🪙, проклятие уходит в колоду владений' },
   };
 
   // n — числа кубика, t — тип, inc — доход, per — доход «за каждое…», cost — цена, p — провинция, sym — значок
@@ -109,14 +110,18 @@ const DATA = (() => {
     thieves: { name: 'Гильдия воров', n: [5], t: 'hold', inc: 2, cost: 7, p: 'W', copies: 4, mods: { redBonus: 1 }, ptext: 'ваши 🟥 Набеги забирают на 1🪙 больше' },
     embassy: { name: 'Посольство', n: [1, 2], t: 'hold', inc: 1, cost: 6, p: 'W', copies: 4, mods: { courtCheap: 1 }, ptext: 'карты двора вам на 1🪙 дешевле' },
 
-    // беды-владения (v8): при покупке их сразу подбрасывают сопернику нападением (+2); провал — беда замешивается обратно в колоду владений.
-    // Числа разведены: Мытарь — по одному кубику, Чума и Стан — по двум, Неурожай — по обоим. Деньги уходят в ход любого игрока
-    // (тому, кто подбросил; в ход владельца — в банк). Избавиться: в свой ход действие + 2🪙 — беда уходит в колоду владений
-    falsetax: { name: 'Самозваный мытарь', n: [1, 2], t: 'bad', bad: 'toll', inc: 3, cost: 2, copies: 2, badText: 'Выпало 1 или 2 — отдайте 3🪙 тому, кто подбросил (в ваш ход — в банк).' },
-    blight: { name: 'Неурожай', n: [4, 5, 6], t: 'bad', bad: 'blight', inc: 0, cost: 2, copies: 2, badText: 'Выпало 4, 5 или 6 — в этот бросок ваши 🟦 Земли и 🟩 Ремёсла не приносят дохода.' },
-    plaguehouse: { name: 'Чумная слобода', n: [7], t: 'bad', bad: 'quarantine', inc: 0, cost: 2, copies: 2, badText: 'Выпало 7 в ваш ход — до конца хода нельзя нанимать знамёна.' },
-    banditpost: { name: 'Разбойничий стан', n: [8, 9], t: 'bad', bad: 'toll', inc: 3, cost: 2, copies: 2, badText: 'Выпало 8 или 9 — отдайте 3🪙 тому, кто подбросил (в ваш ход — в банк).' },
-    ashes: { name: 'Пепелище', n: [], t: 'bad', bad: 'walls', walls: -2, inc: 0, cost: 2, copies: 2, badText: 'Ваши 🧱 Стены слабее на 2.' },
+    // проклятия (v10.14): беды-владения действуют всегда, пока лежат у того, кому их подбросили (кубик не нужен).
+    // Купили на рынке владений — сразу подбросьте сопернику: шпионаж +3🔗. Удача — проклятие у него на столе, провал — замешайте в колоду владений.
+    // Снять — в свой ход после броска: действие и 2🪙, проклятие уходит в колоду владений. Сколько проклятий на игроке — не ограничено.
+    // bad — ключ эффекта в движке, badText — что делает (для журнала и подсказок)
+    falsetax: { name: 'Самозваный мытарь', n: [], t: 'bad', bad: 'tax', inc: 0, cost: 2, copies: 1, badText: 'Доход его 🟩 Ремёсел получает тот, кто подбросил.' },
+    blight: { name: 'Неурожай', n: [], t: 'bad', bad: 'blight', inc: 0, cost: 2, copies: 1, badText: 'Его 🟦 Земли не приносят дохода.' },
+    plaguehouse: { name: 'Чумная слобода', n: [], t: 'bad', bad: 'quarantine', inc: 0, cost: 2, copies: 1, badText: 'Он не покупает владения.' },
+    banditpost: { name: 'Разбойничий стан', n: [], t: 'bad', bad: 'bandits', inc: 0, cost: 2, copies: 1, badText: 'Его 🟥 Набеги и 🟪 Твердыни не срабатывают.' },
+    ashes: { name: 'Пепелище', n: [], t: 'bad', bad: 'walls', walls: -2, inc: 0, cost: 2, copies: 1, badText: 'Его 🧱 Стены слабее на 2.' },
+    evileye: { name: 'Сглаз', n: [], t: 'bad', bad: 'evileye', inc: 0, cost: 2, copies: 1, badText: 'Он бросает только один кубик.' },
+    cursedrelic: { name: 'Проклятая реликвия', n: [], t: 'bad', bad: 'relic', inc: 0, cost: 2, copies: 1, badText: 'Его вера не действует: ни ступени, ни обряд, ни карты веры.' },
+    schemer: { name: 'Заговор', n: [], t: 'bad', bad: 'schemer', inc: 0, cost: 2, copies: 1, badText: 'Он не нанимает знамёна.' },
 
     // стартовые владения Домов: по три у каждого (вместо Пашни и Пекарни), в колоду рынка не входят
     vineyard: { name: 'Виноградник', n: [1], t: 'land', inc: 1, cost: 1, p: 'S', house: 'deer' },
@@ -176,12 +181,12 @@ const DATA = (() => {
     courtesan: { name: 'Куртизанка', role: 'spy', cost: 3, fx: [['spy', 4, 'lock', 1]], ally: [['gold', 2]], copies: 2 },
     agitator: { name: 'Смутьян', role: 'spy', cost: 3, fx: [['spy', 4, 'tax', 1]], ally: [['draw', 1]], copies: 2 },
 
-    // ---------- беды двора: купили — сразу подсуньте сопернику (шпионаж +3). Удача — беда в его сбросе, провал — замешайте её обратно в колоду двора.
-    // Беда у вас в руке в начале хода срабатывает и действует весь ход (даже если вы её потом сыграли).
-    // Сыграть беду — подсунуть её дальше. bad — ключ эффекта, badText — что она делает (человеческим языком)
-    evileye: { name: 'Сглаз', role: null, cost: 1, bad: 'evileye', fx: [['plant', 3]], badText: 'В этот ход бросайте только один кубик.' },
-    cursedrelic: { name: 'Проклятая реликвия', role: null, cost: 2, bad: 'relic', fx: [['plant', 3]], badText: 'В этот ход ваша вера не действует: ни ступени, ни обряд, ни карты веры.' },
-    schemer: { name: 'Заговор', role: null, cost: 3, bad: 'schemer', fx: [['plant', 3]], badText: 'В этот ход нельзя нанимать знамёна.' },
+    // ---------- козни (v10.14): разовая пакость сопернику. Сыграли — шпионаж +3🔗: удача — вред сразу.
+    // Удача или провал — карта уходит в колоду двора (scheme). Модуль «Шпионаж»
+    arson: { name: 'Поджог', role: null, cost: 1, scheme: true, fx: [['spy', 3, 'arson', 4]] },
+    denounce: { name: 'Донос', role: null, cost: 2, scheme: true, fx: [['spy', 3, 'denounce', 2]] },
+    slander: { name: 'Клевета', role: null, cost: 1, scheme: true, fx: [['spy', 3, 'slander', 1]] },
+    poisonfeast: { name: 'Отравленный пир', role: null, cost: 2, scheme: true, fx: [['spy', 3, 'feast', 2]] },
 
     // ---------- Жрецы (направление «Вера»): Реликварий на рынке; карты вер — ниже ----------
     reliquary: { name: 'Реликварий', role: 'priest', cost: 4, fx: [['goldPerSym', 'faith', 1, 99]], plot: 'timed', pfx: [['goldPerSym', 'faith', 2, 99]] },
@@ -471,7 +476,6 @@ const DATA = (() => {
       case 'forage': return `возьмите ${b}🪙 у самого богатого из соперников, у кого ${SYM[a]} меньше, чем у вас`;
       case 'siege': return `Захват (+${a}⚔️): победа — возьмите любое его владение до ${RULES.siegeLoot}🪙 (оно в руинах)`;
       case 'raze': return `Разрушение (+${a}⚔️): победа — его владение на ваш выбор${b >= 99 ? '' : ` до ${b}🪙`} ${c === 'wall' ? 'и одна стена разрушаются' : 'разрушается'}${c === 'nowalls' ? '; стены цели не в счёт' : ''}`;
-      case 'plant': return `купили или сыграли — подсуньте сопернику, шпионаж (+${a}🔗): удача — беда уходит в его сброс, провал — замешайте её в колоду двора`;
       case 'spy':
         if (b === 'steal') return `Шпионаж (+${a}🔗): удача — украдите ${c}🪙`;
         if (b === 'sabotage') return `Шпионаж (+${a}🔗): удача — сорвите его замысел или прогоните придворного`;
@@ -483,6 +487,10 @@ const DATA = (() => {
         if (b === 'tax') return `Шпионаж (+${a}🔗): удача — он отдаёт в банк ${c}🪙 за каждое своё знамя`;
         if (b === 'distract') return `Шпионаж (+${a}🔗): удача — его лорд на ваш выбор не действует до конца его следующего хода`;
         if (b === 'riot') return `Шпионаж (+${a}🔗): удача — в его следующий ход содержание его великих лордов на ${c}🪙 дороже`;
+        if (b === 'arson') return `Шпионаж (+${a}🔗): удача — соперник теряет ${c}🪙`;
+        if (b === 'denounce') return `Шпионаж (+${a}🔗): удача — соперник сбрасывает ${c} ${plural(c, 'случайную карту', 'случайные карты', 'случайных карт')} из руки`;
+        if (b === 'slander') return `Шпионаж (+${a}🔗): удача — в свой следующий ход он не покупает карты двора`;
+        if (b === 'feast') return `Шпионаж (+${a}🔗): удача — он сбрасывает случайную карту из руки и теряет ${c}🪙`;
         return 'Шпионаж';
       case 'trash': return `уберите из игры до ${a} ${plural(a, 'карты', 'карт', 'карт')} из руки`;
       case 'trashGold': return `уберите из игры до ${a} ${plural(a, 'карты', 'карт', 'карт')} из руки, +${b}🪙 за каждую`;
@@ -563,16 +571,16 @@ const DATA = (() => {
     house: { wolf: 'sieges', rose: 'spy', moon: 'plots', eagle: 'unions', sun: 'faith' },
     court: { siegeband: 'sieges', wolfpack: 'sieges', sappers: 'sieges', pickpocket: 'spy', saboteur: 'spy', blackmailer: 'spy', briber: 'spy',
       ballista: 'sieges', ram: 'sieges', catapult: 'sieges', siegetower: 'sieges', trebuchet: 'sieges', interceptor: 'spy', torchman: 'spy', courtesan: 'spy', agitator: 'spy', recruiter: 'spy',
-      cursedrelic: 'spy&faith', pr_grain: 'faith', pr_bounty: 'faith', pr_star: 'faith', pr_seer: 'faith', pr_flame: 'faith', pr_blade: 'faith', pr_shade: 'faith', pr_circle: 'faith', pr_cathedral: 'faith', pr_ash: 'faith', pr_harvest: 'faith', pr_mercy: 'faith',
-      keeper: 'seats', fairwarden: 'seats', taxfarmer: 'seats', tutor: 'seats', physician: 'seats', dreamer: 'seats', captain: 'seats', huntsman: 'seats', bannerman: 'seats', favorite: 'seats', schemer: 'seats', gossip: 'seats',
+      pr_grain: 'faith', pr_bounty: 'faith', pr_star: 'faith', pr_seer: 'faith', pr_flame: 'faith', pr_blade: 'faith', pr_shade: 'faith', pr_circle: 'faith', pr_cathedral: 'faith', pr_ash: 'faith', pr_harvest: 'faith', pr_mercy: 'faith',
+      keeper: 'seats', fairwarden: 'seats', taxfarmer: 'seats', tutor: 'seats', physician: 'seats', dreamer: 'seats', captain: 'seats', huntsman: 'seats', bannerman: 'seats', favorite: 'seats', gossip: 'seats',
       seneschal: 'seats', tollman: 'seats', bookman: 'seats', clockmaker: 'seats', armsmaster: 'seats', centurion: 'seats', ladyinwaiting: 'seats', confidante: 'seats', boatswain: 'seats', fence: 'seats', seeress: 'seats', sorceress: 'seats', meadmaker: 'seats', forester: 'seats', steward: 'seats', chamberlain: 'seats', envoyfam: 'seats', inspector: 'seats', harvestpriestess: 'seats', bellringer: 'seats' },
     ban: {},
     // 🟪 Твердыни — не в основе, а с модулями нападений
-    estate: { wall: 'sieges', cliffkeep: 'sieges', secretoffice: 'spy', plaguehouse: 'sieges', banditpost: 'sieges', falsetax: 'sieges', blight: 'sieges', ashes: 'sieges', mint: 'sieges|spy', citadel: 'sieges|spy', customs: 'sieges|spy', granary: 'sieges|spy', merchants: 'sieges|spy', fortress: 'sieges|spy', chancery: 'sieges|spy', thieves: 'sieges|spy', robberkeep: 'sieges|spy', embassy: 'sieges|spy' },
+    estate: { wall: 'sieges', cliffkeep: 'sieges', secretoffice: 'spy', plaguehouse: 'spy', banditpost: 'spy', falsetax: 'spy', blight: 'spy', ashes: 'spy&sieges', evileye: 'spy', cursedrelic: 'spy&faith', schemer: 'spy', mint: 'sieges|spy', citadel: 'sieges|spy', customs: 'sieges|spy', granary: 'sieges|spy', merchants: 'sieges|spy', fortress: 'sieges|spy', chancery: 'sieges|spy', thieves: 'sieges|spy', robberkeep: 'sieges|spy', embassy: 'sieges|spy' },
   };
   for (const id in BAN) if (BAN[id].needs) NEEDS.ban[id] = BAN[id].needs;
   for (const id in COURT) if (COURT[id].faith) NEEDS.court[id] = 'faith';
-  Object.assign(NEEDS.court, { schemer: 'spy', evileye: 'spy', cursedrelic: 'spy&faith', courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats',
+  Object.assign(NEEDS.court, { arson: 'spy', denounce: 'spy', slander: 'spy', poisonfeast: 'spy', courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats',
     chamberlain: 'seats', revels: 'seats', augur: 'seats', gatekeeper: 'seats', huntsman: 'seats', cupbearer: 'seats', confessor: 'seats', gossip: 'seats' });
   // убранные карты — убрать и из списка зависимостей
   { const SRC = { court: COURT, estate: ESTATES, ban: BAN, house: HOUSES }; for (const k in SRC) for (const id in NEEDS[k] || {}) if (!SRC[k][id]) delete NEEDS[k][id]; }
