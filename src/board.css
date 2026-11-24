@@ -183,7 +183,7 @@ body.staging .cmid, body.staging .cfoot { opacity: .12; transition: opacity .2s 
 .handz { grid-area: hand; position: relative; background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .18)); }
 .board .hcard { position: absolute; bottom: 9px; left: 0; width: var(--cw); height: var(--ch); border-radius: .82em; background: var(--ivory); box-shadow: 0 0 0 3px var(--rc), 0 6px 12px 2px rgba(0, 0, 0, .4); display: flex; flex-direction: column; overflow: hidden; transform-origin: 50% 140%; font-size: calc(var(--cw) / 7.4); --rc: #8a6a48; --r: 0deg; --y: 0px;
   transform: translateY(var(--y)) rotate(var(--r)); transition: transform .2s cubic-bezier(.2, .8, .3, 1), left .28s cubic-bezier(.2, .8, .3, 1), box-shadow .2s ease, filter .2s ease; touch-action: none; }
-.hcard.r-merchant { --rc: #b8862a; } .hcard.r-scholar { --rc: #2f5ea8; } .hcard.r-knight { --rc: #a83a36; } .hcard.r-spy { --rc: #6a4690; } .hcard.r-priest { --rc: #237d76; } .hcard.r-bad { --rc: #26221d; }
+.hcard.r-merchant { --rc: #b8862a; } .hcard.r-scholar { --rc: #2f5ea8; } .hcard.r-knight { --rc: #a83a36; } .hcard.r-spy { --rc: #6a4690; } .hcard.r-priest { --rc: #237d76; } .hcard.r-bad { --rc: #26221d; } .hcard.r-sin { --rc: #7a1f2b; }
 .hcard .art { height: 51%; width: 100%; flex: none; object-fit: cover; display: block; box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .25); pointer-events: none; }
 .hcard .idx { position: absolute; left: .3em; top: .3em; display: grid; gap: .22em; padding: .3em .38em; border-radius: .6em; background: rgba(16, 12, 6, .8); color: #fff; font: 800 1.06em/1 var(--font-body); }
 .hcard .idx span { display: flex; align-items: center; gap: .14em; white-space: nowrap; }
@@ -279,7 +279,7 @@ body.staging .cmid, body.staging .cfoot { opacity: .12; transition: opacity .2s 
 .dcards { display: grid; grid-template-columns: repeat(4, minmax(0, 132px)); justify-content: center; gap: 8px; }
 .mslot { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; align-content: start; min-width: 0; }
 .board .mcard, .cpop .mcard { position: relative; display: flex; flex-direction: column; width: 100%; aspect-ratio: 86 / 118; border-radius: .8em; background: var(--ivory); box-shadow: 0 0 0 2.5px var(--rc), 0 4px 9px 1px rgba(0, 0, 0, .4); overflow: hidden; font-size: calc(var(--mw, 86px) / 7); --rc: #8a6a48; color: #241b10; text-align: center; }
-.mcard.r-merchant, .mcard.d-t-trade { --rc: #b8862a; } .mcard.r-scholar, .mcard.d-t-sci { --rc: #2f5ea8; } .mcard.r-knight, .mcard.d-t-war { --rc: #a83a36; } .mcard.r-spy, .mcard.d-t-int { --rc: #6a4690; } .mcard.r-priest, .mcard.d-t-faith { --rc: #237d76; } .mcard.r-bad { --rc: #26221d; }
+.mcard.r-merchant, .mcard.d-t-trade { --rc: #b8862a; } .mcard.r-scholar, .mcard.d-t-sci { --rc: #2f5ea8; } .mcard.r-knight, .mcard.d-t-war { --rc: #a83a36; } .mcard.r-spy, .mcard.d-t-int { --rc: #6a4690; } .mcard.r-priest, .mcard.d-t-faith { --rc: #237d76; } .mcard.r-bad { --rc: #26221d; } .mcard.r-sin { --rc: #7a1f2b; }
 .mcard.t-land { --rc: var(--t-land); } .mcard.t-craft { --rc: var(--t-craft); } .mcard.t-raid { --rc: var(--t-raid); } .mcard.t-hold { --rc: var(--t-hold); } .mcard.t-bad { --rc: var(--t-bad); } .mcard.t-wall { --rc: var(--t-wall); }
 .mcard .art { height: 50%; width: 100%; flex: none; object-fit: cover; display: block; pointer-events: none; }
 .mcard.k-ban .art, .mcard.k-faith .art, .mcard.k-house .art { object-position: 50% 30%; }

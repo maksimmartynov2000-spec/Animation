@@ -1319,8 +1319,9 @@
       };
       const list = () => p.hand.map((id, i) => { const c = D.COURT[id]; return `<button class="opt" data-i="${i}"><span class="big">${sel.includes(i) ? '☑️' : '⬜'}</span><span><b>${esc(c.name)}</b><br><span class="muted">${D.fxText(c.fx)}</span></span><span class="r">${c.start || c.sig ? '' : c.cost + '🪙'}</span></button>`; }).join('');
       const warn = () => { const xs = sel.filter(i => p.hand[i] !== 'tax').map(i => `«${esc(D.COURT[p.hand[i]].name)}»`); return xs.length ? `Внимание: ${xs.join(' и ')} — не «Подать», ${xs.length > 1 ? 'исчезнут' : 'исчезнет'} навсегда.` : ''; };
-      const okTxt = () => (sel.length ? `Убрать ${D.cards(sel.length)}` : 'Ничего не убирать');
-      const body = `<p class="note">Убранные карты исчезают из вашей колоды навсегда. Обычно убирают «Подать»: колода становится меньше, и сильные карты приходят чаще.</p><p class="trash-sum">${sum()}</p><p class="trash-warn" hidden></p><div class="optlist">${list()}</div><div class="acts"><button class="btn primary wide" data-ok>${okTxt()}</button></div>`;
+      const short = () => Math.max(0, (q.need || 0) - sel.length); // покаяние: обязательно ровно q.need карт
+      const okTxt = () => (short() ? `Выберите ещё ${D.cards(short())}` : sel.length ? `Убрать ${D.cards(sel.length)}` : 'Ничего не убирать');
+      const body = `<p class="note">Убранные карты исчезают из вашей колоды навсегда. Обычно убирают «Подать»: колода становится меньше, и сильные карты приходят чаще.</p><p class="trash-sum">${sum()}</p><p class="trash-warn" hidden></p><div class="optlist">${list()}</div><div class="acts"><button class="btn primary wide" data-ok${short() ? ' disabled' : ''}>${okTxt()}</button></div>`;
       const sh = openSheet({ title: `${q.label || (q.each ? 'Покаяние' : 'Очищение')}: уберите ${q.need >= q.max ? `${q.max} ${D.plural(q.max, 'карту', 'карты', 'карт')}` : `до ${q.max} ${D.plural(q.max, 'карты', 'карт', 'карт')}`}${q.each ? ` (+${q.each}🪙 за каждую)` : ''}`, body, dismiss: false });
       sh.el.addEventListener('click', (e) => {
         const b = e.target.closest('[data-i]');
@@ -1330,10 +1331,10 @@
           sh.el.querySelector('.optlist').innerHTML = list();
           sh.el.querySelector('.trash-sum').textContent = sum();
           const wn = sh.el.querySelector('.trash-warn'); wn.textContent = warn(); wn.hidden = !warn();
-          sh.el.querySelector('[data-ok]').textContent = okTxt();
+          { const ok = sh.el.querySelector('[data-ok]'); ok.textContent = okTxt(); ok.disabled = short() > 0; }
           return;
         }
-        if (e.target.closest('[data-ok]')) { sh.close(); res(sel); }
+        if (e.target.closest('[data-ok]') && !short()) { sh.close(); res(sel); }
       });
     });
   }
@@ -2093,8 +2094,8 @@
     }
     return out.slice(0, max).join('');
   }
-  const roleCls = (c) => (c.scheme ? 'r-bad' : c.role ? 'r-' + c.role : ''); // козни — тёмные, как проклятия
-  const roleName = (c) => (c.scheme ? 'Козни' : c.role ? D.ROLES[c.role].name : c.start ? 'Стартовая' : 'Без роли');
+  const roleCls = (c) => (c.sin ? 'r-sin' : c.scheme ? 'r-bad' : c.role ? 'r-' + c.role : ''); // козни — тёмные, как проклятия; грех — тёмно-красный
+  const roleName = (c) => (c.sin ? 'Грех' : c.scheme ? 'Козни' : c.role ? D.ROLES[c.role].name : c.start ? 'Стартовая' : 'Без роли');
 
   // ---------- размеры зон ----------
   // Раскладки: port — телефон стоя; land — телефон боком (столы слева, рука справа);
