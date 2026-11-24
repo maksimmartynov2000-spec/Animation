@@ -16,7 +16,7 @@
     if (on('lords')) dawn.push(on('great') ? 'содержание лордов и великих' : 'содержание лордов');
     if (on('plots')) dawn.push('⏳-замыслы');
     if (on('balance')) dawn.push('Зависть и Поддержка');
-    const bad = on('sieges') ? `<tr><td><span class="bsq"></span>Беда</td><td>вредит<small>как на карте</small></td><td>вредит<small>как на карте</small></td></tr>` : '';
+    const bad = on('spy') ? `<tr><td><span class="bsq"></span>Проклятие</td><td>вредит<small>всегда, пока лежит</small></td><td>вредит<small>всегда, пока лежит</small></td></tr>` : '';
     const holds = on('sieges') || on('spy');
     return `<div class="aid front">
       ${head(1, 'Ход')}

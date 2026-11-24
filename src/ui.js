@@ -394,7 +394,7 @@
           const pe = d.plantEstate && D.ESTATES[d.plantEstate] ? `«${esc(D.ESTATES[d.plantEstate].name)}»` : '';
           const tossed = d.toss && d.toss.length ? d.toss.map(cn).join(', ') : '';
           const extra = pe ? `вам подбросили проклятие ${pe}` : d.arson ? `поджог: вы потеряли ${d.arson}🪙` : d.toss ? [tossed ? `в сброс ушли ${tossed}` : '', d.lose ? `−${d.lose}🪙` : ''].filter(Boolean).join(', ') : d.slander ? 'клевета: в свой ход вы не купите карты двора' : d.grab ? `забрали из вашего сброса ${cn(d.grab)}` : d.burn ? `сожгли ${D.cards(d.burn)} из вашего сброса` : d.poach ? `переманили вассала ${cn(d.poach)}` : d.distract ? `${cn(d.distract)} отвлечён до конца вашего хода` : d.riot ? `содержание в ваш ход +${d.riot}🪙` : null;
-          const extra2 = pe ? `${pe} теперь у ${tn}` : d.arson ? `${tn} теряют ${d.arson}🪙` : d.toss ? `${tn}: ${[tossed ? `в сброс ${tossed}` : '', d.lose ? `−${d.lose}🪙` : ''].filter(Boolean).join(', ')}` : d.slander ? `${tn} не купят карты двора в свой ход` : d.grab ? `${cn(d.grab)} — в вашем сбросе` : d.burn ? `сожгли ${D.cards(d.burn)}` : d.poach ? `${cn(d.poach)} теперь ваш` : d.distract ? `${cn(d.distract)} отвлечён` : d.riot ? `смута: содержание у них +${d.riot}🪙` : null;
+          const extra2 = pe ? `${pe} теперь у ${esc(E.shortG(S.players[d.t]))}` : d.arson ? `${tn} теряют ${d.arson}🪙` : d.toss ? `${tn}: ${[tossed ? `в сброс ${tossed}` : '', d.lose ? `−${d.lose}🪙` : ''].filter(Boolean).join(', ')}` : d.slander ? `${tn} не купят карты двора в свой ход` : d.grab ? `${cn(d.grab)} — в вашем сбросе` : d.burn ? `сожгли ${D.cards(d.burn)}` : d.poach ? `${cn(d.poach)} теперь ваш` : d.distract ? `${cn(d.distract)} отвлечён` : d.riot ? `смута: содержание у них +${d.riot}🪙` : null;
           if (d.buyoff) { if (d.t === ME) toast(`🗝 Вы откупились от шпиона ${an}: −${d.buyoff}🪙`, 3800); else if (d.a === ME) toast(`🗝 ${tn} откупились от вашего шпиона: +${d.buyoff}🪙`, 3800); break; }
           if (d.A != null && d.G != null && flyOn()) {
             // шпион против стражи — посреди стола, без окна; владение (вымогательство) переезжает после сцены
@@ -2065,8 +2065,8 @@
     }
     return out.slice(0, max).join('');
   }
-  const roleCls = (c) => (c.bad ? 'r-bad' : c.role ? 'r-' + c.role : '');
-  const roleName = (c) => (c.bad ? 'Беда' : c.role ? D.ROLES[c.role].name : c.start ? 'Стартовая' : 'Без роли');
+  const roleCls = (c) => (c.scheme ? 'r-bad' : c.role ? 'r-' + c.role : ''); // козни — тёмные, как проклятия
+  const roleName = (c) => (c.scheme ? 'Козни' : c.role ? D.ROLES[c.role].name : c.start ? 'Стартовая' : 'Без роли');
 
   // ---------- размеры зон ----------
   // Раскладки: port — телефон стоя; land — телефон боком (столы слева, рука справа);
@@ -3687,7 +3687,7 @@
   const estKind = (id) => { const t = D.ESTATES[id].t; return ['land', 'craft', 'raid', 'hold'].includes(t) ? t : 'other'; };
   const SUBS = {
     estates: [['all', 'Все'], ['land', '🟦 Земли'], ['craft', '🟩 Ремёсла'], ['raid', '🟥 Набеги'], ['hold', '🟪 Твердыни'], ['other', 'Стены и проклятия']],
-    court: [['all', 'Все'], ['merchant', '⚖️ Купцы'], ['scholar', '📜 Учёные'], ['knight', '⚔️ Рыцари'], ['spy', '🔗 Шпионы'], ['priest', '🕯 Жрецы'], ['bad', '☠ Беды']],
+    court: [['all', 'Все'], ['merchant', '⚖️ Купцы'], ['scholar', '📜 Учёные'], ['knight', '⚔️ Рыцари'], ['spy', '🔗 Шпионы'], ['priest', '🕯 Жрецы'], ['scheme', '☠ Козни']],
     bans: [['all', 'Все'], ['v', 'Вассалы'], ['l', 'Лорды'], ['g', 'Великие лорды']],
   };
   const DIRS5 = [['all', 'Любое'], ['trade', '⚖️'], ['sci', '📜'], ['war', '⚔️'], ['int', '🔗'], ['faith', '🕯']];
@@ -3700,7 +3700,7 @@
   };
   const subOk = (kind, id) => {
     if (kind === 'estate') { const d = D.ESTATES[id]; return (catSub.estates === 'all' || estKind(id) === catSub.estates) && (catDir === 'all' || d.sym === catDir); }
-    if (kind === 'court') { const c = D.COURT[id], f = catSub.court; return f === 'all' || (f === 'bad' ? !!c.bad : !c.bad && !c.start && c.role === f); }
+    if (kind === 'court') { const c = D.COURT[id], f = catSub.court; return f === 'all' || (f === 'scheme' ? !!c.scheme : !c.scheme && !c.start && c.role === f); }
     if (kind === 'ban') { const b = D.BAN[id]; return (catSub.bans === 'all' || b.tier === catSub.bans) && (catDir === 'all' || b.dir === catDir); }
     return true;
   };

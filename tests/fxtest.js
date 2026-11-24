@@ -62,7 +62,7 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   }
   /* убрано: карта или правило изменены */
   { const S = mk(), [a, b] = S.players; est(S, b, 'wall', 'wall'); const w = E.razeOdds(S, a, b, 3, 'nowalls'), w2 = E.razeOdds(S, a, b, 3, null); eq(w.D, w2.D - E.walls(S, b), 'Осадная башня: стены цели не в счёт'); }
-  { // правила модулей открываются все (v10.14: «Шпионаж» падал — ссылка на убранную в v10.11 беду «Долг»)
+  { // правила модулей открываются все (v10.14: «Вражда» падала — раздел о шпионаже ссылался на убранную в v10.11 беду «Долг»)
     const M = require(G + 'modrules.js'), bad = [];
     for (const k of (M.ORDER || D.MODULE_KEYS)) { try { M.page(D, k, () => true); } catch (e) { bad.push(`${k}: ${e.message}`); } }
     ok(!bad.length, `правила модулей: ${bad.join('; ') || 'все открываются'}`);
