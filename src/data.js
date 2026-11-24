@@ -117,7 +117,7 @@ const DATA = (() => {
     falsetax: { name: 'Самозваный мытарь', n: [], t: 'bad', bad: 'tax', inc: 0, cost: 2, copies: 1, badText: 'Доход его 🟩 Ремёсел получает тот, кто подбросил.' },
     blight: { name: 'Неурожай', n: [], t: 'bad', bad: 'blight', inc: 0, cost: 2, copies: 1, badText: 'Его 🟦 Земли не приносят дохода.' },
     plaguehouse: { name: 'Чумная слобода', n: [], t: 'bad', bad: 'quarantine', inc: 0, cost: 2, copies: 1, badText: 'Он не покупает владения.' },
-    banditpost: { name: 'Разбойничий стан', n: [], t: 'bad', bad: 'bandits', inc: 0, cost: 2, copies: 1, badText: 'Его 🟥 Набеги и 🟪 Твердыни не приносят дохода.' },
+    banditpost: { name: 'Разбойничий стан', n: [], t: 'bad', bad: 'bandits', inc: 0, cost: 2, copies: 1, badText: 'Его 🟥 Набеги и 🟪 Твердыни не срабатывают.' },
     ashes: { name: 'Пепелище', n: [], t: 'bad', bad: 'walls', walls: -2, inc: 0, cost: 2, copies: 1, badText: 'Его 🧱 Стены слабее на 2.' },
     evileye: { name: 'Сглаз', n: [], t: 'bad', bad: 'evileye', inc: 0, cost: 2, copies: 1, badText: 'Он бросает только один кубик.' },
     cursedrelic: { name: 'Проклятая реликвия', n: [], t: 'bad', bad: 'relic', inc: 0, cost: 2, copies: 1, badText: 'Его вера не действует: ни ступени, ни обряд, ни карты веры.' },

@@ -1384,12 +1384,12 @@ const Engine = (() => {
     for (let k = 1; k < N; k++) {
       const o = S.players[(a.i - k + N) % N];
       if (R.raidNeighbor && prevOf(S, o) !== a) continue; // набег — в ход любого другого игрока (старый вариант: только того, кто ходит перед владельцем)
-      const m = mods(S, o), bandit = cursed(o, 'bandits'); // Разбойничий стан: Набеги и Твердыни молчат
+      const m = mods(S, o), bandit = cursed(o, 'bandits'); // Разбойничий стан: Набеги и Твердыни не срабатывают
       for (const e of o.estates) {
         const d = ES(e);
         if (d.t !== 'raid' || !d.n.includes(r)) continue;
+        if (bandit) { ev.push({ to: o.i, from: a.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: 'raid', zero: true, bandit: true }); continue; } // не срабатывает: ни дохода, ни отстройки
         if (e.ruined) { repair(S, o, e, ev); continue; }
-        if (bandit) { ev.push({ to: o.i, from: a.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: 'raid', zero: true, bandit: true }); continue; }
         const amt = a.shield > 0 ? 0 : Math.min(Math.max(0, d.inc + (m.redBonus || 0) + provB(m, d) - (mods(S, a).raidShield || 0)), a.gold);
         if (amt > 0) { const parts = raidParts(S, o, d, 'redBonus', a, amt); a.gold -= amt; o.gold += amt; o.stats.raidInc += amt; ev.push({ to: o.i, from: a.i, amt, src: d.name, id: e.id, uid: e.uid, t: 'raid', parts }); }
         else ev.push({ to: o.i, from: a.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: 'raid', zero: true });
@@ -1422,16 +1422,16 @@ const Engine = (() => {
       if (m.redOwn) for (const e of a.estates) {
         const d = ES(e);
         if (d.t !== 'raid' || !d.n.includes(r)) continue;
-        if (e.ruined) { repair(S, a, e, ev); continue; }
         if (bandit) { ev.push({ to: a.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: 'raid', own: true, zero: true, bandit: true }); continue; }
+        if (e.ruined) { repair(S, a, e, ev); continue; }
         const v = d.inc + (m.redBonus || 0) + provB(m, d);
         a.gold += v; a.stats.raidInc += v; ev.push({ to: a.i, amt: v, src: d.name, id: e.id, uid: e.uid, t: 'raid', own: true, parts: raidParts(S, a, d, 'redBonus', null, v) });
       }
       for (const e of a.estates) {
         const d = ES(e);
         if (d.t !== 'hold' || !d.n.includes(r)) continue;
-        if (e.ruined) { repair(S, a, e, ev); continue; }
         if (bandit) { ev.push({ to: a.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: 'hold', zero: true, bandit: true }); continue; }
+        if (e.ruined) { repair(S, a, e, ev); continue; }
         let left = d.cap || Infinity; // потолок за одно срабатывание (если задан)
         for (const o of rivals(S, a, o => o.gold > 0)) {
           const amt = o.shield > 0 ? 0 : Math.min(Math.max(0, d.inc + (m.holdBonus || 0) + provB(m, d) - (mods(S, o).raidShield || 0)), o.gold, left);
@@ -1851,11 +1851,12 @@ const Engine = (() => {
     },
     rollValue(S, p, r) {
       let v = 0; const m = mods(S, p);
-      // проклятия у нас: Неурожай — Земли молчат, Мытарь — доход Ремёсел уходит подбросившему, Разбойничий стан — Набеги и Твердыни молчат
+      // проклятия у нас: Неурожай — Земли молчат, Мытарь — доход Ремёсел уходит подбросившему, Разбойничий стан — Набеги и Твердыни не срабатывают
       const blight = cursed(p, 'blight'), taxed = cursed(p, 'tax'), bandit = cursed(p, 'bandits');
       for (const e of p.estates) {
         const d = ES(e);
         if (d.bad || !d.n.includes(r)) continue;
+        if (bandit && (d.t === 'raid' || d.t === 'hold')) continue; // Разбойничий стан: не срабатывают
         if (e.ruined) { if (d.t !== 'raid' || m.redOwn) v += 0.5; continue; }
         if (d.t === 'land' && !blight) v += estateIncome(S, p, d, m) + (m.landOwn || 0);
         if (d.t === 'craft' && !taxed) v += estateIncome(S, p, d, m);
@@ -2218,7 +2219,7 @@ const Engine = (() => {
       const n = this.allCards(p).length;
       const T = this.horizon(S);
       // козни разыгрываются один раз и уходят в колоду двора: ценность — один розыгрыш, если карта успеет прийти в руку
-      if (c.scheme) return clamp(T * handSize(S, p) / (n + 1), 0, 1) * (pw - avg * 0.3);
+      if (c.scheme) return clamp(T * handSize(S, p) / (n + 1), 0, 1) * (pw - avg * 0.3) + this.PRANK.scheme;
       const asCard = T * handSize(S, p) * (pw - avg) / (n + 1);
       if (!canSeat(S, id)) return asCard;
       // можно посадить ко двору: ценность места с поправкой на то, когда карта придёт в руку
@@ -2789,8 +2790,11 @@ const Engine = (() => {
         const dmg = (purged ? h * Math.min(T, 2.5) + 3.5 : h * T) * (d.bad === 'tax' ? 1 + k : k); // Мытарь: его доход Ремёсел — нам
         best = Math.max(best, spyInfo(S, p, o, R.plantSpy || 3).p * dmg * this.leaderBias(S, p, o));
       }
-      return best;
+      return best * this.PRANK.curse;
     },
+    // v10.14, решение владельца: боты охотнее на пакости — проклятия ценят в 2,5 раза выше, козням +3 к оценке.
+    // Парные партии (те же Дома и кубики): «охотный» бот выиграл 48 из 100 у прежнего — сила та же; проклятий в партии ~в 2,5 раза больше, сыгранных козней ~в 3
+    PRANK: { curse: 2.5, scheme: 3 },
     // разрушение: соперник теряет владение (нам — только его потеря; в дуэли это весь выигрыш)
     razeSwing(S, a, t, maxCost, flag) {
       const el = destroyable(S, t, maxCost, flag);

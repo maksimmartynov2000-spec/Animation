@@ -102,12 +102,17 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     await T.resolveRoll(S, b, 2); ok(b.gold === gb && a.gold === ga + 1, 'Самозваный мытарь: доход Пекарни — подбросившему');
     gb = b.gold; await T.resolveRoll(S, b, 1); eq(b.gold, gb + 1, 'Самозваный мытарь: Пашня приносит как обычно');
   }
-  { // Разбойничий стан: Набеги и Твердыни молчат
+  { // Разбойничий стан: Набеги и Твердыни не срабатывают
     const S = mk(), [a, b] = S.players; addEst(S, b, 'barracks'); addEst(S, b, 'citadel'); addEst(S, b, 'banditpost', { by: 0 }); const ga = a.gold, gb = b.gold;
     await T.resolveRoll(S, a, 4); ok(a.gold === ga && b.gold === gb, 'Разбойничий стан: Набег на чужом броске ничего не забирает');
     await T.resolveRoll(S, b, 4); ok(a.gold === ga && b.gold === gb, 'Разбойничий стан: Твердыня на своём броске ничего не забирает');
     b.estates = b.estates.filter(e => e.id !== 'banditpost'); await T.resolveRoll(S, a, 4); ok(b.gold > gb && a.gold < ga, 'без Стана Набег снова забирает');
   }
+  { // Разбойничий стан: Набеги и Твердыни не срабатывают совсем — и руины не отстраиваются
+    const S = mk(), [a, b] = S.players; const r = addEst(S, b, 'outpost', { ruined: true }); const h = addEst(S, b, 'citadel', { ruined: true }); addEst(S, b, 'banditpost', { by: 0 });
+    await T.resolveRoll(S, a, 9); await T.resolveRoll(S, b, 4); ok(r.ruined && h.ruined, 'Разбойничий стан: руины Набега и Твердыни не отстраиваются');
+  }
+  { const B = E.Bot; ok(B.PRANK && B.PRANK.curse === 2.5 && B.PRANK.scheme === 3, 'боты охотнее на пакости: проклятия ×2,5, козни +3'); }
   { // Чумная слобода: владения не покупает (и проклятия тоже), карты двора — можно
     const S = mk(), [a, b] = S.players; a.turn.rolled = true; addEst(S, a, 'plaguehouse', { by: 1 }); S.estateRow = ['field', 'blight']; S.courtRow = ['scribe'];
     const r1 = await E.buy(S, a, 'estate', 0), r2 = await E.buy(S, a, 'estate', 1);

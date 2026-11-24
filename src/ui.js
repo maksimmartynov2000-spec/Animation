@@ -1870,7 +1870,7 @@
     for (const x of grp(gain, x => `${x.src}|${x.from}`)) chips.push(`<span class="c g"${tap(x, x.to)}>+${x.amt} ${esc(x.src)}${xn(x)}${x.from != null ? ` <i>у ${esc(x.from === ME ? 'вас' : E.shortG(S.players[x.from]))}</i>` : ''}</span>`);
     for (const x of plots) chips.push(`<span class="c g">+${x.gold} замысел «${esc(D.COURT[x.id].name)}»</span>`);
     for (const x of grp(loss, x => `${x.src}|${x.to}`)) chips.push(`<span class="c l"${tap(x, x.t === 'bad' ? x.from : x.to != null ? x.to : x.from)}>−${x.amt} ${esc(x.src)}${xn(x)} <i>${x.to == null ? 'в банк' : esc(x.to === ME ? '→ вам' : E.shortG(S.players[x.to]))}</i></span>`);
-    for (const x of zero) chips.push(x.blight ? `<span class="c z">${esc(x.src)}: Неурожай — без дохода</span>` : x.bandit ? `<span class="c z">${esc(x.src)}: Разбойничий стан — без дохода</span>` : `<span class="c z">${esc(x.src)}: у ${esc(x.from === ME ? 'вас' : E.shortG(S.players[x.from]))} нет золота</span>`);
+    for (const x of zero) chips.push(x.blight ? `<span class="c z">${esc(x.src)}: Неурожай — без дохода</span>` : x.bandit ? `<span class="c z">${esc(x.src)}: Разбойничий стан — не срабатывает</span>` : `<span class="c z">${esc(x.src)}: у ${esc(x.from === ME ? 'вас' : E.shortG(S.players[x.from]))} нет золота</span>`);
     for (const x of badz) chips.push(`<span class="c l">⬛ ${esc(x.src)}${x.block === 'hire' ? ': в этот ход без найма' : x.blight ? ': Земли и Ремёсла молчат' : ': золота нет'}</span>`);
     const net = gain.reduce((a, x) => a + x.amt, 0) + plots.reduce((a, x) => a + x.gold, 0) - loss.reduce((a, x) => a + x.amt, 0);
     return { chips, net, any: chips.length > 0 };
