@@ -19,7 +19,8 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   await p.waitForTimeout(400);
   // вера Провидца, чудо «Перст судьбы» (первый ритуал пройден), второй ритуал можно начать; у соперника — Земли и Набег
   await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME], op = V.S.players[1 - V.ME];
-    me.faiths = ['seer']; me.miracles = ['seer_a']; me.sins = []; me.gold = 20;
+    me.faiths = ['seer']; me.miracles = ['seer_a']; me.sins = []; me.gold = 20; me.forceDice = null;
+    me.estates = me.estates.filter(e => !DATA.ESTATES[e.id].bad); // проклятие от соперника в первый ход (Проклятая реликвия глушит веру, Сглаз — второй кубик) сбило бы проверку
     for (const id of ['field', 'pasture', 'meadery', 'runestone', 'shrine', 'mine', 'orchard', 'barracks']) op.estates.push({ uid: V.S.uid++, id });
     V.redraw(); });
   await p.waitForTimeout(400);
@@ -28,6 +29,7 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   ok('карта веры на столе светится: обряд доступен', /glow/.test(s1.tile || '') && /обряд/.test(s1.lab), JSON.stringify(s1));
   ok('«Ещё можно»: обряд и начать ритуал; «Двор» светится', s1.ex === 'rite,ritstart' && /glow/.test(s1.myb), JSON.stringify(s1));
   // 2. кнопка «начать ритуал» в строке — открывает «Двор» на ритуалах
+  if (!(await p.$('.exline [data-act="ex"][data-k="ritstart"]'))) { ok('кнопка «начать ритуал» в строке', false, await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME]; return JSON.stringify({ est: me.estates.map(e => e.id), sins: me.sins, faiths: me.faiths }); })); console.log(res.join('\n')); await b.close(); return; }
   await p.click('.exline [data-act="ex"][data-k="ritstart"]'); await p.waitForTimeout(700);
   const s2 = await p.evaluate(() => ({ starts: document.querySelectorAll('.scrim:not(.out) [data-act="ritstart"]').length, h: [...document.querySelectorAll('.scrim:not(.out) .sec-h h3')].some(x => /Ритуал/.test(x.innerText)) }));
   ok('«начать ритуал» в строке → «Двор», раздел ритуалов', s2.h && s2.starts >= 1, JSON.stringify(s2));
