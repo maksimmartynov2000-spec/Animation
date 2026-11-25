@@ -156,7 +156,10 @@ function broker() {
     const ps = await gSheet(/Перст судьбы/);
     ok('Перст судьбы: лист вариантов с доходом у гостя', /вам [+−0]/.test(ps), ps.slice(0, 80));
     await guest.evaluate(() => { const o = document.querySelector('.scrim:not(.out) .optlist [data-v="0"]'); if (o) o.click(); });
-    ok('Перст судьбы по сети: кубик повёрнут у хозяина', await until((S, g) => g.turn.setUsed && g.turn.rolled));
+    ok('Перст судьбы по сети: кубик повёрнут у хозяина', await until((S, g) => g.turn.setUsed));
+    // после поворота окно броска открывается снова (можно ещё перебросить) — «Оставить»
+    for (let k = 0; k < 40; k++) { if (await hostQ((S, g) => g.turn.rolled)) break; await gClick('[data-act="adj-ok"]'); await guest.waitForTimeout(200); }
+    ok('бросок с повёрнутым кубиком принят', await until((S, g) => g.turn.rolled), JSON.stringify(await hostQ((S) => S.lastRoll)));
   }
   await gCloseAll();
   // 5. покаяние: гость с верой и грехом начинает с «Двора»; шаг 1 — 5🪙 сопернику
