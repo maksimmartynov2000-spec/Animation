@@ -530,6 +530,13 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { const S = mk(), [a] = S.players; a.hand = ['scribe', 'doublegame']; await E.play(S, a, 0); const g = a.gold, h = a.hand.length; await E.play(S, a, a.hand.indexOf('doublegame')); ok(a.gold - g === 1 && a.hand.length === h, 'Двойная игра: ещё раз Писарь (+1🪙 и карта)'); }
   { const S = mk(), [a, b] = S.players; b.discard = ['spicer']; await fx(S, a, [['snatch']]); ok(a.hand.includes('spicer') && !b.discard.includes('spicer'), 'Перехват: карта из сброса соперника — в руку'); }
   { const S = mk(), [a] = S.players; a.discard = ['spicer']; await fx(S, a, [['fetchOne']]); ok(a.hand.includes('spicer') && !a.discard.length, 'Святые мощи: из своего сброса в руку'); }
+  { // v10.17: мощи не возвращают сами себя и сыгранные в этот ход — раньше бесконечные монеты (и вдвоём с «Двойной игрой»)
+    const S = mk(), [a] = S.players; a.turn.rolled = true; a.hand = ['relics']; a.discard = []; const g0 = a.gold;
+    await E.play(S, a, 0); ok(!a.hand.includes('relics') && a.gold === g0 + 1, 'Святые мощи: сами себя не вернули, +1🪙');
+    const S2 = mk(), [b] = S2.players; b.turn.rolled = true; b.hand = ['relics', 'doublegame']; b.discard = ['spicer']; const h0 = b.gold;
+    await E.play(S2, b, 0); ok(b.hand.includes('spicer') && b.hand.length === 2, 'Святые мощи: из сброса — Пряностей торговец');
+    await E.play(S2, b, b.hand.indexOf('doublegame')); ok(!b.hand.includes('relics') && !b.hand.includes('doublegame'), 'Двойная игра повторила мощи — ни мощи, ни она сама в руку не вернулись');
+    eq(b.gold - h0, 2, 'мощи + Двойная игра: ровно 2🪙, без петли'); }
   { const S = mk(), [a] = S.players; a.vassals = ['ida', 'gunnar']; a.lords = ['anselm']; await fx(S, a, [['goldPerBanner', 1]]); eq(a.gold, 23, 'Знамя ордена: +1 за каждое знамя'); }
   { const S = mk(['tA', 'tB']), [a, b] = S.players; est(S, b, 'barracks'); a.turn.rolled = true; await fx(S, a, [['shield']]); const g0 = a.gold; await T.resolveRoll(S, a, 4); eq(a.gold, g0, 'Щит ордена: Набег ничего не забирает'); E.endTurn(S, a); E.endTurn(S, a); await T.resolveRoll(S, a, 4); eq(g0 - a.gold, 2, 'щит кончился после следующего хода'); }
   { const S = mk(), [a, b] = S.players; a.temp.int = 60; b.lords = []; ans = (q) => (q.type === 'target' ? 1 : null); const g = a.gold, gb = b.gold; await fx(S, a, D.COURT.courtesan.fx); ok(a.gold === g && b.gold === gb, 'Куртизанка: лордов нет — ничего'); ans = null; }
@@ -709,6 +716,22 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     const S = mk(), [a, b] = S.players; miracle(S, a, 'shade_a'); b.discard = ['collector']; ans = (q) => (q.type === 'borrow' ? 0 : null); await T.borrowCard(S, a); ans = null;
     ok(a.hand.includes('collector') && !b.discard.includes('collector'), 'Чужими руками: карта в руке'); a.turn.retired = false; const k = a.hand.indexOf('collector');
     ok(!(await E.retire(S, a, k)), 'одолженную карту в отставку не отправить'); E.endTurn(S, a); ok(b.discard.includes('collector') && !a.hand.includes('collector') && !a.discard.includes('collector'), 'в конце хода карта вернулась владельцу'); }
+  // ================= v10.17: итог броска заранее (окно броска, «Перст судьбы») =================
+  { // rollPreview = настоящий бросок: Земли всех, свои Ремёсла, чужие Набеги, руины, «срабатывает ещё раз», двое и трое
+    let same = 0, all = 0; const bad = [];
+    for (const n of [2, 3]) for (const mir of [null, 'grain_b', 'harvest_b', 'flame_b']) for (let r = 1; r <= 12; r++) {
+      const S = mk(n === 2 ? ['tA', 'tB'] : ['tA', 'tB', 'tC']), [a, b] = S.players;
+      est(S, a, 'field', 'bakery', 'pasture', 'smithy'); est(S, b, 'field', 'barracks', 'meadery', 'outpost', 'caravan'); if (n === 3) est(S, S.players[2], 'pasture', 'wolfden', 'mine');
+      a.gold = 7; b.gold = 3; b.estates[0].ruined = true; // у соперника Земля в руинах: первое срабатывание — ремонт
+      if (mir) for (const q of S.players) { q.faiths = [D.RITUALS[mir].faith]; q.miracles = [mir]; }
+      const pv = E.rollPreview(S, a, r), g0 = S.players.map(q => q.gold);
+      await T.resolveRoll(S, a, r); all++;
+      const d = S.players.map((q, i) => q.gold - g0[i]);
+      if (pv.every((x, i) => x.gain - x.loss === d[i])) same++; else if (bad.length < 3) bad.push(`${n} игр., ${mir || 'без чуда'}, бросок ${r}: ждали ${d.join('/')}, заранее ${pv.map(x => x.gain - x.loss).join('/')}`);
+    }
+    eq(same, all, `итог броска заранее = настоящий бросок${bad.length ? ' — ' + bad.join('; ') : ''}`);
+    const S = mk(), [a, b] = S.players; est(S, b, 'barracks'); a.gold = 1; // Набег соперника берёт сколько есть
+    const pv = E.rollPreview(S, a, 4); ok(pv[0].loss === 1 && pv[1].gain === 1, `бросок 4: Казармы соперника берут 1🪙 из 1 (вышло −${pv[0].loss} / +${pv[1].gain})`); }
   console.log(`\nИТОГ: ${passes} проверок прошли, ${fails} не прошли`);
 })().catch(e => { console.log('CRASH', e.stack); });
 // ===== Ярмарка на ход (карты двора): таких карт в основе больше нет — проверка убрана =====
