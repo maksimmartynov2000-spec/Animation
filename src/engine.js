@@ -1554,6 +1554,62 @@ const Engine = (() => {
     }
   }
 
+
+  // предпросмотр броска (v10.17): кто сколько получит и отдаст, если у игрока a выпадет r — партия не меняется.
+  // Повторяет resolveRoll: Набеги соперников, Земли и Ремёсла всех, свои Набеги (Змеи) и Твердыни; руины — ремонт вместо дохода.
+  // Замыслы на числе и золото за союз после ремонта руин (модуль «Союзы») не считаются. Возвращает [{ i, gain, loss }] по игрокам
+  function rollPreview(S, a, r) {
+    const N = S.players.length, gold = S.players.map(q => q.gold), out = S.players.map(q => ({ i: q.i, gain: 0, loss: 0 }));
+    const move = (from, to, v) => { if (!(v > 0)) return; if (from != null) { gold[from] -= v; out[from].loss += v; } gold[to] += v; out[to].gain += v; };
+    const ruined = new Set(); for (const q of S.players) for (const e of q.estates) if (e.ruined) ruined.add(e.uid);
+    const fix = (e) => { if (!ruined.has(e.uid)) return false; ruined.delete(e.uid); return true; }; // руины: это срабатывание уходит на ремонт
+    for (let k = 1; k < N; k++) {
+      const o = S.players[(a.i - k + N) % N];
+      if (R.raidNeighbor && prevOf(S, o) !== a) continue;
+      const m = mods(S, o);
+      if (cursed(o, 'bandits')) continue;
+      for (const e of o.estates) {
+        const d = ES(e);
+        if (d.t !== 'raid' || !d.n.includes(r)) continue;
+        for (let x = 0; x < (m.raidDouble ? 2 : 1); x++) {
+          if (fix(e)) continue;
+          move(a.i, o.i, a.shield > 0 ? 0 : Math.min(Math.max(0, d.inc + (m.redBonus || 0) + provB(m, d) - (mods(S, a).raidShield || 0)), gold[a.i]));
+        }
+      }
+    }
+    for (const q of S.players) {
+      const m = mods(S, q), blight = cursed(q, 'blight'), taxE = q.estates.find(e => ES(e).bad === 'tax');
+      const taxTo = taxE && taxE.by != null && S.players[taxE.by] && taxE.by !== q.i ? S.players[taxE.by] : null;
+      for (const e of q.estates) {
+        const d = ES(e);
+        if (!d.n.includes(r)) continue;
+        if (!((d.t === 'land' && (q === a || R.landNeighbor === false || prevOf(S, q) === a)) || (d.t === 'craft' && (q === a || m.craftAny)))) continue;
+        const times = (d.t === 'land' && m.landDouble) || (d.t === 'craft' && m.craftDouble) ? 2 : 1;
+        for (let x = 0; x < times; x++) {
+          if (fix(e)) continue;
+          if (blight && d.t === 'land') break;
+          let v = estateIncome(S, q, d, m);
+          if (d.t === 'land' && q !== a && m.landOthers) v += m.landOthers;
+          if (d.t === 'land' && q === a && m.landOwn) v += m.landOwn;
+          if (v > 0) move(null, taxTo && d.t === 'craft' ? taxTo.i : q.i, v); // Самозваный мытарь: доход Ремёсел — подбросившему
+        }
+      }
+    }
+    const m = mods(S, a), bandit = cursed(a, 'bandits');
+    if (!bandit) for (const e of a.estates) {
+      const d = ES(e);
+      if (!d.n.includes(r)) continue;
+      if (d.t === 'raid' && m.redOwn) for (let x = 0; x < (m.raidDouble ? 2 : 1); x++) { if (fix(e)) continue; move(null, a.i, d.inc + (m.redBonus || 0) + provB(m, d)); }
+      if (d.t === 'hold') {
+        if (fix(e)) continue;
+        let left = d.cap || Infinity;
+        const pool = R.oneRival === false ? opps(S, a).filter(o => gold[o.i] > 0) : (() => { let best = null; for (let k = 1; k < N; k++) { const o = S.players[(a.i + k) % N]; if (gold[o.i] > 0 && (!best || gold[o.i] > gold[best.i])) best = o; } return best ? [best] : []; })();
+        for (const o of pool) { const amt = o.shield > 0 ? 0 : Math.min(Math.max(0, d.inc + (m.holdBonus || 0) + provB(m, d) - (mods(S, o).raidShield || 0)), gold[o.i], left); move(o.i, a.i, amt); left -= Math.max(0, amt); }
+      }
+    }
+    return out;
+  }
+
   // ---------- рынок ----------
   function marketPrice(S, p, base, court = false) {
     const m = mods(S, p);
@@ -3679,7 +3735,7 @@ const Engine = (() => {
     _t: { applyFx: (...a) => applyFx(...a), resolveRoll: (...a) => resolveRoll(...a), payUpkeep: (...a) => payUpkeep(...a), doSpy: (...a) => doSpy(...a), refreshRows, startOfTurn: (...a) => startOfTurn(...a), ritualEndTurn: (...a) => ritualEndTurn(...a), ritualTick: (...a) => ritualTick(...a), returnBorrowed: (...a) => returnBorrowed(...a), borrowCard: (...a) => borrowCard(...a) }, // для тестов
     cuFrom, modParts, incomeParts, dawnParts, guardOf, spyWalls, oathFree, discardOf, playedOf, takeFromDiscard, backToDeck, purgeBad, purgeBlock, prodSources, dawnGold, modSources, fetchLeft,
     nmG, shortG, canOwnEstate, plotSlots, seatMax, fairLimit, fairOf, isCursed, cursed, sinned, sinCount, takeSin, startPenance, penanceBlock,
-    RIT, ritualOn, ritualsFor, ritualsOf, ritualBlock, startRitual, ritualAct, ritualActBlock, ritualProgress, haveNow, miraclesOf, miraclesOn, miracleOn, deckTopOf, borrowIdx, handFree, upkeepCost, extraCost, goalShort, attackOdds, rite, riteBlock, faithStage, faithCandles, oathBuy, oathPlay, canSeat, seatFromDiscard, unseatOptions, handSize, siegeOdds, razeOdds, spyInfo, capturable, destroyable, targetsOf, sameFaith, truce, buyAction, canBuyAction, extraOn, behindLeader, hireFree, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
+    rollPreview, RIT, ritualOn, ritualsFor, ritualsOf, ritualBlock, startRitual, ritualAct, ritualActBlock, ritualProgress, haveNow, miraclesOf, miraclesOn, miracleOn, deckTopOf, borrowIdx, handFree, upkeepCost, extraCost, goalShort, attackOdds, rite, riteBlock, faithStage, faithCandles, oathBuy, oathPlay, canSeat, seatFromDiscard, unseatOptions, handSize, siegeOdds, razeOdds, spyInfo, capturable, destroyable, targetsOf, sameFaith, truce, buyAction, canBuyAction, extraOn, behindLeader, hireFree, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
   };
 })();
 if (typeof module !== 'undefined') module.exports = Engine;

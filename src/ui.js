@@ -12,7 +12,7 @@
   let paused = false;
   let runId = 0;
   let endTurnResolve = null;
-  let adjustReq = null;
+  let adjustReq = null, adjMin = false; // adjMin — окно броска свёрнуто (v10.17)
   // защита от мискликов: «Завершить ход» и «Отставка» срабатывают со второго нажатия (первое — «Точно?» на 4 секунды)
   let armed = null;
   const armedOn = (k) => !!(armed && armed.k === k && performance.now() - armed.t < 4000);
@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.16'; // вера: 16 ритуалов (по 2 у веры) — 5 условий в любом порядке, постоянное чудо
+  const VERSION = '10.17'; // подсказки хода: «Ещё можно», карта веры на столе, окно броска с доходом всех и «Свернуть», ритуал — с его карты
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -1030,7 +1030,7 @@
   // ---------- вопросы человеку ----------
   function askHuman(p, q) {
     switch (q.type) {
-      case 'adjust': return throwDone().then(() => new Promise(res => { adjustReq = { q, res }; schedule(); }));
+      case 'adjust': return throwDone().then(() => new Promise(res => { adjustReq = { q, res }; adjMin = false; schedule(); }));
       case 'target': return askTarget(p, q);
       case 'capture': return askCapture(p, q);
       case 'bribe': return askBribe(p, q);
@@ -2065,12 +2065,40 @@
     } catch (e) { return true; }
     return false;
   }
+  // v10.17: что ещё можно сделать в этот ход — для подсветки, строки «Ещё можно» и вопроса при «Завершить ход».
+  // hard — о чём переспросить при завершении хода; мягкие (принять веру, начать ритуал) — только подсветка и строка
+  function extrasOf(p) {
+    if (!S || !p || !p.turn || WATCH || !isMyTurn() || S.players[S.cur] !== p) return [];
+    const out = [], R0 = p.ritual;
+    if (modOn('faith')) {
+      const many = (p.faiths || []).length > 1; // s — короткая подпись для строки хода (лёжа)
+      for (const f of p.faiths || []) if (!E.riteBlock(S, p, f)) out.push({ k: 'rite', f, t: many ? `обряд «${D.FAITHS[f].rite.name}»` : 'обряд', s: many ? `обряд ${D.FAITHS[f].icon}` : 'обряд', hard: true });
+      if (R0 && (E.ritualProgress(S, p) || []).some(x => x.act && !x.done && !x.why)) out.push({ k: 'ritual', t: 'жертва/милостыня', s: 'ритуал', hard: true });
+      if (!R0 && E.ritualsOf(S, p).some(id => !E.ritualBlock(S, p, id))) out.push({ k: 'ritstart', t: 'начать ритуал', s: 'ритуал' });
+      if (!(p.faiths || []).length || (E.faithMax && (p.faiths || []).length < E.faithMax(S, p))) if ((S.faithRow || []).some(f => !(p.faiths || []).includes(f) && !E.canAdopt(S, p, f))) out.push({ k: 'adopt', t: 'принять веру', s: 'вера' });
+    }
+    if (E.fetchLeft(S, p) > 0 && E.discardOf(p).length) out.push({ k: 'fetch', t: 'взять из сброса', s: 'из сброса', hard: true });
+    if (p.turn.rolled && E.buysLeft(S, p) <= 0 && freeBuyOk(p)) out.push({ k: 'fair', t: 'покупка без действия', s: 'покупка', hard: true });
+    return out;
+  }
+  // есть ли покупка без действия («Ярмарка»), которая по карману прямо сейчас
+  function freeBuyOk(p) {
+    const rows = [['estate', S.estateRow], ['court', S.courtRow], ['hold', S.holdRow || []]];
+    for (const [src, row] of rows) for (const id of row) {
+      const isE = src !== 'court', def = isE ? D.ESTATES[id] : D.COURT[id];
+      if (!def || (isE && !E.canOwnEstate(p, id)) || (!isE && def.sin)) continue;
+      if (E.fairOf(S, p, src, id) && E.marketPrice(S, p, def.cost, !isE) <= p.gold) return true;
+    }
+    return false;
+  }
   function endLeft(p) {
     const bits = [];
     const cards = p.hand.filter(id => !D.COURT[id].bad).length;
     if (cards) bits.push(`в руке ${cards} ${D.plural(cards, 'карта', 'карты', 'карт')}`);
     if (E.buysLeft(S, p) > 0 && canAfford(p)) bits.push('действие не потрачено');
-    return bits.length ? `<small>${bits.join(', ')}</small>` : '';
+    const ex = extrasOf(p).filter(x => x.hard);
+    if (ex.length) bits.push(`ещё можно: ${ex.map(x => x.t).join(', ')}`);
+    return bits.join(' · ');
   }
   // расшифровка дохода: «2 + 2 за пару + 1 Хаген = 5» (первое число — сама карта, дальше — кто добавил)
   // доход начала хода: «за провинции +3» → «+3 за провинции», «постоянный доход +6» → «+6 каждый ход»
@@ -2344,7 +2372,7 @@
   function myBarHtml(p) {
     const n = E.regCount(p), g = E.goal(S);
     const extra = [modOn('seats') && (p.seats || []).length ? `${gico('seat')}${p.seats.length}` : '', modOn('plots') && p.plots.length ? `${gico('plot')}${p.plots.length}` : '', (p.sins || []).length ? `😈${p.sins.length}` : '', p.penance ? `🕯${p.penance.step}/4` : '', p.ritual ? `✨${p.ritual.marks.filter(Boolean).length}/5` : '', (p.miracles || []).length ? `🌟${p.miracles.length}` : ''].filter(Boolean).join(' '); // грехи, покаяние, ритуал и чудеса — на кнопке «Двор»
-    return `<button class="crestb${S.first === p.i ? ' first' : ''}" data-act="my" aria-label="${esc(H(p).name)}: мой двор${S.first === p.i ? ', первый игрок круга' : ''}"><img class="crest" src="${crestOf(p)}" alt=""></button><button class="goldbig" data-act="res" data-s="gold" data-i="${p.i}" data-gold="${p.i}" aria-label="Золото: ${shownGold(p)}">${gico('gold')}<b>${shownGold(p)}</b>${popHtml(p.i, 'gold-pop')}</button>${barCoins(p.i)}<button class="pipsb" data-act="drawer" data-d="regalia" aria-label="Знамёна: ${n} из ${g}">${pipsOf(p)}<small>знамёна · ${n} из ${g}</small></button><span class="sp"></span><button class="myb" data-act="my">${extra ? `<i>${extra}</i>` : ''}${WATCH || hotseat() ? esc(H(p).short) : 'Двор'}</button>`;
+    return `<button class="crestb${S.first === p.i ? ' first' : ''}" data-act="my" aria-label="${esc(H(p).name)}: мой двор${S.first === p.i ? ', первый игрок круга' : ''}"><img class="crest" src="${crestOf(p)}" alt=""></button><button class="goldbig" data-act="res" data-s="gold" data-i="${p.i}" data-gold="${p.i}" aria-label="Золото: ${shownGold(p)}">${gico('gold')}<b>${shownGold(p)}</b>${popHtml(p.i, 'gold-pop')}</button>${barCoins(p.i)}<button class="pipsb" data-act="drawer" data-d="regalia" aria-label="Знамёна: ${n} из ${g}">${pipsOf(p)}<small>знамёна · ${n} из ${g}</small></button><span class="sp"></span><button class="myb${extrasOf(p).some(x => x.k === 'ritual' || x.k === 'ritstart') ? ' glow' : ''}" data-act="my">${extra ? `<i>${extra}</i>` : ''}${WATCH || hotseat() ? esc(H(p).short) : 'Двор'}</button>`;
   }
 
   // ---------- плитки владений ----------
@@ -2366,6 +2394,12 @@
     const v = d.t === 'raid' ? d.inc + (m.redBonus || 0) : d.t === 'hold' ? Math.min(d.cap || 99, d.inc + (m.holdBonus || 0)) : E.estateIncome(S, q, d, m);
     return `<b>+${v}</b>${gico('gold')}`;
   }
+  function faithTile(q, f, mine) {
+    const F = D.FAITHS[f], my = mine && !WATCH && isMyTurn() && S.players[S.cur] === q;
+    const can = my && !E.riteBlock(S, q, f), done = !!(q.turn && q.turn.rites && q.turn.rites[f]) && S.players[S.cur] === q;
+    const lab = mine ? (done ? 'обряд ✓' : 'обряд') : 'вера';
+    return `<button class="tile t-faith${can ? ' glow' : ''}${done ? ' done' : ''}" data-act="faith-tile" data-id="${f}" data-o="${q.i}" aria-label="Вера «${esc(F.name)}»${can ? ': провести обряд' : ''}"><span class="artw"><img src="${IMG(`art/r_${f}.svg`)}" alt="" draggable="false"></span><span class="num fi">${F.icon}</span><span class="inc">${lab}</span></button>`;
+  }
   function tilesHtml(q, mine) {
     const rv = rvShown(), fresh = !!rv && rv.tk === turnKey();
     const hit = fresh ? hitMap(rv, q) : {};
@@ -2381,7 +2415,9 @@
       }
       gs.sort((a, b) => (D.ESTATES[a.id].n[0] || 99) - (D.ESTATES[b.id].n[0] || 99) || D.ESTATES[a.id].cost - D.ESTATES[b.id].cost);
     }
-    if (!gs.length) return `<span class="none">${mine ? 'Владений пока нет — купите на рынке' : 'Владений пока нет'}</span>`;
+    // v10.17: карта веры лежит плиткой рядом с владениями: светится, когда обряд доступен; нажали — обряд
+    const ft = modOn('faith') ? (q.faiths || []).map(f => faithTile(q, f, mine)) : [];
+    if (!gs.length && !ft.length) return `<span class="none">${mine ? 'Владений пока нет — купите на рынке' : 'Владений пока нет'}</span>`;
     const tiles = gs.map(g => {
       const d = D.ESTATES[g.id];
       const cs = pend.filter(c => (c.kind === 'roll' && c.uid != null && g.uids.includes(c.uid)) || (c.kind === 'dawn' && c.ck && g.uids.some(u => c.ck === 'est:' + u)));
@@ -2393,8 +2429,8 @@
       const what = take ? `, забрать ${take}` : give ? `, отдать ${give}` : '';
       return `<button class="${cls}" data-act="${man.length ? 'coin-card' : 'info-estate'}" data-id="${g.id}" data-o="${q.i}" data-k="t${q.i}:${g.id}${g.ruined ? '#r' : ''}"${cs.length ? ` data-coins="${cs.map(c => c.k).join(',')}"` : ''} aria-label="${esc(d.name)}${g.n > 1 ? ` ×${g.n}` : ''}${what}"><span class="artw"><img src="${artOf(g.id)}" alt="" draggable="false"></span>${d.n.length ? `<span class="num">${CardFX.numText(d.n)}</span>` : ''}${g.n > 1 ? `<span class="stk">×${g.n}</span>` : ''}${d.p ? `<span class="prov">${gico('prov' + d.p)}</span>` : ''}<span class="inc">${g.ruined ? 'руины' : tileInc(q, d, m) + (d.sym ? `<img class="ic sy" src="${IMG(`icons/i_${d.sym}.svg`)}" alt="">` : '')}</span>${bubble}</button>`;
     });
-    const f = tileFit(gs.length, mine), v = mine ? '' : 'o';
-    return `<div class="trow${f.more ? ' more' : ''}" style="--cols:${f.cols}${f.s < 1 ? `;--${v}tw:${f.w}px;--${v}th:${f.h}px` : ''}">${tiles.join('')}</div>`;
+    const f = tileFit(gs.length + ft.length, mine), v = mine ? '' : 'o';
+    return `<div class="trow${f.more ? ' more' : ''}" style="--cols:${f.cols}${f.s < 1 ? `;--${v}tw:${f.w}px;--${v}th:${f.h}px` : ''}">${ft.concat(tiles).join('')}</div>`;
   }
   // сколько плиток в ряду и какого они размера: все владения видны без прокрутки, пока плитка не мельче 44 px;
   // ряды ровные (6 плиток — это 3 + 3, а не 5 + 1), неполный ряд стоит по центру
@@ -2443,7 +2479,8 @@
   function centerHtml(p, hint) {
     const ti = turnInfo(p);
     const coach = hint && coachMin === hint.id ? `<button class="coachchip" data-act="coach-max">${gico('magister')}${hint.step ? `шаг ${hint.step}` : 'подсказка'}</button>` : '';
-    const row = `<div class="turnrow"><button class="rnd" data-act="log" aria-label="Круг ${S.round}: журнал партии">Круг ${S.round}</button><b class="whose${ti.me ? ' mine' : ''}">${ti.whose}</b>${coach}${ti.text && (hintOn || ti.warn) ? `<span class="hint${ti.warn ? ' warn' : ''}">${ti.text}</span>` : ''}</div>`;
+    const exr = exInRow() && !ti.warn ? exChips(p, true) : ''; // v10.17: лёжа «Ещё можно» — в строке хода вместо подсказки
+    const row = `<div class="turnrow"><button class="rnd" data-act="log" aria-label="Круг ${S.round}: журнал партии">Круг ${S.round}</button><b class="whose${ti.me ? ' mine' : ''}">${ti.whose}</b>${coach}${exr ? `<span class="exr"><span class="exlab">ещё:</span>${exr}</span>` : ti.text && (hintOn || ti.warn) ? `<span class="hint${ti.warn ? ' warn' : ''}">${ti.text}</span>` : ''}</div>`;
     // ↻ обновление ряда: уходящая карта лежит посреди стола
     if (stepReq && stepReq.d.kind === 'refresh') {
       const d = stepReq.d, isBan = ['v', 'l', 'g'].includes(d.row);
@@ -2491,7 +2528,20 @@
         if (l) feed = `<span class="log">${esc(l.t.trim())}</span>`;
       }
     }
-    return { cls: `${fresh ? '' : ' stale'}${air ? ' air' : landing ? ' landing' : ''}`, html: `${row}<div class="cmid"><button class="well" data-act="rollsum" aria-label="Итог броска: подробно">${well}</button></div><div class="cfoot">${feed ? `<div class="cfeed" data-act="log">${feed}</div>` : ''}${why ? `<div class="why">${why}</div>` : ''}</div>` };
+    return { cls: `${fresh ? '' : ' stale'}${air ? ' air' : landing ? ' landing' : ''}`, html: `${row}<div class="cmid"><button class="well" data-act="rollsum" aria-label="Итог броска: подробно">${well}</button></div><div class="cfoot">${feed ? `<div class="cfeed" data-act="log">${feed}</div>` : ''}${why ? `<div class="why">${why}</div>` : ''}${exLine(p)}</div>` };
+  }
+
+  // v10.17: «Ещё можно: обряд · из сброса…» — кнопки ведут прямо к делу
+  const EX_ICON = { rite: '🕯', ritual: '✨', ritstart: '✨', adopt: '🕯', fetch: '🂠', fair: '🏷' };
+  const exInRow = () => L.mode === 'land' || L.mode === 'wide'; // лёжа центр низкий: кнопки — в строке хода, внизу места не держим
+  function exChips(p, short) {
+    if (!S || WATCH || !isMyTurn() || S.players[S.cur] !== p) return '';
+    return extrasOf(p).map(x => `<button class="exb${x.hard ? '' : ' soft'}" data-act="ex" data-k="${x.k}"${x.f ? ` data-f="${x.f}"` : ''} aria-label="Ещё можно: ${esc(x.t)}">${EX_ICON[x.k] || ''} ${esc(short ? x.s || x.t : x.t)}</button>`).join('');
+  }
+  function exLine(p) {
+    if (exInRow()) return '';
+    const ch = exChips(p); // место под строку есть всегда — стол не прыгает
+    return `<div class="exline${ch ? '' : ' empty'}" aria-hidden="${ch ? 'false' : 'true'}">${ch ? `<span>Ещё можно:</span>${ch}` : '<span>&nbsp;</span>'}</div>`;
   }
 
   // ---------- средняя карта: рука, рынок, знамёна ----------
@@ -2544,16 +2594,26 @@
   const dealSoon = () => { clearTimeout(dealTimer); dealTimer = setTimeout(schedule, FLIP_MS + FLIP_STEP * 6 + 80); };
 
   // ---------- рука: веер ----------
+  // v10.17: итог броска для всех — кто сколько получит, сколько вы отдадите чужим Набегам (замыслы не в счёте)
+  function pvLine(p, r, short) {
+    const pv = E.rollPreview(S, p, r), me = pv[p.i], bits = [];
+    const sgn = (v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0');
+    if (short === 'others') { if (me.loss) bits.push(`вы платите ${me.loss}`); }
+    else if (!short) bits.push(`вам ${sgn(me.gain - me.loss)}${me.loss ? ` (вы платите ${me.loss})` : ''}`);
+    else if (me.loss) bits.push(`вы −${me.loss}`);
+    for (const x of pv) { if (x.i === p.i) continue; const n = x.gain - x.loss; if (!n) continue; const q = S.players[x.i]; bits.push(short === true ? `${H(q).sigil}${sgn(n)}` : `${esc(H(q).dat)} ${sgn(n)}`); }
+    return bits.join(short === true ? ' ' : ' · ');
+  }
   // «Перст судьбы»: все повороты одного кубика с итогом броска и доходом, лучшие — сверху
   function setChoices(p, q) {
     const out = [];
-    q.vals.forEach((v, k) => { if (k > 0 && v === q.vals[0]) return; /* одинаковые кубики — варианты один раз */ for (let d = 1; d <= 6; d++) { if (d === v) continue; const vs2 = q.vals.slice(); vs2[k] = d; const t = vs2.reduce((a, b) => a + b, 0); out.push({ k, v: d, from: v, t, g: Math.round(E.Bot.rollValue(S, p, t)) }); } });
+    q.vals.forEach((v, k) => { if (k > 0 && v === q.vals[0]) return; /* одинаковые кубики — варианты один раз */ for (let d = 1; d <= 6; d++) { if (d === v) continue; const vs2 = q.vals.slice(); vs2[k] = d; const t = vs2.reduce((a, b) => a + b, 0); const x = E.rollPreview(S, p, t)[p.i]; out.push({ k, v: d, from: v, t, g: x.gain - x.loss }); } });
     return out.sort((a, b) => b.g - a.g || a.t - b.t);
   }
   function adjustPanel(p) {
     const q = adjustReq.q, vs = q.vals.join(' + ');
     const plotsOn = (r) => p.plots.filter(pl => pl.kind === 'dice' && pl.nums && pl.nums.includes(r)).length;
-    const gold = (r) => Math.round(E.Bot.rollValue(S, p, r) - 4 * plotsOn(r));
+    const gold = (r) => { const x = E.rollPreview(S, p, r)[p.i]; return x.gain - x.loss; }; // точно: доход минус чужие Набеги (замыслы — отдельно)
     const fmt = (v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0') + gico('gold');
     const ev = E.Bot.rollEV(S, p, q.n);
     const better = ev > gold(q.total) + 4 * plotsOn(q.total) + 0.5;
@@ -2563,15 +2623,16 @@
     const shC = q.shiftCost || 0, shOpts = q.shifts > 0 && p.gold >= shC ? [-1, 1].filter(d => q.total + d >= 1 && q.total + d <= 12) : [];
     const worth = (r, c) => gold(r) + 4 * plotsOn(r) - c;
     const shBest = shOpts.reduce((bb, d) => (worth(q.total + d, shC) > (bb == null ? worth(q.total, 0) : worth(q.total + bb, shC)) ? d : bb), null);
-    const shifts = shOpts.map(d => { const v = gold(q.total + d) - shC; return `<button class="adjb${d === shBest && !better ? ' best' : ''}" data-act="adj-shift" data-d="${d}"><b>Сдвиг на ${q.total + d}</b><small class="${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}">${fmt(v)}${shC ? ' с платой' : ''}</small></button>`; }).join('');
+    const shifts = shOpts.map(d => { const v = gold(q.total + d) - shC, o = pvLine(p, q.total + d, true); return `<button class="adjb${d === shBest && !better ? ' best' : ''}" data-act="adj-shift" data-d="${d}"><b>Сдвиг на ${q.total + d}</b><small class="${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}">${fmt(v)}${shC ? ' с платой' : ''}${o ? ` · ${o}` : ''}</small></button>`; }).join('');
     const rr = q.rerolls > 0 ? `<button class="adjb${better ? ' best' : ''}" data-act="adj-reroll"><b>Переброс${q.rerolls > 1 ? ' ×' + q.rerolls : ''}</b><small>в среднем ${f1x(ev)}</small></button>` : '';
     // чудо «Перст судьбы»: повернуть один кубик на любую грань — варианты в отдельном листе
-    const setB = q.sets > 0 ? (() => { const best = setChoices(p, q)[0]; return `<button class="adjb${best && best.g > gold(q.total) && !better ? ' best' : ''}" data-act="adj-setsheet"><b>Перст судьбы</b><small>${best ? `лучше всего ${best.t} · ${fmt(best.g)}` : 'любая грань'}</small></button>`; })() : '';
-    return `<div class="adjp"><div class="adj-h">Выпало <b>${vs}${q.n > 1 ? ` = ${q.total}` : ''}</b> — вам <b>${fmt(gold(q.total))}</b>${plotsOn(q.total) ? ' и замысел' : ''}. Оставить или изменить?${shOpts.length ? ` ${esc(E.modSources(S, p, 'shift').join(', ') || 'Гадатель')}: сдвиг на 1 за ${shC}${gico('gold')}.` : ''}</div><div class="adj">${rr}${ones}${shifts}${setB}</div></div>`;
+    const setB = q.sets > 0 ? (() => { const best = setChoices(p, q)[0]; return `<button class="adjb${best && best.g > gold(q.total) && !better ? ' best' : ''}" data-act="adj-setsheet"><b>Перст судьбы</b><small>${best ? `лучше: ${best.t} · ${fmt(best.g)}` : 'любая грань'}</small></button>`; })() : '';
+    const others = pvLine(p, q.total, 'others');
+    return `<div class="adjp"><button class="adjmin" data-act="adj-min" aria-label="Свернуть окно броска">Свернуть ▾</button><div class="adj-h">Выпало <b>${vs}${q.n > 1 ? ` = ${q.total}` : ''}</b> — вам <b>${fmt(gold(q.total))}</b>${plotsOn(q.total) ? ' и замысел' : ''}. Оставить или изменить?${others ? `<span class="adj-o">${others}</span>` : ''}${shOpts.length ? ` ${esc(E.modSources(S, p, 'shift').join(', ') || 'Гадатель')}: сдвиг на 1 за ${shC}${gico('gold')}.` : ''}</div><div class="adj">${rr}${ones}${shifts}${setB}</div></div>`;
   }
   function handHtml(p) {
     const my = isMyTurn() && !WATCH;
-    if (adjustReq && my) return adjustPanel(p);
+    if (adjustReq && my && !adjMin) return adjustPanel(p); // свёрнуто (adjMin) — видна рука, вернуть окно — кнопкой «Изменить» внизу
     // одно устройство на несколько человек: в чужой ход карты лежат рубашкой
     const hidden = hotseat() && (S.cur !== ME || coverReq) && S.winner === null;
     const n = p.hand.length;
@@ -2614,7 +2675,7 @@
     pileSeen.p = p.i; pileSeen.deck = dn; pileSeen.disc = dc; pileSeen.gid = S.gid || '';
     const thick = (k) => (k > 9 ? ' t3' : k > 3 ? ' t2' : k > 0 ? ' t1' : ' empty');
     return `<button class="pile deck${thick(dn)}${draw ? ' go' : ''}" data-act="${draw ? 'step-ok' : 'pile'}" data-w="deck" aria-label="Колода: ${dn} ${D.plural(dn, 'карта', 'карты', 'карт')}${draw ? ' — нажмите, чтобы взять карты' : ''}"><span class="pk">${dn ? `<img src="${backSrc('court')}" alt="" draggable="false">` : ''}</span><b>${dn}</b><small>${draw ? 'взять' : 'колода'}</small></button>`
-      + `<button class="pile disc${thick(dc)}${tc ? ' ' + roleCls(tc) : ''}" data-act="pile" data-w="discard" aria-label="Сброс: ${dc} ${D.plural(dc, 'карта', 'карты', 'карт')}"><span class="pk">${tc ? `<img src="${artOf(top)}" alt="" draggable="false">` : ''}</span><b>${dc}</b><small>сброс</small></button>`;
+      + `<button class="pile disc${thick(dc)}${tc ? ' ' + roleCls(tc) : ''}${my && extrasOf(p).some(x => x.k === 'fetch') ? ' glow' : ''}" data-act="pile" data-w="discard" aria-label="Сброс: ${dc} ${D.plural(dc, 'карта', 'карты', 'карт')}"><span class="pk">${tc ? `<img src="${artOf(top)}" alt="" draggable="false">` : ''}</span><b>${dc}</b><small>сброс</small></button>`;
   }
   // колода перемешивается: карты сброса перелетают в колоду, колода «тасуется»
   function pileShuffle() {
@@ -2722,7 +2783,8 @@
   function abarHtml(p) {
     const my = isMyTurn() && !WATCH;
     const cu = my && cuOn(p);
-    let left = `<button class="sq${drawer === 'market' ? ' on' : ''}" data-act="drawer" data-d="market" aria-pressed="${drawer === 'market'}">${gico('tag')}<span>Рынок</span></button><button class="sq${drawer === 'regalia' ? ' on' : ''}" data-act="drawer" data-d="regalia" aria-pressed="${drawer === 'regalia'}">${gico('banner')}<span>Знамёна</span>${cu ? '<b class="bdg">+1</b>' : ''}</button>`;
+    const exk = new Set(extrasOf(p).map(x => x.k)); // v10.17: подсветка — тут есть что сделать
+    let left = `<button class="sq${drawer === 'market' ? ' on' : ''}${exk.has('fair') ? ' glow' : ''}" data-act="drawer" data-d="market" aria-pressed="${drawer === 'market'}">${gico('tag')}<span>Рынок</span></button><button class="sq${drawer === 'regalia' ? ' on' : ''}${exk.has('adopt') ? ' glow' : ''}" data-act="drawer" data-d="regalia" aria-pressed="${drawer === 'regalia'}">${gico('banner')}<span>Знамёна</span>${cu ? '<b class="bdg">+1</b>' : ''}</button>`;
     const status = (t, s) => `<div class="status"><b>${t}</b>${s ? `<span>${s}</span>` : ''}</div>`;
     let pa;
     const cs = S.winner === null ? myCoins() : [];
@@ -2742,7 +2804,7 @@
     } else if (nextReq && lastRec) pa = '<button class="primary" data-act="next"><span>Дальше</span></button>';
     else if (adjustReq) {
       const q = adjustReq.q;
-      pa = `<button class="primary" data-act="adj-ok"><span>Оставить ${q.total}</span></button>`;
+      pa = `${adjMin ? '<button class="second" data-act="adj-max" aria-label="Вернуть окно броска">Изменить<small>бросок ▴</small></button>' : ''}<button class="primary" data-act="adj-ok"><span>Оставить ${q.total}</span></button>`; // окно свёрнуто — вернуть его кнопкой рядом
     } else if (my) {
       if (selCard) {
         const i = selCard.i, id = selCard.id, c = D.COURT[id], f = CardFX.court(c);
@@ -2767,7 +2829,7 @@
         const xa = lf <= 0 && E.extraOn(S, p) && !p.turn.extraBought ? `<button class="second" data-act="xaction" ${busy || !E.canBuyAction(S, p) ? 'disabled' : ''}>+1 действие<small>${E.extraCost(S, p)}${gico('gold')}</small></button>` : '';
         const el = endLeft(p);
         const all = p.hand.filter(id => !D.COURT[id].bad).length > 1 && !xa ? `<button class="second all" data-act="play-all" ${busy ? 'disabled' : ''}>Сыграть<small>все карты</small></button>` : '';
-        pa = xa + all + (armedOn('end') ? `<button class="primary warn" data-act="end" ${busy ? 'disabled' : ''}><span>Точно завершить?</span>${el}</button>` : `<button class="primary" data-act="end" ${busy ? 'disabled' : ''}><span>Завершить ход</span>${lf > 0 && canAfford(p) ? '<small>действие осталось</small>' : lf > 0 ? '<small>купить не на что</small>' : ''}</button>`);
+        pa = xa + all + (armedOn('end') ? `<button class="primary warn" data-act="end" ${busy ? 'disabled' : ''} aria-label="Точно завершить ход? Не сделано: ${esc(el)}"><span>Завершить?</span>${el ? `<em class="armnote">Не сделано: ${esc(el)}</em>` : ''}</button>` : `<button class="primary" data-act="end" ${busy ? 'disabled' : ''}><span>Завершить ход</span>${lf > 0 && canAfford(p) ? '<small>действие осталось</small>' : (() => { const ex = extrasOf(p).filter(x => x.hard); return ex.length ? `<small>ещё можно: ${ex.map(x => x.t).join(', ')}</small>` : ''; })()}</button>`);
       }
     } else {
       const cur = S.players[S.cur];
@@ -3286,7 +3348,20 @@
   function faithRitualsHtml(f) {
     const ids = Object.keys(D.RITUALS || {}).filter(id => D.RITUALS[id].faith === f);
     if (!ids.length) return '';
-    return `<div class="fcards"><div class="fch"><b>Ритуалы</b><span>два на выбор, чудо — с каждого</span></div><div class="pgrid">${ids.map(id => pslot(pcard('ritual', id))).join('')}</div></div>`;
+    return `<div class="fcards"><div class="fch"><b>Ритуалы</b><span>два на выбор, чудо — с каждого</span></div><div class="pgrid">${ids.map(id => pslot(pcard('ritual', id), ritBtn(id, true))).join('')}</div></div>`;
+  }
+  // v10.17: начать ритуал прямо с его карты — на листе ритуала и на листе веры (просьба владельца: не только через «Двор»)
+  // compact — кнопка под картой в сетке; иначе — строка под крупной картой
+  function ritBtn(id, compact) {
+    if (!S || WATCH || !modOn('faith')) return '';
+    const p = S.players[ME], W = D.RITUALS[id];
+    if (!p || !W || !(p.faiths || []).includes(W.faith) || !E.ritualOn(S, id)) return '';
+    const n = p.ritual && p.ritual.id === id ? p.ritual.marks.filter(Boolean).length : 0;
+    if ((p.miracles || []).includes(id)) return compact ? '<span class="pmeta"><span class="own">🌟 чудо ваше</span></span>' : '<p class="note">🌟 Ритуал пройден — чудо ваше.</p>';
+    if (p.ritual && p.ritual.id === id) return compact ? `<span class="pmeta"><span class="own">✨ идёт · ${n} из ${W.steps.length}</span></span>` : `<p class="note">✨ Ритуал идёт: отметок ${n} из ${W.steps.length}. Жертва и милостыня — на странице «Двор».</p>`;
+    const why = isMyTurn() ? E.ritualBlock(S, p, id) : 'Начать — в свой ход';
+    const b = `<button class="btn small ${why ? '' : 'primary'}" data-act="ritstart" data-id="${id}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : p.ritual ? 'Начать вместо текущего' : '✨ Начать ритуал'}</button>`;
+    return compact ? b : `<p class="note">${b}${p.ritual && !why ? ' Отметки текущего ритуала сгорят.' : ''}</p>`;
   }
   function ritualRows(id) {
     const W = D.RITUALS[id];
@@ -3324,7 +3399,7 @@
     if (d.act === 'info-court') { const c = D.COURT[d.id]; if (!c) return null; return { title: esc(c.name), body: `<div class="ex-pc">${pcard('court', d.id, { big: true })}</div>${exHtml(courtRows(d.id))}` }; }
     // v10.10: у знамени всё напечатано на карте (значок, свойство, «При найме», содержание); причину «нанять нельзя» показывает планка покупки
     if (d.act === 'info-ban') { const b = D.BAN[d.key]; if (!b) return null; return { title: esc(b.name), body: `<div class="ex-pc">${pcard('ban', d.key, { big: true })}</div>${offNote(b.mods)}` }; }
-    if (d.act === 'zoom') { const m = d.kind === 'house' ? D.HOUSES[d.id].mods : d.kind === 'faith' ? D.FAITHS[d.id].mods : null; return { title: esc(pcName(d.kind, d.id)), body: `<div class="ex-pc">${pcard(d.kind, d.id, { big: true })}</div>${m ? offNote(m) : ''}${d.kind === 'faith' && D.FAITHS[d.id] ? faithCardsHtml(d.id) + faithRitualsHtml(d.id) : ''}${d.kind === 'ritual' ? ritualRows(d.id) : ''}` }; }
+    if (d.act === 'zoom') { const m = d.kind === 'house' ? D.HOUSES[d.id].mods : d.kind === 'faith' ? D.FAITHS[d.id].mods : null; return { title: esc(pcName(d.kind, d.id)), body: `<div class="ex-pc">${pcard(d.kind, d.id, { big: true })}</div>${m ? offNote(m) : ''}${d.kind === 'faith' && D.FAITHS[d.id] ? faithCardsHtml(d.id) + faithRitualsHtml(d.id) : ''}${d.kind === 'ritual' ? ritBtn(d.id) + ritualRows(d.id) : ''}` }; }
     return null;
   }
   // ---------- листать открытую карту влево-вправо: соседние карты того же экрана, в том порядке, как они лежат; по кругу ----------
@@ -4586,11 +4661,13 @@
       case 'adj-one': if (adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'one', k: +el.dataset.k }); schedule(); } break;
       case 'adj-shift': if (adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'shift', d: +el.dataset.d }); schedule(); } break;
       case 'adj-ok': if (adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'accept' }); schedule(); } break;
+      case 'adj-min': if (adjustReq) { e.stopPropagation(); adjMin = true; schedule(); } break;
+      case 'adj-max': if (adjustReq) { e.stopPropagation(); adjMin = false; schedule(); } break;
       case 'adj-setsheet': if (adjustReq) {
         e.stopPropagation();
         const q = adjustReq.q, fmtG = (v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0') + '🪙';
         choiceSheet('🌟 Перст судьбы: какой кубик повернуть?', `<p class="note">Один кубик — на любую грань, раз в ход.${q.n > 1 ? ' Дубль от поворота не считается.' : ''} Справа — ваш доход по броску.</p>`,
-          [...setChoices(S.players[ME], q).map(c => ({ icon: '🎲', value: c, right: fmtG(c.g), html: q.n > 1 ? `<b>${c.from} → ${c.v}</b> · сумма ${c.t}` : `<b>${c.from} → ${c.v}</b>` })), { icon: '✕', value: null, right: '', html: '<b>Не поворачивать</b>' }])
+          [...setChoices(S.players[ME], q).map(c => { const o = pvLine(S.players[ME], c.t, false); return { icon: '🎲', value: c, right: fmtG(c.g), html: `${q.n > 1 ? `<b>${c.from} → ${c.v}</b> · сумма ${c.t}` : `<b>${c.from} → ${c.v}</b>`}${o ? `<br><span class="muted">${o}</span>` : ''}` }; }), { icon: '▾', value: null, right: '', html: '<b>Свернуть — посмотреть стол</b><br><span class="muted">вернуться — кнопка «Перст судьбы»</span>' }])
           .then(c => { if (c && adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'set', k: c.k, v: c.v }); schedule(); } });
       } break;
       case 'play': if (isMyTurn()) { e.stopPropagation(); playCard(+el.dataset.i); } break;
@@ -4607,6 +4684,19 @@
       case 'retire': if (isMyTurn()) { e.stopPropagation(); const i = +el.dataset.i; if (!armedOn('retire:' + p.hand[i] + ':' + i)) { arm('retire:' + p.hand[i] + ':' + i); break; } armed = null; flyHand(i, 'out'); selCard = null; if (guest()) netDo('retire', { i }); else guarded(async () => { await E.retire(S, p, i); }); } break;
       case 'rollsum': showRoll(); break;
       case 'penance': if (isMyTurn()) { e.stopPropagation(); closeAllSheets(); if (guest()) netDo('penance', {}); else guarded(async () => { const r = await E.startPenance(S, p); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
+      case 'faith-tile': {
+        e.stopPropagation(); const f = el.dataset.id, o = +el.dataset.o;
+        if (o === ME && isMyTurn() && !WATCH && !E.riteBlock(S, p, f)) { if (guest()) netDo('rite', { id: f }); else guarded(async () => { const r = await E.rite(S, p, f); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); }
+        else infoZoom('faith', f);
+        break;
+      }
+      case 'ex': if (isMyTurn()) {
+        e.stopPropagation(); const k = el.dataset.k;
+        if (k === 'rite') { const f = el.dataset.f; if (guest()) netDo('rite', { id: f }); else guarded(async () => { const r = await E.rite(S, p, f); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); }
+        else if (k === 'ritual' || k === 'ritstart') { showMy(); setTimeout(() => { const h = [...document.querySelectorAll('.scrim:not(.out) .sec-h h3')].find(x => /Ритуал/.test(x.innerText)); if (h) h.closest('.sec-h').scrollIntoView({ block: 'start' }); }, 60); }
+        else if (k === 'fetch') { const b = document.querySelector('.handz .pile.disc'); if (b) b.click(); }
+        else if (k === 'adopt' || k === 'fair') { if (!L.big) { drawer = k === 'adopt' ? 'regalia' : 'market'; selCard = null; schedule(); } else { const c = document.querySelector(k === 'adopt' ? '.shopcol > .shop.rg' : '.shopcol > .shop.mk'); if (c) c.scrollIntoView({ block: 'nearest' }); } }
+      } break;
       case 'ritstart': if (isMyTurn()) { e.stopPropagation(); const id = el.dataset.id; closeAllSheets(); if (guest()) netDo('ritstart', { id }); else guarded(async () => { const r = await E.startRitual(S, p, id); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
       case 'ritact': if (isMyTurn()) { e.stopPropagation(); const i = +el.dataset.i; closeAllSheets(); if (guest()) netDo('ritact', { i }); else guarded(async () => { const r = await E.ritualAct(S, p, i); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
       case 'purge': if (isMyTurn()) { e.stopPropagation(); const uid = +el.dataset.uid; closeAllSheets(); if (guest()) netDo('purge', { uid }); else guarded(async () => { const r = await E.purgeBad(S, p, uid); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;

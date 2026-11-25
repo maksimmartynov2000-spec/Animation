@@ -709,6 +709,22 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     const S = mk(), [a, b] = S.players; miracle(S, a, 'shade_a'); b.discard = ['collector']; ans = (q) => (q.type === 'borrow' ? 0 : null); await T.borrowCard(S, a); ans = null;
     ok(a.hand.includes('collector') && !b.discard.includes('collector'), 'Чужими руками: карта в руке'); a.turn.retired = false; const k = a.hand.indexOf('collector');
     ok(!(await E.retire(S, a, k)), 'одолженную карту в отставку не отправить'); E.endTurn(S, a); ok(b.discard.includes('collector') && !a.hand.includes('collector') && !a.discard.includes('collector'), 'в конце хода карта вернулась владельцу'); }
+  // ================= v10.17: итог броска заранее (окно броска, «Перст судьбы») =================
+  { // rollPreview = настоящий бросок: Земли всех, свои Ремёсла, чужие Набеги, руины, «срабатывает ещё раз», двое и трое
+    let same = 0, all = 0; const bad = [];
+    for (const n of [2, 3]) for (const mir of [null, 'grain_b', 'harvest_b', 'flame_b']) for (let r = 1; r <= 12; r++) {
+      const S = mk(n === 2 ? ['tA', 'tB'] : ['tA', 'tB', 'tC']), [a, b] = S.players;
+      est(S, a, 'field', 'bakery', 'pasture', 'smithy'); est(S, b, 'field', 'barracks', 'meadery', 'outpost', 'caravan'); if (n === 3) est(S, S.players[2], 'pasture', 'wolfden', 'mine');
+      a.gold = 7; b.gold = 3; b.estates[0].ruined = true; // у соперника Земля в руинах: первое срабатывание — ремонт
+      if (mir) for (const q of S.players) { q.faiths = [D.RITUALS[mir].faith]; q.miracles = [mir]; }
+      const pv = E.rollPreview(S, a, r), g0 = S.players.map(q => q.gold);
+      await T.resolveRoll(S, a, r); all++;
+      const d = S.players.map((q, i) => q.gold - g0[i]);
+      if (pv.every((x, i) => x.gain - x.loss === d[i])) same++; else if (bad.length < 3) bad.push(`${n} игр., ${mir || 'без чуда'}, бросок ${r}: ждали ${d.join('/')}, заранее ${pv.map(x => x.gain - x.loss).join('/')}`);
+    }
+    eq(same, all, `итог броска заранее = настоящий бросок${bad.length ? ' — ' + bad.join('; ') : ''}`);
+    const S = mk(), [a, b] = S.players; est(S, b, 'barracks'); a.gold = 1; // Набег соперника берёт сколько есть
+    const pv = E.rollPreview(S, a, 4); ok(pv[0].loss === 1 && pv[1].gain === 1, `бросок 4: Казармы соперника берут 1🪙 из 1 (вышло −${pv[0].loss} / +${pv[1].gain})`); }
   console.log(`\nИТОГ: ${passes} проверок прошли, ${fails} не прошли`);
 })().catch(e => { console.log('CRASH', e.stack); });
 // ===== Ярмарка на ход (карты двора): таких карт в основе больше нет — проверка убрана =====
