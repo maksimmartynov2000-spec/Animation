@@ -2398,7 +2398,7 @@
     const F = D.FAITHS[f], my = mine && !WATCH && isMyTurn() && S.players[S.cur] === q;
     const can = my && !E.riteBlock(S, q, f), done = !!(q.turn && q.turn.rites && q.turn.rites[f]) && S.players[S.cur] === q;
     const lab = mine ? (done ? 'обряд ✓' : 'обряд') : 'вера';
-    return `<button class="tile t-faith${can ? ' glow' : ''}${done ? ' done' : ''}" data-act="faith-tile" data-id="${f}" data-o="${q.i}" aria-label="Вера «${esc(F.name)}»${can ? ': провести обряд' : ''}"><span class="artw"><img src="${IMG(`art/r_${f}.svg`)}" alt="" draggable="false"></span><span class="num fi">${F.icon}</span><span class="inc">${lab}</span></button>`;
+    return `<button class="tile t-faith${can ? ' glow' : ''}${done ? ' done' : ''}" data-act="faith-tile" data-id="${f}" data-o="${q.i}" aria-label="Вера «${esc(F.name)}»${can ? ': обряд доступен' : ''}"><span class="artw"><img src="${IMG(`art/r_${f}.svg`)}" alt="" draggable="false"></span><span class="num fi">${F.icon}</span><span class="inc">${lab}</span></button>`;
   }
   function tilesHtml(q, mine) {
     const rv = rvShown(), fresh = !!rv && rv.tk === turnKey();
@@ -3350,6 +3350,14 @@
     if (!ids.length) return '';
     return `<div class="fcards"><div class="fch"><b>Ритуалы</b><span>два на выбор, чудо — с каждого</span></div><div class="pgrid">${ids.map(id => pslot(pcard('ritual', id), ritBtn(id, true))).join('')}</div></div>`;
   }
+  // v10.17 (ответ владельца 2.3): карта веры на столе открывает лист веры, обряд — этой кнопкой, без подтверждения
+  function riteBtn(f) {
+    if (!S || WATCH || !modOn('faith')) return '';
+    const p = S.players[ME], F = D.FAITHS[f];
+    if (!p || !F || !(p.faiths || []).includes(f)) return '';
+    const why = isMyTurn() && S.players[S.cur] === p ? E.riteBlock(S, p, f) : 'Обряд — в свой ход';
+    return `<p class="note rite-go"><button class="btn small ${why ? '' : 'primary'}" data-act="rite-go" data-id="${f}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : `🕯 Провести обряд «${esc(F.rite.name)}»`}</button></p>`;
+  }
   // v10.17: начать ритуал прямо с его карты — на листе ритуала и на листе веры (просьба владельца: не только через «Двор»)
   // compact — кнопка под картой в сетке; иначе — строка под крупной картой
   function ritBtn(id, compact) {
@@ -3399,7 +3407,7 @@
     if (d.act === 'info-court') { const c = D.COURT[d.id]; if (!c) return null; return { title: esc(c.name), body: `<div class="ex-pc">${pcard('court', d.id, { big: true })}</div>${exHtml(courtRows(d.id))}` }; }
     // v10.10: у знамени всё напечатано на карте (значок, свойство, «При найме», содержание); причину «нанять нельзя» показывает планка покупки
     if (d.act === 'info-ban') { const b = D.BAN[d.key]; if (!b) return null; return { title: esc(b.name), body: `<div class="ex-pc">${pcard('ban', d.key, { big: true })}</div>${offNote(b.mods)}` }; }
-    if (d.act === 'zoom') { const m = d.kind === 'house' ? D.HOUSES[d.id].mods : d.kind === 'faith' ? D.FAITHS[d.id].mods : null; return { title: esc(pcName(d.kind, d.id)), body: `<div class="ex-pc">${pcard(d.kind, d.id, { big: true })}</div>${m ? offNote(m) : ''}${d.kind === 'faith' && D.FAITHS[d.id] ? faithCardsHtml(d.id) + faithRitualsHtml(d.id) : ''}${d.kind === 'ritual' ? ritBtn(d.id) + ritualRows(d.id) : ''}` }; }
+    if (d.act === 'zoom') { const m = d.kind === 'house' ? D.HOUSES[d.id].mods : d.kind === 'faith' ? D.FAITHS[d.id].mods : null; return { title: esc(pcName(d.kind, d.id)), body: `<div class="ex-pc">${pcard(d.kind, d.id, { big: true })}</div>${d.kind === 'faith' && D.FAITHS[d.id] ? riteBtn(d.id) : ''}${m ? offNote(m) : ''}${d.kind === 'faith' && D.FAITHS[d.id] ? faithCardsHtml(d.id) + faithRitualsHtml(d.id) : ''}${d.kind === 'ritual' ? ritBtn(d.id) + ritualRows(d.id) : ''}` }; }
     return null;
   }
   // ---------- листать открытую карту влево-вправо: соседние карты того же экрана, в том порядке, как они лежат; по кругу ----------
@@ -4580,7 +4588,7 @@
     // нажатие мимо кнопок на столе снимает выбор с карты руки
     if (!el) { if (selCard && e.target.closest('.board') && !e.target.closest('.handz .hcard')) { selCard = null; schedule(); } return; }
     if (el.disabled) return;
-    if (el.closest('.scrim') && !['new', 'info-estate', 'info-court', 'info-ban', 'zoom', 'fetch', 'discard-seat', 'res', 'pile', 'purge', 'penance', 'ritstart', 'ritact'].includes(el.dataset.act)) return;
+    if (el.closest('.scrim') && !['new', 'info-estate', 'info-court', 'info-ban', 'zoom', 'fetch', 'discard-seat', 'res', 'pile', 'purge', 'penance', 'ritstart', 'ritact', 'rite-go'].includes(el.dataset.act)) return;
     const a = el.dataset.act;
     const p = S ? S.players[ME !== null ? ME : S.cur] : null;
     switch (a) {
@@ -4684,12 +4692,8 @@
       case 'retire': if (isMyTurn()) { e.stopPropagation(); const i = +el.dataset.i; if (!armedOn('retire:' + p.hand[i] + ':' + i)) { arm('retire:' + p.hand[i] + ':' + i); break; } armed = null; flyHand(i, 'out'); selCard = null; if (guest()) netDo('retire', { i }); else guarded(async () => { await E.retire(S, p, i); }); } break;
       case 'rollsum': showRoll(); break;
       case 'penance': if (isMyTurn()) { e.stopPropagation(); closeAllSheets(); if (guest()) netDo('penance', {}); else guarded(async () => { const r = await E.startPenance(S, p); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
-      case 'faith-tile': {
-        e.stopPropagation(); const f = el.dataset.id, o = +el.dataset.o;
-        if (o === ME && isMyTurn() && !WATCH && !E.riteBlock(S, p, f)) { if (guest()) netDo('rite', { id: f }); else guarded(async () => { const r = await E.rite(S, p, f); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); }
-        else infoZoom('faith', f);
-        break;
-      }
+      case 'faith-tile': e.stopPropagation(); infoZoom('faith', el.dataset.id); break; // лист веры; обряд — кнопкой в нём (ответ владельца 2.3)
+      case 'rite-go': if (isMyTurn()) { e.stopPropagation(); const id = el.dataset.id; closeAllSheets(); if (guest()) netDo('rite', { id }); else guarded(async () => { const r = await E.rite(S, p, id); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
       case 'ex': if (isMyTurn()) {
         e.stopPropagation(); const k = el.dataset.k;
         if (k === 'rite') { const f = el.dataset.f; if (guest()) netDo('rite', { id: f }); else guarded(async () => { const r = await E.rite(S, p, f); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); }

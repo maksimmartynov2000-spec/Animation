@@ -1,4 +1,4 @@
-// v10.17: подсказки хода. Карта веры на столе (светится, нажатие — обряд), строка «Ещё можно» и пузырь «Не сделано» у «Завершить?»,
+// v10.17: подсказки хода. Карта веры на столе (светится, нажатие — лист веры с кнопкой обряда), строка «Ещё можно» и пузырь «Не сделано» у «Завершить?»,
 // окно броска: доход всех и «Свернуть» (рука видна, вернуть — «Изменить»), «Начать ритуал» с карты ритуала, лёжа — кнопки в строке хода.
 // node hints.js [file]
 const { chromium } = require('playwright');
@@ -58,14 +58,17 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   ok('«Завершить?»: ход не кончился, пузырь «Не сделано … ещё можно: обряд»', s6.w && s6.turn && /Не сделано/.test(s6.note) && /ещё можно: обряд/.test(s6.note), JSON.stringify(s6));
   ok('«Завершить?» влезает в кнопку на iPhone', s6.fits, JSON.stringify(s6));
   await p.waitForTimeout(4300);
-  // 5. нажатие на карту веры — обряд; потом — лист веры с кнопкой «Начать ритуал»
+  // 5. нажатие на карту веры — лист веры с кнопкой «Провести обряд» (ответ владельца 2.3); кнопка — обряд без подтверждения
   const g0 = await p.evaluate(() => window.__VD.S.players[window.__VD.ME].gold);
-  await p.click('.tiles.own .tile.t-faith'); await p.waitForTimeout(1200); await myTurn();
-  const s7 = await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME], t = document.querySelector('.tiles.own .tile.t-faith'); return { rite: !!(me.turn.rites && me.turn.rites.seer), gold: me.gold, tile: t ? t.className : '', lab: t ? t.innerText.replace(/\s+/g, ' ') : '', ex: [...document.querySelectorAll('.exline [data-act="ex"]')].map(x => x.dataset.k).join(',') }; });
-  ok('карта веры: нажатие — обряд (−1🪙), подсветка погасла', s7.rite && s7.gold === g0 - 1 && !/glow/.test(s7.tile) && /обряд ✓/.test(s7.lab) && s7.ex === 'ritstart', JSON.stringify(s7));
   await p.click('.tiles.own .tile.t-faith'); await p.waitForTimeout(700);
-  const s8 = await p.evaluate(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); return s ? { t: /Око Провидца/.test(s.innerText), btn: [...s.querySelectorAll('[data-act="ritstart"]')].map(x => x.dataset.id + ':' + x.disabled).join(','), done: /чудо ваше/.test(s.innerText) } : null; });
-  ok('обряд уже был — нажатие открывает лист веры: «Начать ритуал» под вторым ритуалом', s8 && s8.t && s8.btn === 'seer_b:false' && s8.done, JSON.stringify(s8));
+  const s6b = await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME], s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && s.querySelector('[data-act="rite-go"]'); return { open: !!s, btn: b ? b.innerText + ':' + b.disabled : null, rite: !!(me.turn.rites && me.turn.rites.seer) }; });
+  ok('карта веры: нажатие — лист веры с кнопкой «Провести обряд», обряда ещё нет', s6b.open && /Провести обряд/.test(s6b.btn || '') && /false$/.test(s6b.btn || '') && !s6b.rite, JSON.stringify(s6b));
+  await p.click('.scrim:not(.out) [data-act="rite-go"]'); await p.waitForTimeout(1200); await myTurn();
+  const s7 = await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME], t = document.querySelector('.tiles.own .tile.t-faith'); return { rite: !!(me.turn.rites && me.turn.rites.seer), gold: me.gold, open: document.querySelectorAll('.scrim:not(.out)').length, tile: t ? t.className : '', lab: t ? t.innerText.replace(/\s+/g, ' ') : '', ex: [...document.querySelectorAll('.exline [data-act="ex"]')].map(x => x.dataset.k).join(',') }; });
+  ok('«Провести обряд»: обряд (−1🪙), лист закрыт, подсветка погасла', s7.rite && s7.gold === g0 - 1 && !s7.open && !/glow/.test(s7.tile) && /обряд ✓/.test(s7.lab) && s7.ex === 'ritstart', JSON.stringify(s7));
+  await p.click('.tiles.own .tile.t-faith'); await p.waitForTimeout(700);
+  const s8 = await p.evaluate(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const rg = s && s.querySelector('[data-act="rite-go"]'); return s ? { t: /Око Провидца/.test(s.innerText), btn: [...s.querySelectorAll('[data-act="ritstart"]')].map(x => x.dataset.id + ':' + x.disabled).join(','), done: /чудо ваше/.test(s.innerText), rite: rg ? rg.innerText + ':' + rg.disabled : null } : null; });
+  ok('обряд уже был — в листе веры кнопка обряда выключена, «Начать ритуал» под вторым ритуалом', s8 && s8.t && s8.btn === 'seer_b:false' && s8.done && /уже был/.test(s8.rite || '') && /true$/.test(s8.rite || ''), JSON.stringify(s8));
   // 6. карта ритуала крупно — там тоже «Начать ритуал»; начинаем
   await p.evaluate(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const c = s && s.querySelector('[data-act="zoom"][data-kind="ritual"][data-id="seer_b"]'); if (c) c.click(); }); await p.waitForTimeout(700);
   const s9 = await sheet();
