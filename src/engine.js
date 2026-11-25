@@ -1373,22 +1373,29 @@ const Engine = (() => {
       if (guess === total) { p.gold += m.predict; log(S, `${nm(p)}: предсказание сбылось (${guess}) — +${m.predict}🪙`, p.i, 'gold'); }
       else log(S, `${nm(p)}: предсказали ${guess} — не сбылось`, p.i, 'quiet');
     }
-    if (total <= (R.lustLow || 2) && sinned(p, 'lust')) lustLoss(S, p, total); // грех Похоть (v10.18)
+    if (total <= (R.lustLow || 2) && sinned(p, 'lust')) await lustLoss(S, p, total); // грех Похоть (v10.18)
     await resolveRoll(S, p, total);
     emit(S, 'change');
     return true;
   }
-  // Похоть (v10.18): итог броска 1–2 — случайная карта из руки или сброса (и сыгранных) уходит в сброс соперника, следующего по ходу.
+  // Похоть (v10.18, по проверке владельца): итог броска 1–2 — грешник выбирает, откуда: из руки или из сброса (сыгранные в этот ход —
+  // тоже в сбросе); оттуда соперник, следующий по ходу, вслепую берёт одну карту в свой сброс. Одна стопка пуста — без вопроса.
   // Козни и одолженная карта («Чужими руками») не уходят
-  function lustLoss(S, p, total) {
-    const to = S.players[(p.i + 1) % S.players.length], bid = p.borrow ? p.borrow.id : null, pool = [];
-    for (const w of ['hand', 'discard', 'inPlay']) (p[w] || []).forEach((id, i) => { if (D.COURT[id] && !D.COURT[id].scheme && id !== bid) pool.push([w, i]); });
-    if (!pool.length || to === p) { log(S, `${nm(p)}: Похоть — итог ${total}, но отдать нечего`, p.i, 'quiet'); return; }
+  async function lustLoss(S, p, total) {
+    const to = S.players[(p.i + 1) % S.players.length], bid = p.borrow ? p.borrow.id : null;
+    const ok = (id) => D.COURT[id] && !D.COURT[id].scheme && id !== bid;
+    const hand = [], disc = [];
+    p.hand.forEach((id, i) => { if (ok(id)) hand.push(['hand', i]); });
+    for (const w of ['discard', 'inPlay']) (p[w] || []).forEach((id, i) => { if (ok(id)) disc.push([w, i]); });
+    if ((!hand.length && !disc.length) || to === p) { log(S, `${nm(p)}: Похоть — итог ${total}, но отдать нечего`, p.i, 'quiet'); return; }
+    let src = hand.length && disc.length ? await ask(S, p, { type: 'lustFrom', total, to: to.i, hand: hand.length, discard: disc.length }) : hand.length ? 'hand' : 'discard';
+    if (src !== 'hand' && src !== 'discard') src = 'discard';
+    const pool = src === 'hand' ? hand : disc;
     const [w, i] = pool[Math.floor(rnd(S) * pool.length)];
     const [id] = p[w].splice(i, 1);
     to.discard.push(id);
-    log(S, `${nm(p)}: Похоть — итог ${total}, «${D.COURT[id].name}» ${w === 'hand' ? 'из руки' : 'из сброса'} уходит в сброс ${nmG(to)}`, p.i, 'sin');
-    emit(S, 'lust', { a: to.i, t: p.i, ids: [id], lose: true, total });
+    log(S, `${nm(p)}: Похоть — итог ${total}, ${nm(to)} вслепую взяли ${w === 'hand' ? 'из руки' : 'из сброса'} «${D.COURT[id].name}»`, p.i, 'sin');
+    emit(S, 'lust', { a: to.i, t: p.i, ids: [id], lose: true, total, from: src });
   }
 
   // надбавка знамён к владениям провинции: «Ваши владения Севера приносят +1🪙»
@@ -3635,6 +3642,7 @@ const Engine = (() => {
         case 'raze': { const t = S.players[q.from]; let b = q.options[0], bv = -Infinity; for (const uid of q.options) { const e = t.estates.find(x => x.uid === uid); if (!e) continue; const v = this.estateValue(S, t, e.id); if (v > bv) { bv = v; b = uid; } } return b; }
         case 'sinHire': case 'summon': { let b = q.options[0], bv = -Infinity; for (const id of q.options) { const v = banCost(S, p, id).total + this.banWorth(S, p, id); if (v > bv) { bv = v; b = id; } } return b; }
         case 'sinBanner': { let bk = 0, bv = -Infinity; q.options.forEach((o, k) => { const v = D.BAN[o.id].cost + this.banWorth(S, p, o.id); if (v > bv) { bv = v; bk = k; } }); return bk; }
+        case 'lustFrom': { const avg = this.avgPower(S, p), bid = p.borrow ? p.borrow.id : null, ok = (id) => D.COURT[id] && !D.COURT[id].scheme && id !== bid; const mean = (xs) => { const v = xs.filter(ok).map(id => this.power(S, p, id, avg)); return v.length ? v.reduce((t, x) => t + x, 0) / v.length : Infinity; }; return mean(p.hand) < mean([...p.discard, ...(p.inPlay || [])]) - 0.3 ? 'hand' : 'discard'; } // Похоть: отдать из стопки, где карты слабее
         case 'lustTake': { const avg = this.avgPower(S, p); return q.options.map((id, k) => ({ k, v: this.power(S, p, id, avg) })).sort((x, y) => y.v - x.v).slice(0, q.max).map(x => x.k); } // Похоть: лучшие карты
         case 'penanceEstate': { let b = q.options[0], bv = Infinity; for (const uid of q.options) { const e = p.estates.find(x => x.uid === uid); if (!e) continue; const v = this.estateValue(S, p, e.id); if (v < bv) { bv = v; b = uid; } } return b; }
         case 'penanceSin': { let b = q.options[0], bv = -Infinity; for (const id of q.options) { const v = this.sinPen(S, p, D.COURT[id].sin); if (v > bv) { bv = v; b = id; } } return b; }
@@ -3745,7 +3753,7 @@ const Engine = (() => {
   return {
     D, R, on, needOf, goal, goalText, meetsGoal, cardOn, houseOn, setHooks, newGame, runTurn, startOfTurn, play, roll, buy, hire, build, retire, fetchCard, endTurn, adoptFaith, renounceFaith, canAdopt, faithReq, faithMax,
     SKILL, SKILL_NAMES, SCORE_W, mods, prod, sym, walls, unionsOf, unionNeed, unionCount, regCount, banCost, hireBlock, faithBan, faithsOf, tierList, rowOf, allBans, upkeepOf, marketPrice, buysLeft, basicLeft,
-    _t: { applyFx: (...a) => applyFx(...a), resolveRoll: (...a) => resolveRoll(...a), payUpkeep: (...a) => payUpkeep(...a), doSpy: (...a) => doSpy(...a), refreshRows, startOfTurn: (...a) => startOfTurn(...a), ritualEndTurn: (...a) => ritualEndTurn(...a), ritualTick: (...a) => ritualTick(...a), returnBorrowed: (...a) => returnBorrowed(...a), borrowCard: (...a) => borrowCard(...a) }, // для тестов
+    _t: { applyFx: (...a) => applyFx(...a), resolveRoll: (...a) => resolveRoll(...a), payUpkeep: (...a) => payUpkeep(...a), doSpy: (...a) => doSpy(...a), refreshRows, startOfTurn: (...a) => startOfTurn(...a), ritualEndTurn: (...a) => ritualEndTurn(...a), ritualTick: (...a) => ritualTick(...a), returnBorrowed: (...a) => returnBorrowed(...a), borrowCard: (...a) => borrowCard(...a), lustLoss: (...a) => lustLoss(...a) }, // для тестов
     cuFrom, modParts, incomeParts, dawnParts, guardOf, spyWalls, oathFree, discardOf, playedOf, takeFromDiscard, backToDeck, purgeBad, purgeBlock, prodSources, dawnGold, modSources, fetchLeft,
     nmG, shortG, canOwnEstate, plotSlots, seatMax, fairLimit, fairOf, isCursed, cursed, sinned, sinCount, takeSin, startPenance, penanceBlock,
     rollPreview, RIT, ritualOn, ritualsFor, ritualsOf, ritualBlock, startRitual, ritualAct, ritualActBlock, ritualProgress, haveNow, miraclesOf, miraclesOn, miracleOn, deckTopOf, borrowIdx, handFree, upkeepCost, extraCost, goalShort, attackOdds, rite, riteBlock, faithStage, faithCandles, oathBuy, oathPlay, canSeat, seatFromDiscard, unseatOptions, handSize, siegeOdds, razeOdds, spyInfo, capturable, destroyable, targetsOf, sameFaith, truce, buyAction, canBuyAction, extraOn, behindLeader, hireFree, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,

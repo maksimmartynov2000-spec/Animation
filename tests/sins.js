@@ -81,6 +81,20 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME]; me.turn.rolled = false; V.redraw(); }); await p.waitForTimeout(400);
   const hint6 = await p.evaluate(() => (document.querySelector('.turnrow .hint') || {}).innerText || '');
   ok('до броска: «Похоть: итог 1–2 — карта уйдёт сопернику»', /Похоть: итог 1–2 — карта уйдёт сопернику/.test(hint6), hint6);
+  // 7. Похоть: итог 1–2 — окно «откуда возьмут карту» (рука или сброс); выбрали сброс — оттуда одна карта ушла сопернику
+  await p.evaluate(() => { const V = window.__VD, S = V.S, me = S.players[V.ME]; me.discard = ['tax', 'tax']; me.inPlay = []; me.turn.rolled = false; me.turn.setUsed = true; V.redraw();
+    const step = (x) => { x = (x + 0x6D2B79F5) | 0; let t = x; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return [x, ((t ^ (t >>> 14)) >>> 0) / 4294967296]; };
+    for (let k = 1; k < 300000; k++) { const s0 = (S.seed + k * 7919) | 0; if (1 + Math.floor(step(s0)[1] * 6) === 2) { S.seed = s0; break; } } });
+  await p.waitForTimeout(400);
+  const b7 = await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME], op = V.S.players[1 - V.ME]; return { hand: me.hand.length, disc: me.discard.length, op: op.discard.length }; });
+  await p.evaluate(() => { const r = document.querySelector('.abar [data-act="roll"][data-n="1"]'); if (r) r.click(); });
+  let ls7 = '';
+  for (let k = 0; k < 60; k++) { ls7 = await sheet(); if (/откуда/.test(ls7)) break; await p.evaluate(() => { const o = document.querySelector('[data-act="adj-ok"]'); if (o) o.click(); }); await p.waitForTimeout(150); }
+  ok('Похоть: итог 2 — окно «откуда возьмут карту»: из руки или из сброса', /Похоть: итог 2 — откуда/.test(ls7) && /Из руки/.test(ls7) && /Из сброса/.test(ls7), ls7.slice(0, 110));
+  await p.evaluate(() => { const o = [...document.querySelectorAll('.scrim:not(.out) .optlist [data-v]')].find(x => /Из сброса/.test(x.innerText)); if (o) o.click(); }); await p.waitForTimeout(1000);
+  const a7 = await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME], op = V.S.players[1 - V.ME]; return { hand: me.hand.length, disc: me.discard.length, op: op.discard.length }; });
+  ok('выбрали «из сброса» — одна карта из сброса ушла сопернику, рука цела', a7.hand === b7.hand && a7.disc === b7.disc - 1 && a7.op === b7.op + 1, JSON.stringify(b7) + ' → ' + JSON.stringify(a7));
+  await closeAll();
   const lw = await sheetOf({ act: 'info-court', id: 'sin_wrath' });
   ok('лист Гнева: «чужие Набеги срабатывают на вас ещё раз», модуль — только «Вера»', /Набеги срабатывают на вас ещё раз/.test(lw) && !/Вражд/.test(lw), lw.slice(0, 160));
   console.log(res.join('\n')); console.log('ошибки', errs.slice(0, 5));

@@ -1064,6 +1064,8 @@
       case 'sinBanner': return choiceSheet('😈 Зависть: какое знамя забрать?', '<p class="note">Знамя лидера переходит к вам бесплатно — вассал, лорд или даже великий лорд.</p>',
         q.options.map((o, k) => ({ icon: H(S.players[o.i]).sigil, value: k, right: D.BAN[o.id].tier === 'v' ? 'вассал' : D.BAN[o.id].tier === 'l' ? 'лорд' : 'великий', html: `${banLine(o.id)}<br><span class="muted">сейчас у ${esc(E.shortG(S.players[o.i]))}</span>` })));
       case 'lustTake': return askLustTake(p, q);
+      case 'lustFrom': return choiceSheet(`😈 Похоть: итог ${q.total} — откуда ${esc(H(S.players[q.to]).short)} возьмут карту?`, `<p class="note">Соперник вслепую берёт одну вашу карту — она уходит в его сброс. Откуда — решаете вы.</p>`,
+        [{ icon: '✋', value: 'hand', right: '', html: `<b>Из руки</b><br><span class="muted">в руке ${D.cards(q.hand)} — какая уйдёт, решит случай</span>` }, { icon: '🂠', value: 'discard', right: '', html: `<b>Из сброса</b><br><span class="muted">в сбросе ${D.cards(q.discard)}, с сыгранными в этот ход</span>` }]);
       case 'penanceEstate': return choiceSheet('🕯 Покаяние, шаг 4: какое владение уходит из игры?', '<p class="note">Владение уходит из игры навсегда. Потом вы снимете один грех.</p>',
         q.options.map(uid => { const e = p.estates.find(x => x.uid === uid); const d = D.ESTATES[e.id]; return { icon: D.ETYPE[d.t].mark, value: uid, right: `${d.cost}🪙`, html: `<b>${esc(d.name)}</b><br><span class="muted">${esc(D.estateText(d))}</span>` }; }));
       case 'penanceSin': return choiceSheet('🕯 Покаяние окончено: какой грех снять?', '<p class="note">Грех уходит в колоду двора, его штраф больше не действует.</p>',

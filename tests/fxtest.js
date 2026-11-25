@@ -126,7 +126,16 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     ans = null; ok(!c.hand.length && d.discard.includes('spicer'), 'Похоть: на итоге 1–2 карта из руки ушла в сброс соперника');
     const S3 = mk(), [e1] = S3.players; e1.sins = ['sin_lust']; e1.hand = ['tax']; let lost = 0, rolls = 0;
     for (let k = 0; k < 60; k++) { e1.turn = fresh(); e1.hand = ['tax']; e1.discard = []; await E.roll(S3, e1, 2); rolls++; if (!e1.hand.length) lost++; }
-    ok(lost === S3.log.filter(x => /Похоть — итог 2/.test(x.t || x.text || '')).length && lost <= 6, `Похоть: на двух кубиках карта уходит только на 1+1 (ушла ${lost} раз из ${rolls})`); }
+    ok(lost === S3.log.filter(x => /Похоть — итог 2/.test(x.t || x.text || '')).length && lost <= 6, `Похоть: на двух кубиках карта уходит только на 1+1 (ушла ${lost} раз из ${rolls})`);
+    // по проверке владельца: откуда — решает грешник (рука или сброс), какая карта — вслепую; одна стопка пуста — без вопроса
+    for (const pick of ['discard', 'hand']) {
+      const S4 = mk(), [g1, h1] = S4.players; g1.sins = ['sin_lust']; g1.hand = ['spicer', 'collector']; g1.discard = ['tax', 'tax']; g1.inPlay = ['augur']; h1.discard = []; let asked = null;
+      ans = (q) => (q.type === 'lustFrom' ? (asked = q, pick) : null); await E._t.lustLoss(S4, g1, 2); ans = null;
+      const fromHand = g1.hand.length === 1, fromDisc = g1.discard.length + g1.inPlay.length === 2;
+      ok(asked && asked.hand === 2 && asked.discard === 3 && h1.discard.length === 1 && (pick === 'hand' ? fromHand && !fromDisc : fromDisc && !fromHand), `Похоть: выбрали «${pick === 'hand' ? 'из руки' : 'из сброса'}» — оттуда одна карта ушла сопернику (${h1.discard.join(',')})`);
+    }
+    { const S5 = mk(), [g2, h2] = S5.players; g2.sins = ['sin_lust']; g2.hand = []; g2.discard = ['tax']; g2.inPlay = []; let asked = false; ans = (q) => (q.type === 'lustFrom' ? (asked = true, 'hand') : null);
+      await E._t.lustLoss(S5, g2, 1); ans = null; ok(!asked && !g2.discard.length && h2.discard.includes('tax'), 'Похоть: рука пуста — карта из сброса без вопроса'); } }
   { // покаяние: 4 шага подряд, потом грех снят
     const S = mk(), [a, b] = S.players; a.faiths = ['grain']; a.sins = ['sin_greed']; S.cur = 0; a.gold = 20; b.gold = 3; addEst(S, a, 'field'); addEst(S, a, 'bakery');
     a.faiths = []; ok(/веру/.test(E.penanceBlock(S, a) || ''), 'без веры каяться нельзя'); a.faiths = ['grain'];
