@@ -50,9 +50,10 @@ console.log(JSON.stringify([...out]));
 """], cwd=root))
 def minsvg(t):
     t = re.sub(r'>\s+<', '><', t.strip())
-    # укорачиваем только координаты контуров (d="…"): 12.3456 -> 12.35. Числа в transform не трогаем —
+    # укорачиваем только координаты контуров (d="…"): 12.3456 -> 12.3 (v10.20: был 1 знак больше; рисунок ~220 единиц — 0,05 единицы не видно).
+    # Числа в transform не трогаем —
     # масштаб 0.22462 -> 0.2 уменьшал рисунок и сдвигал его влево-вверх
-    t = re.sub(r'd="([^"]*)"', lambda m: 'd="' + re.sub(r'(\d+\.\d\d)\d+', r'\1', m.group(1)) + '"', t)
+    t = re.sub(r'd="([^"]*)"', lambda m: 'd="' + re.sub(r'(\d+\.\d)\d+', r'\1', m.group(1)) + '"', t)
     return t
 assets = {}
 for p in used:
@@ -82,6 +83,13 @@ for _k, _v in assets.items():
     assert re.sub(r'~(.)', lambda m: asset_dict[m.group(1)], _v) == assets_full[_k], _k
 asset_dict_js = '{' + ','.join(json.dumps(k) + ':' + jsstr(v) for k, v in asset_dict.items()) + '}'
 assets_js = '{' + ','.join(json.dumps(k, ensure_ascii=False) + ':' + jsstr(v) for k, v in assets.items()) + '}'
+# v10.20: рисунки и словарь лежат в файле сжатыми (DEFLATE, base64) — около −330 КБ. В странице их распаковывает INFLATE
+# (src/inflate.js, свой, без библиотек) один раз при запуске, синхронно: остальной код видит те же ASSETS и ASSET_DICT.
+import zlib, base64
+_pack_json = json.dumps({'a': assets, 'd': asset_dict}, ensure_ascii=False, separators=(',', ':'))
+_z = zlib.compressobj(9, zlib.DEFLATED, -15)
+asset_pack = base64.b64encode(_z.compress(_pack_json.encode('utf-8')) + _z.flush()).decode()
+inflate_src = (root / 'inflate.js').read_text().replace("if (typeof module === 'object') module.exports = INFLATE;", '')
 
 import base64, urllib.parse
 touch_icon = 'data:image/png;base64,' + base64.b64encode((root/'appicon'/'icon-180.png').read_bytes()).decode()
@@ -104,6 +112,7 @@ def minify(text, loader):
         print('без сжатия:', e)
         return text
 js_src, css_src = js, css
+assets_unpack_js = "const ASSET_PACK = '" + asset_pack + "';\n" + minify(inflate_src, 'js').strip() + "\nconst { a: ASSETS, d: ASSET_DICT } = JSON.parse(INFLATE(ASSET_PACK));" # распаковщик — тоже сжатый (esbuild)
 js = minify(js, 'js')
 css = minify(css, 'css')
 standalone = f'''<!doctype html>
@@ -141,9 +150,8 @@ img {{ max-width: 100%; }}
 window.PRETENDENTY_LINKS = {{}}; // ссылки на учебник и каталог на claude.ai здесь не нужны
 // игра по сети: публичные MQTT-брокеры (список можно поменять в настройках игры)
 window.PRETENDENTY_NET = {{ brokers: ['wss://broker.emqx.io:8084/mqtt', 'wss://test.mosquitto.org:8081/mqtt', 'wss://broker.hivemq.com:8884/mqtt'] }};
-const ASSETS = {assets_js};
-// общие куски рисунков лежат в словаре: «~x» в рисунке — это ASSET_DICT.x
-const ASSET_DICT = {asset_dict_js};
+// рисунки сжаты (DEFLATE + base64) и распаковываются здесь один раз; общие куски — в словаре: «~x» в рисунке — это ASSET_DICT.x
+{assets_unpack_js}
 const ASSET_X = (s) => s.replace(/~(.)/g, (m, c) => ASSET_DICT[c] || m);
 const ASSET_CACHE = {{}};
 // гербы Домов, вассалов, лордов (icons/h_*, v_*, g_*) — тот же рисунок, что на карте, только кадр по эмблеме
@@ -179,8 +187,7 @@ print('index.html', len(standalone.encode('utf-8'))//1024, 'KB, картинок
 
 # ---------- публикация на claude.ai: тот же фрагмент, что velikie-doma.html, но картинки встроены (без отдельных файлов) ----------
 asset_script = f'''<script>
-const ASSETS = {assets_js};
-const ASSET_DICT = {asset_dict_js};
+{assets_unpack_js}
 const ASSET_X = (s) => s.replace(/~(.)/g, (m, c) => ASSET_DICT[c] || m);
 const ASSET_CACHE = {{}};
 const ICON_FROM_ART = /^icons\\/([hvgstpbr]_[A-Za-z0-9]+\\.svg)$/;
