@@ -84,12 +84,19 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     await E.buy(S, a, 'court', 0); ok(a.vassals.length === 1 && a.gold === 5, 'Гордыня: вассал бесплатно');
     const S2 = mk(), [b] = S2.players; b.turn.rolled = true; addEst(S2, b, 'schemer', { by: 1 }); S2.courtRow = ['sin_pride']; S2.vRow = ['fuller'];
     await E.buy(S2, b, 'court', 0); ok(!b.vassals.length && b.sins.length === 1, 'Гордыня при Заговоре: грех есть, найма нет'); }
-  { // Гнев: владение до 6🪙 без нападения, в руинах; против грешника +3 и без перемирия
+  { // Гнев (v10.18): владение до 6🪙 без нападения, в руинах; потом — чужие Набеги на грешнике срабатывают ещё раз
     const S = mk(), [a, b] = S.players; a.turn.rolled = true; addEst(S, b, 'shop'); S.courtRow = ['sin_wrath'];
     await E.buy(S, a, 'court', 0); ok(a.estates.some(e => e.id === 'shop' && e.ruined) && !b.estates.length, 'Гнев: Лавка соперника — ваша, в руинах');
-    const s0 = E.siegeOdds(S, b, a, 2).A, p0 = E.spyInfo(S, b, a, 2).A; a.sins = []; eq(s0 - E.siegeOdds(S, b, a, 2).A, 3, 'Гнев: нападения против грешника +3'); eq(p0 - E.spyInfo(S, b, a, 2).A, 3, 'Гнев: шпионаж против грешника +3');
-    const S2 = mk(), [c, d] = S2.players; c.faiths = ['grain']; d.faiths = ['grain']; const before = E.targetsOf(S2, c).length; d.sins = ['sin_wrath'];
-    ok(E.targetsOf(S2, c).length === before + 1, 'Гнев: перемирие единоверцев на грешника не действует'); }
+    const S2 = mk(), [c, d] = S2.players; est(S2, d, 'barracks'); c.gold = 10; await T.resolveRoll(S2, c, 4); eq(c.gold, 8, 'без Гнева: Казармы соперника взяли 2🪙');
+    c.sins = ['sin_wrath']; c.gold = 10; const pv = E.rollPreview(S2, c, 4); await T.resolveRoll(S2, c, 4);
+    eq(c.gold, 6, 'Гнев: Казармы соперника сработали ещё раз — 4🪙'); ok(pv[c.i].loss === 4 && pv[d.i].gain === 4, 'Гнев: итог броска заранее — те же 4🪙');
+    d.estates[0].ruined = true; c.gold = 10; await T.resolveRoll(S2, c, 4); ok(c.gold === 8 && !d.estates[0].ruined, 'Гнев: Казармы в руинах — первое срабатывание ремонт, второе берёт 2🪙');
+    c.gold = 1; await T.resolveRoll(S2, c, 4); eq(c.gold, 0, 'Гнев: второй раз берёт, сколько осталось');
+    const S3 = mk(), [e1, f1] = S3.players; e1.faiths = ['grain']; f1.faiths = ['grain']; const before = E.targetsOf(S3, e1).length; f1.sins = ['sin_wrath'];
+    eq(E.targetsOf(S3, e1).length, before, 'Гнев: перемирие единоверцев действует и на грешника (старого «+3» больше нет)'); }
+  { // все 7 грехов — в любой партии с «Верой» (v10.18)
+    eq(D.NEEDS.court.sin_wrath + ' ' + D.NEEDS.court.sin_lust, 'faith faith', 'Гнев и Похоть нужна только «Вера»');
+    const S = mk(['tA', 'tB'], ['faith']); eq(new Set([...S.courtDeck, ...S.courtRow].filter(id => D.COURT[id].sin)).size, 7, 'с одной «Верой» в колоде двора — все 7 грехов'); }
   { // Зависть: любое знамя лидера — ваше (даже лорд, когда вассалов хватает); потом: соперник нанял — 1🪙 в банк
     const S = mk(), [a, b] = S.players; a.turn.rolled = true; b.vassals = ['fuller', 'grain']; S.courtRow = ['sin_envy'];
     await E.buy(S, a, 'court', 0); ok(a.vassals.length === 1 && b.vassals.length === 1, 'Зависть: вассал лидера — ваш');
@@ -108,12 +115,18 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     a.turn.extraTurn = true; E.endTurn(S, a); ok(S.cur === 0 && S.extraTaken, 'дубль в ходе Лени — ещё ход');
     a.turn.extraTurn = true; E.endTurn(S, a); eq(S.cur, 1, 'больше ходов нет — ход соперника');
     const S2 = mk(), [b] = S2.players; b.sins = ['sin_sloth']; S2.cur = 0; await E.roll(S2, b, 2); eq(S2.lastRoll.n, 1, 'Лень: только один кубик'); }
-  { // Похоть: придворный соперника — к вам; в начале хода на 1–2 — придворный уходит
-    const S = mk(), [a, b] = S.players; a.turn.rolled = true; b.seats = ['fairwarden']; S.courtRow = ['sin_lust'];
-    await E.buy(S, a, 'court', 0); ok(a.seats.includes('fairwarden') && !b.seats.length, 'Похоть: придворный соперника — при вашем дворе');
-    let gone = 0, stay = 0;
-    for (let k = 0; k < 24; k++) { const S2 = mk(), [c] = S2.players; S2.seed = 500 + k; c.seats = ['fairwarden']; c.sins = ['sin_lust']; S2.cur = 0; await E.startOfTurn(S2, c); if (c.seats.length) stay++; else gone++; }
-    ok(gone > 0 && stay > gone, `Похоть: придворный уходит примерно в трети ходов (ушёл ${gone} из 24)`); }
+  { // Похоть (v10.18): 3 карты из сброса соперника — в руку (козни не берутся); итог броска 1–2 — случайная карта уходит в его сброс
+    const S = mk(), [a, b] = S.players; a.turn.rolled = true; b.discard = ['spicer', 'arson', 'collector', 'tax', 'tax']; S.courtRow = ['sin_lust']; const h0 = a.hand.length;
+    ans = (q) => (q.type === 'lustTake' ? [0, 1, 2] : null); await E.buy(S, a, 'court', 0); ans = null;
+    ok(a.hand.length === h0 + 3 && a.hand.includes('spicer') && a.hand.includes('collector') && !a.hand.includes('arson') && b.discard.includes('arson'), `Похоть: 3 карты из сброса соперника — ваши, козни не берутся (${a.hand.join(',')})`);
+    const S2 = mk(), [c, d] = S2.players; c.sins = ['sin_lust']; c.hand = ['spicer']; c.discard = []; c.inPlay = []; d.discard = [];
+    await T.resolveRoll(S2, c, 5); eq(c.hand.length, 1, 'Похоть: итог 5 — ничего не уходит');
+    S2.cur = 0; c.turn = fresh(); ans = (q) => (q.type === 'adjust' ? { a: 'accept' } : null);
+    for (let k = 0; k < 40 && c.hand.length; k++) { c.turn = fresh(); await E.roll(S2, c, 1); }
+    ans = null; ok(!c.hand.length && d.discard.includes('spicer'), 'Похоть: на итоге 1–2 карта из руки ушла в сброс соперника');
+    const S3 = mk(), [e1] = S3.players; e1.sins = ['sin_lust']; e1.hand = ['tax']; let lost = 0, rolls = 0;
+    for (let k = 0; k < 60; k++) { e1.turn = fresh(); e1.hand = ['tax']; e1.discard = []; await E.roll(S3, e1, 2); rolls++; if (!e1.hand.length) lost++; }
+    ok(lost === S3.log.filter(x => /Похоть — итог 2/.test(x.t || x.text || '')).length && lost <= 6, `Похоть: на двух кубиках карта уходит только на 1+1 (ушла ${lost} раз из ${rolls})`); }
   { // покаяние: 4 шага подряд, потом грех снят
     const S = mk(), [a, b] = S.players; a.faiths = ['grain']; a.sins = ['sin_greed']; S.cur = 0; a.gold = 20; b.gold = 3; addEst(S, a, 'field'); addEst(S, a, 'bakery');
     a.faiths = []; ok(/веру/.test(E.penanceBlock(S, a) || ''), 'без веры каяться нельзя'); a.faiths = ['grain'];

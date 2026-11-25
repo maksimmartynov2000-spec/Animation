@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.17'; // подсказки хода: «Ещё можно», карта веры на столе, окно броска с доходом всех и «Свернуть», ритуал — с его карты
+  const VERSION = '10.18'; // все 7 грехов с одной «Верой»: новые Гнев (чужие Набеги — ещё раз) и Похоть (3 карты из сброса соперника; итог 1–2 — карта ему)
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -324,6 +324,12 @@
         break;
       }
       case 'miracle': { const W = D.RITUALS[d.id]; toast(`🌟 ${d.p === ME ? 'Ваше чудо' : `${esc(H(S.players[d.p]).short)}: чудо`} «${esc(W.miracle.name)}» — ${esc(W.miracle.text)}`, 5200); break; }
+      case 'lust': { // Похоть (v10.18)
+        const names = (d.ids || []).map(id => `«${esc(D.COURT[id].name)}»`).join(', ');
+        if (d.lose) { if (d.t === ME) toast(`😈 Похоть: итог ${d.total} — ${names} уходит в сброс ${esc(H(S.players[d.a]).gen)}`, 4200); else if (d.a === ME) toast(`😈 Похоть ${esc(E.shortG(S.players[d.t]))}: итог ${d.total} — ${names} теперь в вашем сбросе`, 4200); }
+        else if (d.t === ME) toast(`😈 Похоть: ${esc(H(S.players[d.a]).short)} забрали из вашего сброса ${names}`, 4800);
+        break;
+      }
       case 'summon': toast(`😈 ${d.p === ME ? 'Вы собрали' : `${esc(H(S.players[d.p]).short)} собрали`} все семь грехов — призыв знамён!`, 4500); break;
       case 'unseat': {
         const nm1 = esc(D.COURT[d.id].name);
@@ -1057,8 +1063,7 @@
         [...q.options.map(id => ({ icon: D.SYM[D.BAN[id].dir], value: id, right: D.BAN[id].tier === 'v' ? 'вассал' : D.BAN[id].tier === 'l' ? 'лорд' : 'великий', html: banLine(id) })), { icon: '✋', value: null, html: '<b>Хватит</b>' }]);
       case 'sinBanner': return choiceSheet('😈 Зависть: какое знамя забрать?', '<p class="note">Знамя лидера переходит к вам бесплатно — вассал, лорд или даже великий лорд.</p>',
         q.options.map((o, k) => ({ icon: H(S.players[o.i]).sigil, value: k, right: D.BAN[o.id].tier === 'v' ? 'вассал' : D.BAN[o.id].tier === 'l' ? 'лорд' : 'великий', html: `${banLine(o.id)}<br><span class="muted">сейчас у ${esc(E.shortG(S.players[o.i]))}</span>` })));
-      case 'sinCourtier': return choiceSheet('😈 Похоть: кого переманить к своему двору?', '<p class="note">Придворный соперника садится при вашем дворе. Мест не хватит — один из ваших уйдёт в сброс.</p>',
-        q.options.map((o, k) => { const t = S.players[o.i]; return { icon: H(t).sigil, value: k, right: '', html: `<b>${esc(D.COURT[o.id].name)}</b> · ${esc(H(t).short)}<br><span class="muted">даёт: ${esc(D.COURT[o.id].stext)}</span>` }; }));
+      case 'lustTake': return askLustTake(p, q);
       case 'penanceEstate': return choiceSheet('🕯 Покаяние, шаг 4: какое владение уходит из игры?', '<p class="note">Владение уходит из игры навсегда. Потом вы снимете один грех.</p>',
         q.options.map(uid => { const e = p.estates.find(x => x.uid === uid); const d = D.ESTATES[e.id]; return { icon: D.ETYPE[d.t].mark, value: uid, right: `${d.cost}🪙`, html: `<b>${esc(d.name)}</b><br><span class="muted">${esc(D.estateText(d))}</span>` }; }));
       case 'penanceSin': return choiceSheet('🕯 Покаяние окончено: какой грех снять?', '<p class="note">Грех уходит в колоду двора, его штраф больше не действует.</p>',
@@ -1172,7 +1177,6 @@
   // мест при дворе стало меньше (ушёл Камергер): кто уходит в сброс; отказаться нельзя
   function askSeatDrop(p, q) {
     const opts = q.options.map((id, k) => ({ icon: '🪑', value: k, right: '', html: `<b>${esc(D.COURT[id].name)}</b><br><span class="muted">сейчас даёт: ${esc(D.COURT[id].stext)}</span>` }));
-    if (q.lust) return choiceSheet('😈 Похоть: кто уйдёт от двора?', '<p class="note">На кубике 1 или 2 — один ваш придворный уходит в сброс. Выберите кто.</p>', opts);
     return choiceSheet('🪑 Мест при дворе стало меньше', `<p class="note">Теперь мест — ${q.max}. Выберите, кто уйдёт в ваш сброс: оттуда он со временем снова придёт в руку.</p>`, opts);
   }
   // опала: чьего придворного прогнать
@@ -1202,7 +1206,8 @@
     ? `Нападение: ваши ⚔️ и +${n != null ? n : 'число с карты'} против ⚔️ и 🧱 соперника, каждый ещё бросает по кубику. У кого больше — тот победил, поровну — он отбился.`
     : `Шпионаж: ваши 🔗 и +${n != null ? n : 'число с карты'} против 🔗 и 🧱 соперника, каждый ещё бросает по кубику. Больше — успех, поровну — провал.`);
   function askTarget(p, q) {
-    if (q.kind === 'wrath') return choiceSheet('😈 Гнев: у кого забрать владение?', '<p class="note">Владение до 6🪙 — без нападения, отбить нельзя.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: '', html: `<b>${esc(H(t).short)}</b><br><span class="muted">можно забрать: ${o.loot}</span>` }; }));
+    if (q.kind === 'lust') return choiceSheet('😈 Похоть: из чьего сброса взять карты?', '<p class="note">Три карты из его сброса — вам в руку. Козни и грехи не берутся.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: '', html: `<b>${esc(H(t).short)}</b><br><span class="muted">в сбросе ${D.cards(o.n)}</span>` }; }));
+    if (q.kind === 'wrath') return choiceSheet('😈 Гнев: у кого забрать владение?', '<p class="note">Владение до 6🪙 — без нападения, оно придёт к вам в руинах.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: '', html: `<b>${esc(H(t).short)}</b><br><span class="muted">можно забрать: ${o.loot}</span>` }; }));
     if (q.kind === 'penancePoor' || q.kind === 'ritualPoor') return choiceSheet(q.kind === 'ritualPoor' ? '✨ Милостыня: кому отдать?' : '🕯 Покаяние, шаг 1: кому отдать 5🪙?', '<p class="note">Самых бедных несколько — выберите любого.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: `${o.gold}🪙`, html: `<b>${esc(H(t).short)}</b>` }; }));
     if (q.kind === 'plantEstate') {
       const bad = D.ESTATES[q.estate];
@@ -1326,6 +1331,22 @@
         const b = e.target.closest('[data-n]');
         if (b) { const n = +b.dataset.n; if (sel.includes(n)) sel = sel.filter(x => x !== n); else { sel.push(n); if (sel.length > count) sel.shift(); } upd(); return; }
         if (e.target.closest('[data-ok]') && sel.length === count) { sh.close(); res(sel.slice()); }
+      });
+    });
+  }
+  // Похоть (v10.18): из сброса соперника — ровно q.max карт себе в руку
+  function askLustTake(p, q) {
+    return new Promise(res => {
+      let sel = [];
+      const t = S.players[q.from], src = q.options;
+      const list = () => src.map((id, i) => { const c = D.COURT[id]; return `<button class="opt" data-i="${i}"><span class="big">${sel.includes(i) ? '☑️' : '⬜'}</span><span><b>${esc(c.name)}</b><br><span class="muted">${esc(roleName(c))} · ${c.cost}🪙</span></span><span class="r"></span></button>`; }).join('');
+      const left = () => q.max - sel.length;
+      const okTxt = () => (left() > 0 ? `Выберите ещё ${D.cards(left())}` : `Забрать ${D.cards(sel.length)}`);
+      const sh = openSheet({ title: `😈 Похоть: какие карты забрать у ${esc(E.shortG(t))}?`, body: `<p class="note">${D.cards(q.max)} из сброса соперника — вам в руку, теперь они ваши. Козни и грехи не берутся.</p><div class="optlist">${list()}</div><button class="btn primary" data-ok disabled>${okTxt()}</button>`, dismiss: false });
+      sh.el.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-i]');
+        if (b) { const i = +b.dataset.i; if (sel.includes(i)) sel = sel.filter(x => x !== i); else if (sel.length < q.max) sel.push(i); sh.el.querySelector('.optlist').innerHTML = list(); const ok = sh.el.querySelector('[data-ok]'); ok.textContent = okTxt(); ok.disabled = left() > 0; return; }
+        if (e.target.closest('[data-ok]') && left() <= 0) { sh.close(); res(sel); }
       });
     });
   }
@@ -2467,6 +2488,7 @@
       else if (!p.turn.rolled) {
         const od = E.faithBan(S, p, 'oneDie');
         t = E.cursed(p, 'evileye') ? 'Сглаз: пока он у вас — только один кубик' : E.sinned(p, 'sloth') ? 'Лень: до конца игры — только один кубик' : od ? `обет «${esc(D.FAITHS[od].name)}»: только один кубик` : (E.mods(S, p).peek || 0) > 0 ? 'добросок: увидите первый кубик — решите, бросать ли второй' : p.hand.length ? 'сыграйте карты, потом бросьте кубики' : 'бросьте кубики: один или два';
+        if (E.sinned(p, 'lust')) t = E.cursed(p, 'evileye') || E.sinned(p, 'sloth') || od ? 'один кубик — 😈 Похоть: итог 1–2 отдаст карту сопернику' : '😈 Похоть: итог 1–2 — карта уйдёт сопернику'; // важнее общей подсказки: с одним кубиком — каждый третий бросок, с двумя — только 1+1
       } else {
         const left = E.buysLeft(S, p), cu = cuOn(p);
         const fair = (S.courtRow.length && E.fairOf(S, p, 'court', S.courtRow[0])) || (S.estateRow.length && E.fairOf(S, p, 'estate', S.estateRow[0]));
@@ -2628,7 +2650,7 @@
     // чудо «Перст судьбы»: повернуть один кубик на любую грань — варианты в отдельном листе
     const setB = q.sets > 0 ? (() => { const best = setChoices(p, q)[0]; return `<button class="adjb${best && best.g > gold(q.total) && !better ? ' best' : ''}" data-act="adj-setsheet"><b>Перст судьбы</b><small>${best ? `лучше: ${best.t} · ${fmt(best.g)}` : 'любая грань'}</small></button>`; })() : '';
     const others = pvLine(p, q.total, 'others');
-    return `<div class="adjp"><button class="adjmin" data-act="adj-min" aria-label="Свернуть окно броска">Свернуть ▾</button><div class="adj-h">Выпало <b>${vs}${q.n > 1 ? ` = ${q.total}` : ''}</b> — вам <b>${fmt(gold(q.total))}</b>${plotsOn(q.total) ? ' и замысел' : ''}. Оставить или изменить?${others ? `<span class="adj-o">${others}</span>` : ''}${shOpts.length ? ` ${esc(E.modSources(S, p, 'shift').join(', ') || 'Гадатель')}: сдвиг на 1 за ${shC}${gico('gold')}.` : ''}</div><div class="adj">${rr}${ones}${shifts}${setB}</div></div>`;
+    return `<div class="adjp"><button class="adjmin" data-act="adj-min" aria-label="Свернуть окно броска">Свернуть ▾</button><div class="adj-h">Выпало <b>${vs}${q.n > 1 ? ` = ${q.total}` : ''}</b> — вам <b>${fmt(gold(q.total))}</b>${plotsOn(q.total) ? ' и замысел' : ''}. Оставить или изменить?${others ? `<span class="adj-o">${others}</span>` : ''}${E.sinned(p, 'lust') && q.total <= 2 ? '<span class="adj-o">😈 Похоть: итог 1–2 — карта уйдёт сопернику</span>' : ''}${shOpts.length ? ` ${esc(E.modSources(S, p, 'shift').join(', ') || 'Гадатель')}: сдвиг на 1 за ${shC}${gico('gold')}.` : ''}</div><div class="adj">${rr}${ones}${shifts}${setB}</div></div>`;
   }
   function handHtml(p) {
     const my = isMyTurn() && !WATCH;
@@ -4675,7 +4697,7 @@
         e.stopPropagation();
         const q = adjustReq.q, fmtG = (v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0') + '🪙';
         choiceSheet('🌟 Перст судьбы: какой кубик повернуть?', `<p class="note">Один кубик — на любую грань, раз в ход.${q.n > 1 ? ' Дубль от поворота не считается.' : ''} Справа — ваш доход по броску.</p>`,
-          [...setChoices(S.players[ME], q).map(c => { const o = pvLine(S.players[ME], c.t, false); return { icon: '🎲', value: c, right: fmtG(c.g), html: `${q.n > 1 ? `<b>${c.from} → ${c.v}</b> · сумма ${c.t}` : `<b>${c.from} → ${c.v}</b>`}${o ? `<br><span class="muted">${o}</span>` : ''}` }; }), { icon: '▾', value: null, right: '', html: '<b>Свернуть — посмотреть стол</b><br><span class="muted">вернуться — кнопка «Перст судьбы»</span>' }])
+          [...setChoices(S.players[ME], q).map(c => { const o = pvLine(S.players[ME], c.t, false) + (c.t <= 2 && E.sinned(S.players[ME], 'lust') ? ' · 😈 карта сопернику' : ''); return { icon: '🎲', value: c, right: fmtG(c.g), html: `${q.n > 1 ? `<b>${c.from} → ${c.v}</b> · сумма ${c.t}` : `<b>${c.from} → ${c.v}</b>`}${o ? `<br><span class="muted">${o}</span>` : ''}` }; }), { icon: '▾', value: null, right: '', html: '<b>Свернуть — посмотреть стол</b><br><span class="muted">вернуться — кнопка «Перст судьбы»</span>' }])
           .then(c => { if (c && adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'set', k: c.k, v: c.v }); schedule(); } });
       } break;
       case 'play': if (isMyTurn()) { e.stopPropagation(); playCard(+el.dataset.i); } break;
