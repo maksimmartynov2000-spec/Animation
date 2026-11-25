@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 164"><defs>
+<radialGradient id="bg" cx="50%" cy="48%" r="72%"><stop offset="0" stop-color="#6086c0"/><stop offset="1" stop-color="#284780"/></radialGradient>
+<radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".7" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<pattern id="dia" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 7H14M7 0V14" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/></pattern>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000" flood-opacity=".42"/></filter></defs>
+<rect width="220" height="164" fill="url(#bg)"/><rect width="220" height="164" fill="url(#dia)"/>
+<circle cx="110" cy="86" r="64" fill="url(#gl)"/><circle cx="110" cy="86" r="58" fill="none" stroke="#fbf3df" stroke-opacity=".22" stroke-width="1.6"/>
+<g filter="url(#sh)">
+<path fill="#fbf3df" d="M112 34 A50 50 0 1 0 150 122 A42 42 0 1 1 112 34 Z"/><path d="M122 84 Q138 98 154 84" fill="none" stroke="#fbf3df" stroke-width="4" stroke-linecap="round"/><path d="M126.0 92 L124.0 100" stroke="#fbf3df" stroke-width="2.4" stroke-linecap="round"/><path d="M132.5 95 L131.5 103" stroke="#fbf3df" stroke-width="2.4" stroke-linecap="round"/><path d="M139.0 95 L139.0 103" stroke="#fbf3df" stroke-width="2.4" stroke-linecap="round"/><path d="M145.5 95 L146.5 103" stroke="#fbf3df" stroke-width="2.4" stroke-linecap="round"/><path d="M152.0 92 L154.0 100" stroke="#fbf3df" stroke-width="2.4" stroke-linecap="round"/><polygon fill="#fbf3df" points="148.0,41.0 149.9,48.1 157.0,50.0 149.9,51.9 148.0,59.0 146.1,51.9 139.0,50.0 146.1,48.1"/><polygon fill="#fbf3df" points="164.0,66.5 165.2,70.8 169.5,72.0 165.2,73.2 164.0,77.5 162.8,73.2 158.5,72.0 162.8,70.8"/><polygon fill="#fbf3df" points="132.0,55.5 133.0,59.0 136.5,60.0 133.0,61.0 132.0,64.5 131.0,61.0 127.5,60.0 131.0,59.0"/><polygon fill="#fbf3df" points="160.0,108.0 160.8,111.2 164.0,112.0 160.8,112.8 160.0,116.0 159.2,112.8 156.0,112.0 159.2,111.2"/>
+</g>
+</svg>

@@ -448,6 +448,125 @@ const DATA = (() => {
       rite: { name: 'Месса', cost: {}, fx: [['stageGold', 1]] }, oath: 'oneDie', oathText: 'Бросайте только один кубик.',
       cards: ['relics', 'procession'] },
   };
+  // ---------- ритуалы (v10.16): по 2 у каждой веры; 5 условий в любом порядке → постоянное чудо ----------
+  // k — вид условия: trash — жертва, have — сбор, deed — подвиг, abst — воздержание, alms — милостыня; t — текст на карте
+  // жертва и милостыня — действие игрока на карте ритуала; сбор — «у вас есть» в ваш ход; подвиг — после начала ритуала;
+  // воздержание — ваши ходы подряд без этого. needs — модули, без которых ритуала нет в партии. miracle.mods — свойства чуда
+  const RITUALS = {
+    grain_a: { faith: 'grain', name: 'Великая жатва', steps: [
+      { k: 'trash', what: 'hand', n: 2, t: 'Уберите из игры 2 карты из руки.' },
+      { k: 'have', what: 'land', n: 3, t: 'У вас 3 🟦 Земли.' },
+      { k: 'deed', what: 'rite', n: 3, t: 'Проведите обряд «Первый сноп» 3 раза.' },
+      { k: 'abst', what: 'attack', n: 3, t: '3 своих хода подряд не нападайте и не шпионьте.' },
+      { k: 'alms', what: 'poor', n: 5, t: 'Отдайте 5🪙 самому бедному сопернику.' }],
+      miracle: { name: 'Святая земля', text: 'Каждая ваша 🟦 Земля даёт ещё 🕯.', mods: { landFaith: 1 } } },
+    grain_b: { faith: 'grain', name: 'Хлебный дар', steps: [
+      { k: 'trash', what: 'estate', not: 'land', t: 'Уберите из игры одно своё владение — любое, кроме 🟦 Земли.' },
+      { k: 'have', what: 'gold', n: 15, t: 'В казне 15🪙.' },
+      { k: 'deed', what: 'buyLand', n: 2, t: 'Купите 2 🟦 Земли.' },
+      { k: 'abst', what: 'hire', n: 3, t: '3 своих хода подряд не нанимайте знамён.' },
+      { k: 'alms', what: 'land', t: 'Отдайте самому бедному сопернику одну свою 🟦 Землю.' }],
+      miracle: { name: 'Щедрая нива', text: 'Сработала ваша 🟦 Земля — она срабатывает ещё раз.', mods: { landDouble: 1 } } },
+    harvest_a: { faith: 'harvest', name: 'Осенняя ярмарка', steps: [
+      { k: 'trash', what: 'estate', only: 'land', t: 'Уберите из игры одну свою 🟦 Землю.' },
+      { k: 'have', what: 'craft', n: 3, t: 'У вас 3 🟩 Ремесла.' },
+      { k: 'deed', what: 'buy', n: 4, t: 'Купите на рынке 4 карты — владения или двора.' },
+      { k: 'abst', what: 'hire', n: 3, t: '3 своих хода подряд не нанимайте знамён.' },
+      { k: 'alms', what: 'craft', t: 'Отдайте самому бедному сопернику одно своё 🟩 Ремесло.' }],
+      miracle: { name: 'Вечная ярмарка', text: 'Раз в ход покупка на рынке не тратит действие.', mods: { fairAny: 1 } } },
+    harvest_b: { faith: 'harvest', name: 'Пир на весь мир', steps: [
+      { k: 'trash', what: 'court', min: 3, t: 'Уберите из игры карту двора ценой от 3🪙 из руки.' },
+      { k: 'have', what: 'craft', n: 3, t: 'У вас 3 🟩 Ремесла.' },
+      { k: 'deed', what: 'rite', n: 2, t: 'Проведите обряд «Пир» 2 раза.' },
+      { k: 'abst', what: 'attack', n: 3, t: '3 своих хода подряд не нападайте и не шпионьте.' },
+      { k: 'alms', what: 'each', n: 3, t: 'Отдайте каждому сопернику по 3🪙.' }],
+      miracle: { name: 'Рог изобилия', text: 'Сработало ваше 🟩 Ремесло — оно срабатывает ещё раз.', mods: { craftDouble: 1 } } },
+    seer_a: { faith: 'seer', name: 'Бдение', steps: [
+      { k: 'trash', what: 'estate', t: 'Уберите из игры одно своё владение.' },
+      { k: 'have', what: 'faith', n: 4, t: 'У вас 🕯4.' },
+      { k: 'deed', what: 'double', n: 1, t: 'Выбросьте дубль на двух кубиках.' },
+      { k: 'abst', what: 'twoDice', n: 3, t: '3 своих хода подряд бросайте один кубик.' },
+      { k: 'alms', what: 'poor', n: 5, t: 'Отдайте 5🪙 самому бедному сопернику.' }],
+      miracle: { name: 'Перст судьбы', text: 'Раз в ход после броска поверните один кубик на любую грань. Дубль от поворота не считается.', mods: { setDie: 1 } } },
+    seer_b: { faith: 'seer', name: 'Вещие сны', steps: [
+      { k: 'trash', what: 'discard', n: 3, t: 'Уберите из игры 3 карты из своего сброса.' },
+      { k: 'have', what: 'banDir', dir: 'sci', n: 3, t: 'У вас 3 знамени 📜.' },
+      { k: 'deed', what: 'rollGold', n: 6, t: 'Получите 6🪙 дохода за один свой бросок.' },
+      { k: 'abst', what: 'buyEstate', n: 3, t: '3 своих хода подряд не покупайте владений.' },
+      { k: 'alms', what: 'poor', n: 4, t: 'Отдайте 4🪙 самому бедному сопернику.' }],
+      miracle: { name: 'Ясновидение', text: 'Верхние карты колод владений, двора и знамён открыты для вас: их можно купить или нанять, как карты из ряда.', mods: { deckTop: 1 } } },
+    star_a: { faith: 'star', name: 'Великий диспут', steps: [
+      { k: 'trash', what: 'hand', n: 2, t: 'Уберите из игры 2 карты из руки.' },
+      { k: 'have', what: 'hand', n: 6, t: 'У вас в руке 6 карт.' },
+      { k: 'deed', what: 'playTurn', n: 5, t: 'Сыграйте за один ход 5 карт.' },
+      { k: 'abst', what: 'hire', n: 3, t: '3 своих хода подряд не нанимайте знамён.' },
+      { k: 'alms', what: 'card', t: 'Отдайте самому бедному сопернику карту из руки — ему в сброс.' }],
+      miracle: { name: 'Созвездие', text: 'Все ваши карты двора играются с двойной свитой.', mods: { allyBig: 1 } } },
+    star_b: { faith: 'star', name: 'Звёздная ночь', steps: [
+      { k: 'trash', what: 'court', min: 3, t: 'Уберите из игры карту двора ценой от 3🪙 из руки.' },
+      { k: 'have', what: 'sci', n: 5, t: 'У вас 📜5.' },
+      { k: 'deed', what: 'rite', n: 2, t: 'Проведите обряд «Диспут» 2 раза.' },
+      { k: 'abst', what: 'retire', n: 3, t: '3 своих хода подряд не делайте Отставку.' },
+      { k: 'alms', what: 'each', n: 2, t: 'Отдайте каждому сопернику по 2🪙.' }],
+      miracle: { name: 'Звёздная память', text: 'Несыгранные карты остаются в руке, а в конце хода вы берёте столько новых, сколько обычно.', mods: { keepHand: 1 } } },
+    flame_a: { faith: 'flame', name: 'Испытание огнём', needs: 'sieges', steps: [
+      { k: 'trash', what: 'estate', only: 'craft', t: 'Уберите из игры одно своё 🟩 Ремесло.' },
+      { k: 'have', what: 'war', n: 6, t: 'У вас ⚔️6.' },
+      { k: 'deed', what: 'siegeWin', n: 1, t: 'Выиграйте нападение.' },
+      { k: 'abst', what: 'rite', n: 2, t: '2 своих хода подряд не проводите обряд.' },
+      { k: 'alms', what: 'poor', n: 4, t: 'Отдайте 4🪙 самому бедному сопернику.' }],
+      miracle: { name: 'Неугасимое пламя', text: 'Когда вы нападаете, шпионите или защищаетесь, бросайте два кубика и берите лучший.', mods: { fightBest: 1 } } },
+    flame_b: { faith: 'flame', name: 'Великий набег', steps: [
+      { k: 'trash', what: 'vassal', t: 'Отпустите одного своего вассала — под низ колоды вассалов.' },
+      { k: 'have', what: 'raid', n: 3, t: 'У вас 3 🟥 Набега.' },
+      { k: 'deed', what: 'rite', n: 3, t: 'Проведите обряд «Боевой клич» 3 раза.' },
+      { k: 'abst', what: 'buyEstate', n: 3, t: '3 своих хода подряд не покупайте владений.' },
+      { k: 'alms', what: 'each', n: 2, t: 'Отдайте каждому сопернику по 2🪙.' }],
+      miracle: { name: 'Двойная добыча', text: 'Сработал ваш 🟥 Набег — он срабатывает ещё раз.', mods: { raidDouble: 1 } } },
+    blade_a: { faith: 'blade', name: 'Посвящение', needs: 'lords', steps: [
+      { k: 'trash', what: 'estate', t: 'Уберите из игры одно своё владение.' },
+      { k: 'have', what: 'war', n: 5, t: 'У вас ⚔️5.' },
+      { k: 'deed', what: 'hireLord', n: 1, t: 'Наймите лорда.' },
+      { k: 'abst', what: 'attack', n: 3, t: '3 своих хода подряд не нападайте и не шпионьте.' },
+      { k: 'alms', what: 'poor', n: 5, t: 'Отдайте 5🪙 самому бедному сопернику.' }],
+      miracle: { name: 'Верность до гроба', text: 'Содержание каждого вашего лорда и великого лорда — 1🪙.', mods: { upkeepOne: 1 } } },
+    blade_b: { faith: 'blade', name: 'Святое знамя', steps: [
+      { k: 'trash', what: 'vassal', t: 'Отпустите одного своего вассала — под низ колоды вассалов.' },
+      { k: 'have', what: 'banners', n: 7, t: 'У вас 7 знамён.' },
+      { k: 'deed', what: 'hire', n: 3, t: 'Наймите 3 знамени.' },
+      { k: 'abst', what: 'retire', n: 3, t: '3 своих хода подряд не делайте Отставку.' },
+      { k: 'alms', what: 'poor', n: 10, t: 'Отдайте 10🪙 самому бедному сопернику.' }],
+      miracle: { name: 'Небесный стяг', text: 'Для победы вам нужно на одно знамя меньше — того уровня, которого не хватает.', mods: { goalMinus: 1 } } },
+    shade_a: { faith: 'shade', name: 'Ночной совет', needs: 'spy', steps: [
+      { k: 'trash', what: 'hand', n: 2, t: 'Уберите из игры 2 карты из руки.' },
+      { k: 'have', what: 'int', n: 3, t: 'У вас 🔗3.' },
+      { k: 'deed', what: 'spyWin', n: 1, t: 'Удачно пошпионьте.' },
+      { k: 'abst', what: 'hire', n: 3, t: '3 своих хода подряд не нанимайте знамён.' },
+      { k: 'alms', what: 'each', n: 2, t: 'Отдайте каждому сопернику по 2🪙.' }],
+      miracle: { name: 'Чужими руками', text: 'В начале хода возьмите в руку любую карту из сброса любого соперника. В конце хода она вернётся в его сброс.', mods: { borrow: 1 } } },
+    shade_b: { faith: 'shade', name: 'Обет молчания', steps: [
+      { k: 'trash', what: 'estate', t: 'Уберите из игры одно своё владение.' },
+      { k: 'have', what: 'banDir', dir: 'int', n: 3, t: 'У вас 3 знамени 🔗.' },
+      { k: 'deed', what: 'rite', n: 4, t: 'Проведите обряд «Шёпот» 4 раза.' },
+      { k: 'abst', what: 'attack', n: 3, t: '3 своих хода подряд не нападайте и не шпионьте.' },
+      { k: 'alms', what: 'poor', n: 6, t: 'Отдайте 6🪙 самому бедному сопернику.' }],
+      miracle: { name: 'Нашёптанная судьба', text: 'Раз в ход решите за одного соперника, сколько кубиков он бросит в свой следующий ход: один или два.', mods: { dictateDice: 1 } } },
+    cathedral_a: { faith: 'cathedral', name: 'Освящение собора', steps: [
+      { k: 'trash', what: 'court', min: 3, t: 'Уберите из игры карту двора ценой от 3🪙 из руки.' },
+      { k: 'have', what: 'gold', n: 20, t: 'В казне 20🪙.' },
+      { k: 'deed', what: 'buyCourt', n: 1, t: 'Купите карту двора.' },
+      { k: 'abst', what: 'attack', n: 3, t: '3 своих хода подряд не нападайте и не шпионьте.' },
+      { k: 'alms', what: 'each', n: 3, t: 'Отдайте каждому сопернику по 3🪙.' }],
+      miracle: { name: 'Благодать', text: 'Раз в ход — второе действие за 3🪙.', mods: { cheapAction: 1 } } },
+    cathedral_b: { faith: 'cathedral', name: 'Великий пост', steps: [
+      { k: 'trash', what: 'hand', n: 2, t: 'Уберите из игры 2 карты из руки.' },
+      { k: 'have', what: 'faith', n: 5, t: 'У вас 🕯5.' },
+      { k: 'deed', what: 'rite', n: 3, t: 'Проведите обряд «Месса» 3 раза.' },
+      { k: 'abst', what: 'market', n: 3, t: '3 своих хода подряд ничего не покупайте на рынке.' },
+      { k: 'alms', what: 'poor', n: 5, t: 'Отдайте 5🪙 самому бедному сопернику.' }],
+      miracle: { name: 'Благовест', text: 'В начале хода ваши 🟦 Земли приносят доход.', mods: { landDawn: 1 } } },
+  };
+  const STEP_NAME = { trash: 'Жертва', have: 'Сбор', deed: 'Подвиг', abst: 'Воздержание', alms: 'Милостыня' };
   // обряд — текстом: «Уберите карту из руки из игры → +1🪙 за каждую вашу Землю»
   function riteCostText(c) {
     if (!c) return '';
@@ -594,6 +713,7 @@ const DATA = (() => {
     estate: { wall: 'sieges', cliffkeep: 'sieges', secretoffice: 'spy', plaguehouse: 'spy', banditpost: 'spy', falsetax: 'spy', blight: 'spy', ashes: 'spy&sieges', evileye: 'spy', cursedrelic: 'spy&faith', schemer: 'spy', mint: 'sieges|spy', citadel: 'sieges|spy', customs: 'sieges|spy', granary: 'sieges|spy', merchants: 'sieges|spy', fortress: 'sieges|spy', chancery: 'sieges|spy', thieves: 'sieges|spy', robberkeep: 'sieges|spy', embassy: 'sieges|spy' },
   };
   for (const id in BAN) if (BAN[id].needs) NEEDS.ban[id] = BAN[id].needs;
+  NEEDS.ritual = {}; for (const id in RITUALS) if (RITUALS[id].needs) NEEDS.ritual[id] = 'faith&' + RITUALS[id].needs; // ритуал без своего модуля в партию не выходит
   for (const id in COURT) if (COURT[id].faith) NEEDS.court[id] = 'faith';
   Object.assign(NEEDS.court, { sin_pride: 'faith', sin_greed: 'faith', sin_wrath: 'faith&sieges', sin_envy: 'faith', sin_gluttony: 'faith', sin_sloth: 'faith', sin_lust: 'faith&seats', penance: 'faith', arson: 'spy', denounce: 'spy', slander: 'spy', poisonfeast: 'spy', courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats',
     chamberlain: 'seats', revels: 'seats', augur: 'seats', gatekeeper: 'seats', huntsman: 'seats', cupbearer: 'seats', confessor: 'seats', gossip: 'seats' });
@@ -604,6 +724,6 @@ const DATA = (() => {
   const tierOf = (id) => (BAN[id] ? BAN[id].tier : null);
   const heirOf = (h) => HOUSES[h] && HOUSES[h].heir;
 
-  return { MODULES, MODULE_KEYS, MODULE_PICK, LENGTHS, modMembers, PRESETS, NEEDS, regName, tierOf, heirOf, SYMS, SYM, SYM_NAME, DIRS, TIERS, RULES, PROV, ETYPE, ESTATES, ROLES, COURT, HOUSES, BAN, FAITHS, riteCostText, fxText, fxLine, estateText, numText, reqText, plural, cards, banners };
+  return { MODULES, MODULE_KEYS, MODULE_PICK, LENGTHS, modMembers, PRESETS, NEEDS, regName, tierOf, heirOf, SYMS, SYM, SYM_NAME, DIRS, TIERS, RULES, PROV, ETYPE, ESTATES, ROLES, COURT, HOUSES, BAN, FAITHS, RITUALS, STEP_NAME, riteCostText, fxText, fxLine, estateText, numText, reqText, plural, cards, banners };
 })();
 if (typeof module !== 'undefined') module.exports = DATA;

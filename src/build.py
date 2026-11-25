@@ -39,6 +39,7 @@ for (const k of new Set([...Object.values(sym.MAP), ...Object.keys(sym.NAME)])) 
 for (const h in D.HOUSES) out.add(`art/h_${h}.svg`);
 for (const b in D.BAN) out.add(`art/b_${b}.svg`);
 for (const f in D.FAITHS) out.add(`art/r_${f}.svg`);
+for (const w in (D.RITUALS || {})) out.add(`art/w_${w}.svg`); // ритуалы вер
 for (const p in D.PROV) out.add(`art/p_${p}.svg`);
 for (const id in D.ESTATES) if (!ART[id]) out.add(`art/${id}.svg`);
 for (const id in D.COURT) if (!ART[id]) out.add(`art/${id}.svg`);

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 164"><defs>
+<radialGradient id="bg" cx="50%" cy="48%" r="72%"><stop offset="0" stop-color="#c06e52"/><stop offset="1" stop-color="#7a3018"/></radialGradient>
+<radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".7" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<pattern id="dia" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 7H14M7 0V14" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/></pattern>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000" flood-opacity=".42"/></filter></defs>
+<rect width="220" height="164" fill="url(#bg)"/><rect width="220" height="164" fill="url(#dia)"/>
+<circle cx="110" cy="86" r="64" fill="url(#gl)"/><circle cx="110" cy="86" r="58" fill="none" stroke="#fbf3df" stroke-opacity=".22" stroke-width="1.6"/>
+<g filter="url(#sh)">
+<rect x="72" y="28" width="6" height="116" rx="2" fill="#fbf3df"/><circle cx="75" cy="26" r="5" fill="#fbf3df"/><path fill="#fbf3df" d="M64 142 H86 L82 134 H68 Z"/><path fill="#fbf3df" d="M78 38 C102 32 122 46 152 38 V96 C130 104 112 92 98 98 L118 116 C104 120 90 108 78 112 Z"/><path fill="none" stroke="#511f0f" stroke-width="1.6" d="M84 46 C104 41 122 54 146 47"/><g transform="translate(115 72)"><polygon fill="#511f0f" points="0.0,-15.0 4.0,-5.5 14.3,-4.6 6.4,2.1 8.8,12.1 0.0,6.8 -8.8,12.1 -6.4,2.1 -14.3,-4.6 -4.0,-5.5"/></g>
+</g>
+</svg>

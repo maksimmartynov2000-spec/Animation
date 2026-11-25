@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 164"><defs>
+<radialGradient id="bg" cx="50%" cy="48%" r="72%"><stop offset="0" stop-color="#c06e52"/><stop offset="1" stop-color="#7a3018"/></radialGradient>
+<radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".7" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<pattern id="dia" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 7H14M7 0V14" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/></pattern>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000" flood-opacity=".42"/></filter></defs>
+<rect width="220" height="164" fill="url(#bg)"/><rect width="220" height="164" fill="url(#dia)"/>
+<circle cx="110" cy="86" r="64" fill="url(#gl)"/><circle cx="110" cy="86" r="58" fill="none" stroke="#fbf3df" stroke-opacity=".22" stroke-width="1.6"/>
+<g filter="url(#sh)">
+<g transform="rotate(-40 110 88)"><path fill="#fbf3df" d="M106 26 H114 V118 L110 128 L106 118 Z" stroke="#511f0f" stroke-width="1.4"/><rect x="92" y="116" width="36" height="7" rx="3" fill="#fbf3df" stroke="#511f0f" stroke-width="1.4"/><rect x="107" y="123" width="6" height="16" fill="#fbf3df" stroke="#511f0f" stroke-width="1.2"/><circle cx="110" cy="142" r="4.5" fill="#fbf3df" stroke="#511f0f" stroke-width="1.2"/></g><path fill="#fbf3df" d="M80 52 H140 V92 C140 116 124 130 110 138 C96 130 80 116 80 92 Z" stroke="#511f0f" stroke-width="2"/><path fill="#511f0f" d="M106 60 H114 V82 H132 V90 H114 V126 C112 127.5 108 127.5 106 126 V90 H88 V82 H106 Z"/>
+</g>
+</svg>

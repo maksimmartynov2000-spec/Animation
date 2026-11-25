@@ -57,7 +57,7 @@
   const MOD_CARDS = ['sets', ...(D.MODULE_PICK || D.MODULE_KEYS)]; // лорды — в основе, «Баланс» убран
   const PROV = { N: 'Север', S: 'Юг', E: 'Восток', W: 'Запад' };
   // плотные карты: мелкий текст эффектов ужат, чтобы влезло с запасом 3% (считает cards/fit.js)
-  const FIT = {"e:shrine":0.86,"e:citadel":10.99,"e:harvesttemple":0.86,"e:granary":0.89,"e:runestone":0.86,"e:chancery":11,"e:port":0.86,"e:thieves":0.89,"e:embassy":0.89,"e:falsetax":10.82,"e:blight":10.82,"e:plaguehouse":10.95,"e:banditpost":10.82,"e:ashes":10.82,"c:sappers":0.88,"c:siegeband":11,"c:blackmailer":10.97,"c:ram":0.88,"c:recruiter":11,"c:dreamer":0.91,"c:astrologer":0.99,"c:chronicler":10.9,"c:augur":0.99,"c:huntsman":0.97,"c:cupbearer":0.93,"c:bearhoard":0.98,"h:deer":11,"h:owl":11,"h:wolf":0.91,"h:serpent":10.85,"h:bear":11,"h:lion":11,"b:martin":11,"b:anselm":0.91,"b:alberich":11,"b:albin":0.9,"b:theodor":11,"b:gottfried":10.85,"b:bertrand":0.9,"b:robert":0.9,"b:hagen":11,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:rowena":11,"b:irmina":0.9,"b:bruno":11,"b:warden":0.9,"b:gregory":11,"b:sebastian":11,"b:heir_deer":0.9,"b:heir_owl":0.91,"b:heir_wolf":11,"b:heir_serpent":0.9,"b:heir_bear":11,"b:heir_lion":11,"b:aldo":10.99,"b:edward":10.93,"b:otto":10.99,"b:oberon":0.95,"f:grain":10.84,"f:harvest":10.84,"f:seer":10.8,"f:star":10.8,"f:flame":10.96,"f:blade":10.8,"f:shade":10.84,"f:cathedral":10.87,"p:N":10.94,"p:S":10.86,"p:E":10.94,"p:W":10.9,"m:sets":0.89,"m:faith":0.85,"m:conflict":10.88,"m:court":0.84,"e:evileye":10.82,"e:cursedrelic":10.82,"e:schemer":10.82,"c:sin_pride":10.95,"c:sin_wrath":10.95,"c:sin_envy":10.95,"c:sin_sloth":10.95,"c:penance":10.9};
+  const FIT = {"r:grain_a":10.96,"r:grain_b":10.9,"r:harvest_a":10.93,"r:harvest_b":10.96,"r:seer_a":10.93,"r:seer_b":10.87,"r:star_a":10.96,"r:star_b":10.9,"r:flame_a":10.9,"r:flame_b":10.93,"r:blade_a":10.96,"r:blade_b":10.93,"r:shade_a":10.9,"r:shade_b":10.9,"r:cathedral_a":10.96,"r:cathedral_b":10.96,"e:shrine":0.86,"e:citadel":10.99,"e:harvesttemple":0.86,"e:granary":0.89,"e:runestone":0.86,"e:chancery":11,"e:port":0.86,"e:thieves":0.89,"e:embassy":0.89,"e:falsetax":10.82,"e:blight":10.82,"e:plaguehouse":10.95,"e:banditpost":10.82,"e:ashes":10.82,"c:sappers":0.88,"c:siegeband":11,"c:blackmailer":10.97,"c:ram":0.88,"c:recruiter":11,"c:dreamer":0.91,"c:astrologer":0.99,"c:chronicler":10.9,"c:augur":0.99,"c:huntsman":0.97,"c:cupbearer":0.93,"c:bearhoard":0.98,"h:deer":11,"h:owl":11,"h:wolf":0.91,"h:serpent":10.85,"h:bear":11,"h:lion":11,"b:martin":11,"b:anselm":0.91,"b:alberich":11,"b:albin":0.9,"b:theodor":11,"b:gottfried":10.85,"b:bertrand":0.9,"b:robert":0.9,"b:hagen":11,"b:maurice":0.9,"b:isolde":11,"b:guillaume":0.9,"b:rowena":11,"b:irmina":0.9,"b:bruno":11,"b:warden":0.9,"b:gregory":11,"b:sebastian":11,"b:heir_deer":0.9,"b:heir_owl":0.91,"b:heir_wolf":11,"b:heir_serpent":0.9,"b:heir_bear":11,"b:heir_lion":11,"b:aldo":10.99,"b:edward":10.93,"b:otto":10.99,"b:oberon":0.95,"f:grain":10.84,"f:harvest":10.84,"f:seer":10.8,"f:star":10.8,"f:flame":10.96,"f:blade":10.8,"f:shade":10.84,"f:cathedral":10.87,"p:N":10.94,"p:S":10.86,"p:E":10.94,"p:W":10.9,"m:sets":0.89,"m:faith":0.85,"m:conflict":10.88,"m:court":0.84,"e:evileye":10.82,"e:cursedrelic":10.82,"e:schemer":10.82,"c:sin_pride":10.95,"c:sin_wrath":10.95,"c:sin_envy":10.95,"c:sin_sloth":10.95,"c:penance":10.9};
   // FIT[key]: k — ужать текст эффектов; k + 10 — плотная карта: рисунок ниже, текст ужат на k
   const fitK = (key) => { const v = FIT[key]; return v ? (v >= 10 ? +(v - 10).toFixed(2) : v) : 0; };
   const fit = (key) => (fitK(key) ? ` style="--k:${fitK(key)}"` : '');
@@ -182,6 +182,15 @@
       const left = b.heir ? startTag(b.heir, 'Наследник') : mtag(b.tier === 'l' ? 'lords' : b.tier === 'g' ? 'great' : null, need && !need.includes('|') && !need.includes('&') ? need : null) || BASE_TAG;
       return { key: `b_${id}`, c: DIRC[b.dir], icon: D.SYM[b.dir], tier: b.tier, tag: T.icon, name: b.name, type: `${T.name} · ${b.title}`.length > 30 ? b.title : `${T.name} · ${b.title}`, fx: modChips(b.mods, pr, o) + seat + take + upk + tax, left, cost: b.cost };
     }
+    if (kind === 'ritual') {
+      // ритуал (v10.16): 5 условий в любом порядке → постоянное чудо; карта лежит у веры, отметки у каждого свои
+      const W = D.RITUALS[id], F = D.FAITHS[W.faith];
+      const row = (st) => `<div class="pc-rit"><span class="pc-lbl">${D.STEP_NAME[st.k]}</span><span class="pc-st-t">${st.t}</span></div>`;
+      const mir = `<div class="pc-take pc-mir"><span class="pc-lbl">Чудо<br>навсегда</span><span class="pc-fxs"><span class="pc-fx pc-txt"><span class="pc-fx-c"><b>${W.miracle.name}.</b> ${W.miracle.text}</span></span></span></div>`;
+      return { key: `w_${id}`, c: FAITHC[W.faith], icon: F.icon, name: W.name, type: `Ритуал · ${F.name}`,
+        pre: '<div class="pc-fr">Без грехов · 5 условий в любом порядке</div>',
+        fx: `<div class="pc-stages">${W.steps.map(row).join('')}</div>` + mir, left: mtag('faith') };
+    }
     if (kind === 'faith') {
       const F = D.FAITHS[id], R = D.RULES;
       const cost = F.dir ? `${D.SYM.faith.repeat(R.faithNeed)}${D.SYM[F.dir].repeat(R.faithDir)}` : D.SYM.faith.repeat(R.faithPure);
@@ -268,7 +277,7 @@
       <div class="pc-eff"${fit(kind[0] + ':' + id)}>${sp.pre || ''}${sp.fx}${sp.post ? `<div class="pc-post">${sp.post}</div>` : ''}</div>
       <div class="pc-foot">${sp.left && sp.left.startsWith('<') ? sp.left : `<span class="pc-basic">${sp.left || ''}</span>`}${right}</div>`));
   }
-  const KINDS = { estate, court, house: (id, o) => misc('house', id, o), ban: (id, o) => misc('ban', id, o), faith: (id, o) => misc('faith', id, o),
+  const KINDS = { estate, court, house: (id, o) => misc('house', id, o), ban: (id, o) => misc('ban', id, o), faith: (id, o) => misc('faith', id, o), ritual: (id, o) => misc('ritual', id, o),
     rule: (id, o) => misc('rule', id, o), prov: (id, o) => misc('prov', id, o), module: (id, o) => misc('module', id, o) };
   const SCOPE = (kind) => (kind === 'estate' ? 'pc-e' : 'pc-c');
   // обёртка: область стилей (владение / остальные) + атрибуты; web — масштаб под ширину ячейки
@@ -346,6 +355,12 @@
 .pc-foot { display: flex; justify-content: space-between; align-items: center; border-top: 0.3mm solid #cdbd98; padding-top: 1mm; font-size: 3.6mm; font-weight: 700; }
 .pc-stages { display: grid; gap: 0.5mm; width: 100%; }
 .pc-stage { display: grid; grid-template-columns: 8.5mm 1fr; align-items: baseline; gap: 1mm; text-align: left; }
+.pc-rit { display: grid; grid-template-columns: 13.4mm 1fr; align-items: baseline; gap: 0.9mm; text-align: left; }
+.pc-rit .pc-lbl { font-size: 1.62mm; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--cd); white-space: nowrap; text-align: right; }
+.pc-rit .pc-st-t { font-size: 2.35mm; }
+.pc-mir { background: #efe6cc; border-radius: 1.2mm; border-top: 0; padding: 0.7mm 1mm; margin-top: 0.8mm; }
+.pc-mir .pc-lbl { color: #1f6a62; font-size: 1.8mm; line-height: 1.2; text-align: center; }
+.pc-mir .pc-fx-c b { color: #1f6a62; }
 .pc-stage .pc-lbl { font-size: 1.95mm; font-weight: 700; letter-spacing: .04em; color: var(--cd); white-space: nowrap; text-align: right; }
 .pc-st-t { font-size: 2.45mm; line-height: 1.2; color: #3d3428; }
 .pc-take.pc-rite .pc-lbl { color: #1f6a62; }
