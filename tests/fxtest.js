@@ -619,6 +619,89 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     ok(a.vassals.includes('fuller') && !b.vassals.includes('fuller'), 'Вербовщик: вассал переманен'); eq(30 - a.gold, Math.ceil(cost / 2), 'Вербовщик: половина цены'); eq(b.gold, gb, 'соперник золота не получает'); }
   { const all = E.newGame({ seed: 5, modules: ['lords', 'sieges', 'spy'], players: [{ house: 'deer' }, { house: 'owl' }], first: 0 }); const xs = [...all.courtDeck, ...all.courtRow];
     for (const id of ['recruiter', 'courtesan', 'agitator']) eq(xs.filter(x => x === id).length, 2, `«${D.COURT[id].name}» — 2 копии`); }
+  // ---------- v10.16: ритуалы и чудеса ----------
+  { const W = D.RITUALS, ids = Object.keys(W);
+    eq(ids.length, 16, 'ритуалов 16');
+    ok(Object.keys(D.FAITHS).every(f => ids.filter(id => W[id].faith === f).length === 2), 'по 2 ритуала у каждой веры');
+    ok(ids.every(id => W[id].steps.map(st => st.k).sort().join() === 'abst,alms,deed,have,trash'), 'в каждом ритуале по одному условию каждого вида');
+    ok(ids.every(id => W[id].miracle && W[id].miracle.name && W[id].miracle.text && Object.keys(W[id].miracle.mods).length === 1), 'у каждого ритуала — чудо со свойством');
+    eq(Object.keys(D.NEEDS.ritual).sort().join(), 'blade_a,flame_a,shade_a', 'ритуалы с модулями: Испытание огнём, Посвящение, Ночной совет');
+    const S = mk(['tA', 'tB'], ['faith', 'lords']); ok(!E.ritualsFor(S, 'flame').includes('flame_a') && E.ritualsFor(S, 'flame').includes('flame_b'), 'без «Вражды» у Пламени — один ритуал'); }
+  { // начать: только в вере, без грехов и реликвии
+    const S = mk(), [a] = S.players;
+    ok(/вера/.test(E.ritualBlock(S, a, 'grain_a') || ''), 'без веры ритуал не начать');
+    a.faiths = ['grain']; eq(E.ritualBlock(S, a, 'grain_a'), null, 'в вере — можно');
+    a.sins = ['sin_greed']; ok(/грех/.test(E.ritualBlock(S, a, 'grain_a') || ''), 'с грехом — нельзя'); a.sins = [];
+    addEst(S, a, 'cursedrelic'); ok(/реликвия/i.test(E.ritualBlock(S, a, 'grain_a') || ''), 'с Проклятой реликвией — нельзя'); }
+  { // «Великая жатва» целиком: жертва, милостыня, сбор, подвиг, воздержание → чудо «Святая земля»
+    const S = mk(), [a, b] = S.players; a.faiths = ['grain']; a.turn.rolled = true; a.hand = ['tax', 'tax', 'tax'];
+    eq((await E.startRitual(S, a, 'grain_a')).ok, true, 'ритуал начат');
+    ans = (q) => (q.type === 'trash' ? [0, 1] : null);
+    await E.ritualAct(S, a, 0); ok(a.ritual.marks[0] && a.hand.length === 1 && a.trashed.length >= 2, 'жертва: 2 карты из руки — из игры');
+    const gb = b.gold; await E.ritualAct(S, a, 4); ok(a.ritual.marks[4] && b.gold === gb + 5, 'милостыня: 5🪙 самому бедному');
+    est(S, a, 'field', 'pasture'); T.ritualTick(S, a); ok(!a.ritual.marks[1], 'сбор: 2 Земли — ещё нет'); addEst(S, a, 'vineyard'); T.ritualTick(S, a); ok(a.ritual.marks[1], 'сбор: 3 Земли — отметка');
+    for (let k = 0; k < 3; k++) { a.turn = fresh(); a.turn.rolled = true; a.hand = ['tax']; ans = (q) => (q.type === 'trash' ? [0] : null); const r = await E.rite(S, a, 'grain'); ok(r.ok, `обряд ${k + 1}`); }
+    ok(a.ritual.marks[2], 'подвиг: обряд 3 раза');
+    a.turn = fresh(); a.turn.did = { attack: true }; T.ritualEndTurn(S, a); eq(a.ritual.abst, 0, 'воздержание: напал — счёт с нуля');
+    for (let k = 0; k < 2; k++) { a.turn = fresh(); T.ritualEndTurn(S, a); } eq(a.ritual.abst, 2, 'воздержание: 2 хода');
+    const f0 = E.prod(S, a).faith; a.turn = fresh(); T.ritualEndTurn(S, a); ans = null;
+    ok(!a.ritual && a.miracles.includes('grain_a'), 'все 5 отметок — чудо');
+    eq(E.prod(S, a).faith, f0 + 3, 'Святая земля: каждая Земля — ещё 🕯');
+    // второй ритуал своей веры — можно; первый — нет
+    a.turn = fresh(); a.turn.rolled = true; ok(/пройден/.test(E.ritualBlock(S, a, 'grain_a') || ''), 'пройденный ритуал заново не начать'); eq(E.ritualBlock(S, a, 'grain_b'), null, 'второй ритуал своей веры — можно');
+    // грех: чудо молчит; покаяние снимет — снова действует
+    a.sins = ['sin_greed']; eq(E.prod(S, a).faith, f0, 'грех: чудо молчит'); a.sins = []; eq(E.prod(S, a).faith, f0 + 3, 'без греха чудо снова действует');
+    // отречение: чудеса веры уходят
+    a.gold = 20; a.turn.renounced = false; await E.renounceFaith(S, a, 'grain'); ok(!a.miracles.includes('grain_a'), 'отреклись — чудо уходит'); }
+  { // грех сжигает отметки
+    const S = mk(), [a] = S.players; a.faiths = ['harvest']; a.turn.rolled = true; await E.startRitual(S, a, 'harvest_b');
+    a.ritual.marks[3] = true; await E.takeSin(S, a, 'sin_gluttony'); ok(!a.ritual, 'взяли грех — ритуал прерван'); }
+  { // реликвия — пауза: подвиг не считается, жертву не принести
+    const S = mk(), [a] = S.players; a.faiths = ['blade']; a.turn.rolled = true; await E.startRitual(S, a, 'blade_b'); addEst(S, a, 'cursedrelic');
+    ok(/реликвия/i.test(E.ritualActBlock(S, a, 4) || ''), 'реликвия: милостыню не подать'); a.estates = []; eq(E.ritualActBlock(S, a, 4), null, 'реликвию сняли — можно'); }
+  const miracle = (S, p, id) => { p.faiths = [D.RITUALS[id].faith]; p.miracles = [id]; };
+  { // «Щедрая нива» и «Рог изобилия»: Земли и Ремёсла — вдвое
+    const S = mk(), [a] = S.players; miracle(S, a, 'grain_b'); est(S, a, 'field'); const g0 = a.gold; await T.resolveRoll(S, a, 1); eq(a.gold - g0, 2 * (1 + 1), 'Щедрая нива: Пашня 1+1 (вера I) ×2');
+    const S2 = mk(), [c] = S2.players; miracle(S2, c, 'harvest_b'); est(S2, c, 'shop'); const g1 = c.gold; await T.resolveRoll(S2, c, 4); eq(c.gold - g1, 2 * (1 + 1), 'Рог изобилия: Лавка 1+1 (вера I) ×2'); }
+  { // «Двойная добыча»: Набеги забирают вдвое
+    const S = mk(), [a, b] = S.players; miracle(S, b, 'flame_b'); est(S, b, 'barracks'); a.gold = 20; await T.resolveRoll(S, a, 4); eq(20 - a.gold, (2 + 1) * 2, 'Набег (2 +1 Пламя I) ×2'); }
+  { // «Вечная ярмарка»: одна покупка без действия
+    const S = mk(), [a] = S.players; miracle(S, a, 'harvest_a'); a.turn.rolled = true; a.gold = 30; S.estateRow = ['field', 'pasture', 'vineyard', 'shop'];
+    const r1 = await E.buy(S, a, 'estate', 0); const r2 = await E.buy(S, a, 'estate', 0); const r3 = await E.buy(S, a, 'estate', 0);
+    ok(r1.ok && r2.ok && !r3.ok, 'Вечная ярмарка: две покупки за ход, третья — нет'); }
+  { // «Верность до гроба»: содержание по 1🪙
+    const S = mk(), [a] = S.players; a.lords = ['martin','leopold']; const u0 = E.upkeepOf(a); miracle(S, a, 'blade_a'); eq(E.upkeepOf(a), 2, `Верность до гроба: ${u0}🪙 → 2🪙`); }
+  { // «Небесный стяг»: цель — на одно знамя меньше
+    const S = mk(['tA', 'tB'], ['faith', 'lords']), [a] = S.players; a.vassals = ['ida', 'gunnar', 'sabina', 'emmerich', 'fuller', 'brand']; a.lords = ['magnus', 'tobias', 'orvin'];
+    ok(!E.meetsGoal(S, a), 'без чуда: 3 лорда из 4 — не цель'); miracle(S, a, 'blade_b'); ok(E.meetsGoal(S, a), 'Небесный стяг: 3 лорда из 4 — цель'); }
+  { // «Созвездие»: двойная свита у первой же карты
+    const S = mk(), [a] = S.players; miracle(S, a, 'star_a'); const id = Object.keys(D.COURT).find(k => { const c = D.COURT[k]; return c.role && c.ally && c.ally.length === 1 && c.ally[0][0] === 'gold' && c.fx.length === 1 && c.fx[0][0] === 'gold' && !c.faith && !c.sin; });
+    a.hand = [id]; a.turn.rolled = true; const g0 = a.gold; await E.play(S, a, 0); eq(a.gold - g0, D.COURT[id].fx[0][1] + 2 * D.COURT[id].ally[0][1], `Созвездие: «${D.COURT[id].name}» с двойной свитой`); }
+  { // «Звёздная память»: рука остаётся, новых — сколько обычно
+    const S = mk(), [a] = S.players; miracle(S, a, 'star_b'); a.hand = ['tax', 'tax']; const hs = E.handSize(S, a); E.endTurn(S, a); eq(a.hand.length, 2 + hs, 'Звёздная память: 2 + полная рука'); }
+  { // «Неугасимое пламя»: в бою лучший из двух кубиков
+    ok(E.attackOdds(5, 5, true, false) > E.attackOdds(5, 5) + 0.15 && E.attackOdds(5, 5, false, true) < E.attackOdds(5, 5) - 0.15, 'Неугасимое пламя: шансы и в нападении, и в защите'); }
+  { // «Благодать»: второе действие за 3🪙 — и без великих лордов
+    const S = mk(['tA', 'tB'], ['faith', 'lords']), [a] = S.players; a.turn.rolled = true; ok(!E.extraOn(S, a), 'без великих второго действия нет'); miracle(S, a, 'cathedral_a');
+    ok(E.extraOn(S, a) && E.extraCost(S, a) === 3, 'Благодать: второе действие есть, 3🪙'); const g0 = a.gold; eq(E.buyAction(S, a).ok, true, 'второе действие куплено'); eq(g0 - a.gold, 3, 'за 3🪙'); }
+  { // «Благовест»: в начале хода Земли приносят доход
+    const S = mk(), [a] = S.players; miracle(S, a, 'cathedral_b'); est(S, a, 'field', 'pasture'); const g0 = a.gold; await T.startOfTurn(S, a);
+    ok(a.gold - g0 >= 2, `Благовест: Земли принесли доход в начале хода (+${a.gold - g0})`); }
+  { // «Ясновидение»: верх колоды — как карта ряда
+    const S = mk(), [a] = S.players; miracle(S, a, 'seer_b'); a.turn.rolled = true; a.gold = 30; S.estateDeck.push('mine'); const n0 = S.estateDeck.length;
+    const r = await E.buy(S, a, 'estateTop', 0); ok(r.ok && a.estates.some(e => e.id === 'mine') && S.estateDeck.length === n0 - 1, 'Ясновидение: купили верхнюю карту колоды владений');
+    a.turn = fresh(); a.turn.rolled = true; S.vDeck.push('ida'); S.vRow = S.vRow.filter(x => x !== 'ida'); const h = await E.hire(S, a, 'ida'); ok(h.ok && a.vassals.includes('ida'), 'Ясновидение: наняли верхнего вассала колоды');
+    const S2 = mk(), [c] = S2.players; c.turn.rolled = true; c.gold = 30; S2.estateDeck.push('mine'); ok(!(await E.buy(S2, c, 'estateTop', 0)).ok, 'без чуда верх колоды не купить'); }
+  { // «Перст судьбы»: повернуть кубик; дубль от поворота не считается
+    const S = mk(), [a] = S.players; miracle(S, a, 'seer_a'); a.turn = fresh(); ans = (q) => (q.type === 'adjust' ? (q.sets ? { a: 'set', k: 1, v: q.vals[0] } : { a: 'accept' }) : null);
+    await E.roll(S, a, 2); ans = null; ok(S.lastRoll.vals[0] === S.lastRoll.vals[1] && a.turn.setUsed, 'Перст судьбы: кубик повёрнут'); ok(!a.turn.extraTurn, 'дубль от поворота ещё хода не даёт'); }
+  { // «Нашёптанная судьба»: соперник бросает столько кубиков, сколько решили
+    const S = mk(), [a, b] = S.players; miracle(S, a, 'shade_b'); ans = (q) => (q.type === 'dictate' ? { i: 1, n: 1 } : null); await T.startOfTurn(S, a); ans = null;
+    ok(b.forceDice && b.forceDice.n === 1, 'Нашёптанная судьба: соперник помечен'); S.cur = 1; b.turn = fresh(); await E.roll(S, b, 2); eq(S.lastRoll.n, 1, 'соперник бросил один кубик'); ok(!b.forceDice, 'метка снята'); }
+  { // «Чужими руками»: карта соперника на ход, потом возвращается; в отставку её не отправить
+    const S = mk(), [a, b] = S.players; miracle(S, a, 'shade_a'); b.discard = ['collector']; ans = (q) => (q.type === 'borrow' ? 0 : null); await T.borrowCard(S, a); ans = null;
+    ok(a.hand.includes('collector') && !b.discard.includes('collector'), 'Чужими руками: карта в руке'); a.turn.retired = false; const k = a.hand.indexOf('collector');
+    ok(!(await E.retire(S, a, k)), 'одолженную карту в отставку не отправить'); E.endTurn(S, a); ok(b.discard.includes('collector') && !a.hand.includes('collector') && !a.discard.includes('collector'), 'в конце хода карта вернулась владельцу'); }
   console.log(`\nИТОГ: ${passes} проверок прошли, ${fails} не прошли`);
 })().catch(e => { console.log('CRASH', e.stack); });
 // ===== Ярмарка на ход (карты двора): таких карт в основе больше нет — проверка убрана =====

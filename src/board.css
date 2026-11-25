@@ -302,6 +302,8 @@ body.staging .cmid, body.staging .cfoot { opacity: .12; transition: opacity .2s 
 .mcard.mine { box-shadow: 0 0 0 2.5px var(--rc), 0 0 0 4.5px #f6d581, 0 4px 9px 1px rgba(0, 0, 0, .4); }
 .mcard .tag { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); padding: .22em .55em; border-radius: .7em; background: rgba(16, 12, 6, .82); color: #f6d581; font: 800 .68em/1.2 var(--font-body); white-space: nowrap; }
 .mcard .tag.rf { background: #c2463c; color: #fff; }
+.mcard .tag.eye { background: #2b4d8f; color: #fff; } /* «Ясновидение»: верхняя карта колоды */
+.mcard.seer { outline: 2px dashed rgba(126, 169, 234, .85); outline-offset: 2px; }
 .mcard.deal { animation: mdeal .5s cubic-bezier(.2, .8, .3, 1) both; animation-delay: var(--fd, 0ms); }
 @keyframes mdeal { from { opacity: 0; transform: translateX(30px) rotateY(80deg) scale(.8); } to { opacity: 1; transform: none; } }
 .mcard.rf-out { animation: tilepulse 1.3s ease-in-out infinite; box-shadow: 0 0 0 2.5px #e56b5d, 0 0 14px 3px rgba(229, 107, 93, .6); }

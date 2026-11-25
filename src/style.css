@@ -769,6 +769,22 @@ html, body { overflow-x: clip; }
 .pslot > .btn, .pslot .btns .btn { width: 100%; min-width: 0; padding: 0 6px; }
 .pslot .btns { display: grid; gap: 6px; }
 .pmeta { display: grid; gap: 1px; font-size: 13px; line-height: 1.3; text-align: center; }
+/* ритуал (v10.16): карта слева, пять условий с отметками и кнопками жертвы и милостыни справа */
+.ritw { display: grid; grid-template-columns: minmax(0, 108px) minmax(0, 1fr); gap: 10px; align-items: start; }
+.ritp { display: grid; gap: 6px; min-width: 0; }
+.ritp .rh { margin: 0; font-size: 14px; line-height: 1.3; }
+.ritl { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ritl li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 8px; align-items: center; padding: 6px 8px; border-radius: 10px; background: var(--neutral-t); }
+.ritl li .rk { grid-column: 1; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.ritl li .rt { grid-column: 1; font-size: 13.5px; line-height: 1.3; }
+.ritl li .rst, .ritl li .btn { grid-column: 2; grid-row: 1 / span 2; justify-self: end; }
+.ritl li .rst { font-size: 13px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.ritl li .rst.ok { color: var(--vert); font-size: 18px; }
+.ritl li .rst.bad { color: var(--gules); white-space: normal; text-align: right; max-width: 96px; }
+.ritl li.done { background: var(--vert-t); }
+.ritl li.done .rt { color: var(--muted); }
+.ritl li .btn { max-width: 128px; white-space: normal; line-height: 1.15; min-height: 36px; padding: 4px 10px; }
+.ritp .rnote { margin: 0; font-size: 12.5px; }
 .pmeta .miss { color: var(--gules); }
 .pcw.web { cursor: pointer; -webkit-tap-highlight-color: transparent; border-radius: calc(var(--u) * 3.2); }
 .pcw.web.pc-e .pcard, .pcw.web.pc-c .pcard { box-shadow: inset 0 0 0 calc(var(--u) * .35) var(--cd), 0 1px 2px rgba(30, 20, 5, .25), 0 4px 12px rgba(30, 20, 5, .16); transition: transform .12s ease-out; }
