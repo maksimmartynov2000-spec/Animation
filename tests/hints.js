@@ -91,7 +91,21 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
     ok('«взять из сброса» → лист сброса с кнопками «В руку»', !!s14 && s14.t && s14.take > 0, JSON.stringify(s14));
     await closeAll();
   }
-  // 8. лёжа: «Ещё можно» — в строке хода, внизу центра места не держим
+  // 8. колода и сброс соперника (v10.18): лист соперника → «Сброс» (открыт) и «Колода и рука» (рука не выдаётся)
+  await closeAll();
+  const oc = await p.evaluate(() => { const V = window.__VD, op = V.S.players[1 - V.ME]; op.discard = ['spicer', 'collector', 'tax']; op.inPlay = []; V.redraw(); return { dh: op.deck.length + op.hand.length }; });
+  await p.waitForTimeout(300); await p.click('.pbar.foe [data-act="opp"]'); await p.waitForTimeout(700);
+  const ob = await p.evaluate(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); return s ? [...s.querySelectorAll('[data-act="pile"]')].map(x => x.dataset.w).join(',') : ''; });
+  ok('лист соперника: стопки «Сброс» и «Колода и рука»', /discard/.test(ob) && /deckhand/.test(ob), ob);
+  await p.click('.scrim:not(.out) [data-act="pile"][data-w="discard"]'); await p.waitForTimeout(600);
+  const od = await p.evaluate(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); return s ? s.innerText.replace(/\s+/g, ' ') : ''; });
+  ok('сброс соперника: его карты', /Сброс двора/.test(od) && /Торговец пряностями/.test(od) && /Сборщик податей/.test(od), od.slice(0, 80));
+  await p.evaluate(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); if (s && s.close) s.close(); }); await p.waitForTimeout(500);
+  await p.click('.scrim:not(.out) [data-act="pile"][data-w="deckhand"]'); await p.waitForTimeout(600);
+  const odh = await p.evaluate(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); return s ? { t: s.innerText.replace(/\s+/g, ' ').slice(0, 120), n: [...s.querySelectorAll('.pmeta')].reduce((t, x) => t + (+(x.innerText.match(/×(\d+)/) || [0, 0])[1]), 0) } : null; });
+  ok('«Колода и рука» соперника: колода и рука вместе, рука не выдаётся', !!odh && /Колода и рука/.test(odh.t) && /не видно/.test(odh.t) && odh.n === oc.dh, JSON.stringify(odh) + ' ждали ' + oc.dh);
+  await closeAll();
+  // 9. лёжа: «Ещё можно» — в строке хода, внизу центра места не держим
   await p.setViewportSize({ width: 852, height: 393 }); await p.waitForTimeout(900);
   const s12 = await p.evaluate(() => { const r = document.querySelector('.turnrow .exr'); return { row: r ? [...r.querySelectorAll('[data-act="ex"]')].map(x => x.innerText.trim()).join('|') : null, foot: !!document.querySelector('.cfoot .exline'), clip: r ? r.scrollWidth > r.clientWidth + 1 : null }; });
   ok('лёжа: кнопки в строке хода, коротко и без обрезки', s12.row && /ритуал/.test(s12.row) && !s12.foot && s12.clip === false, JSON.stringify(s12));

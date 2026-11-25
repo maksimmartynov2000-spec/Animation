@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.18'; // все 7 грехов с одной «Верой»: новые Гнев (чужие Набеги — ещё раз) и Похоть (3 карты из сброса соперника; итог 1–2 — карта ему)
+  const VERSION = '10.18'; // все 7 грехов с одной «Верой»: новые Гнев (чужие Набеги — ещё раз) и Похоть (3 карты из сброса соперника; итог 1–2 — карта ему); колода и сброс соперника
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -3528,14 +3528,16 @@
   function infoBan(key, o, st) { showInfo({ act: 'info-ban', key, o, st }); }
   // Дом, сезон, титул, провинция: просто крупно — прочитать мелкий текст
   function showPile(p, w) {
-    const list = w === 'deck' ? p.deck : w === 'discard' ? p.discard : (p.trashed || []);
+    // v10.18: и у соперника. Его колода — вместе с рукой («deckhand»): какие карты в руке, не видно; порядок колоды скрыт
+    const own = p.i === viewIdx(), whose = own ? '' : ` ${esc(H(p).gen)}`;
+    const list = w === 'deck' ? p.deck : w === 'deckhand' ? [...p.deck, ...p.hand] : w === 'discard' ? p.discard : (p.trashed || []);
     const n = {}; for (const id of list) n[id] = (n[id] || 0) + 1;
     const ids = Object.keys(n).sort((a, b) => D.COURT[a].cost - D.COURT[b].cost || a.localeCompare(b));
     // сыгранные в этот ход лежат в сбросе сверху — показываем отдельно
     const pl = w === 'discard' ? (p.inPlay || []) : [], pn = {}; for (const id of pl) pn[id] = (pn[id] || 0) + 1;
     const pids = Object.keys(pn);
-    const title = w === 'deck' ? 'Колода двора' : w === 'discard' ? 'Сброс двора' : 'Убраны из игры';
-    const note = w === 'deck' ? 'Что лежит в колоде. Порядок скрыт, как за настоящим столом: колода перемешана.' : w === 'discard' ? 'Сыгранные и купленные карты. Сыгранная карта уходит сюда сразу. Когда колода кончится, сброс перемешается и станет новой колодой — кроме карт, сыгранных в этот ход.' : 'Карты, убранные отставкой, Канцлером, Покаянием или сожжённые шпионом: они ушли в коробку навсегда — ни в колоду, ни на рынок не вернутся.';
+    const title = (w === 'deck' ? 'Колода двора' : w === 'deckhand' ? 'Колода и рука' : w === 'discard' ? 'Сброс двора' : 'Убраны из игры') + whose;
+    const note = w === 'deckhand' ? `Всё, что не в сбросе: колода и рука вместе — какие карты сейчас в руке (${D.cards(p.hand.length)}), не видно. Порядок колоды скрыт.` : w === 'deck' ? 'Что лежит в колоде. Порядок скрыт, как за настоящим столом: колода перемешана.' : w === 'discard' ? 'Сыгранные и купленные карты. Сыгранная карта уходит сюда сразу. Когда колода кончится, сброс перемешается и станет новой колодой — кроме карт, сыгранных в этот ход.' : 'Карты, убранные отставкой, Канцлером, Покаянием или сожжённые шпионом: они ушли в коробку навсегда — ни в колоду, ни на рынок не вернутся.';
     // Архиепископ Григорий, Сорель Аш: раз в ход можно посадить ко двору карту из своего сброса
     const canDS = w === 'discard' && !WATCH && p === S.players[ME] && isMyTurn() && modOn('seats') && (E.mods(S, p).seatFromDiscard || 0) > 0 && !p.turn.discardSeated;
     // Святой Аврелий: раз в ход взять карту из сброса в руку
@@ -3582,6 +3584,11 @@
     const title = s === 'gold' ? `🪙 Золото: ${shownGold(q)}` : s === 'walls' ? `🧱 Стены: ${E.walls(S, q)}` : `${D.SYM[s]} ${D.SYM_NAME[s]}: ${E.sym(S, q, s)}`;
     openSheet({ title: `${title}${q.i !== ME ? ` · ${esc(H(q).short)}` : ''}`, body: resSourcesHtml(q, s) });
   }
+  // v10.18: колода и сброс двора соперника — те же стопки, что на своём «Дворе»; его рука прячется в «Колода и рука»
+  function pilesOf(q) {
+    const dn = q.discard.length + (q.inPlay || []).length, tr = (q.trashed || []).length, dh = q.deck.length + q.hand.length;
+    return `<div class="sec-h"><h3>Колода и сброс</h3><span>сброс открыт, рука — нет</span></div><div class="piles"><button class="pile-b" data-act="pile" data-w="discard" data-i="${q.i}">${deckHtml('court', dn, 'Сброс')}<span class="pl"><b>Сброс</b> ${dn}</span></button><button class="pile-b" data-act="pile" data-w="deckhand" data-i="${q.i}">${deckHtml('court', dh, 'Колода и рука')}<span class="pl"><b>Колода и рука</b> ${dh}</span></button>${tr ? `<button class="pile-b" data-act="pile" data-w="trashed" data-i="${q.i}">${deckHtml('court', tr, 'Убраны')}<span class="pl"><b>Убраны</b> ${tr}</span></button>` : ''}</div>`;
+  }
   function infoOpp(i) {
     const q = S.players[i];
     const pr = E.prod(S, q);
@@ -3599,7 +3606,7 @@
       <div class="sec-h"><h3>Знамёна ${E.regCount(q)}/${E.goal(S)}</h3><span>вассалов ${q.vassals.length}${needL() ? `, лордов ${q.lords.length}` : ''}${needF() ? `, великих ${q.greats.length}` : ''}</span></div><div class="pgrid mini">${E.allBans(q).map(id => pcard('ban', id, { o: q.i, st: 'built', cls: 'built', badge: q.distracted && q.distracted.id === id ? '<span class="pcb tag">отвлечён</span>' : '<span class="pcb own">🚩</span>' })).join('')}${q.heir ? pcard('ban', q.heir, { o: q.i, cls: 'dim', badge: '<span class="pcb tag">Наследник ждёт</span>' }) : ''}</div>
       <div class="sec-h"><h3>Владения</h3><span>${q.estates.length}</span></div><div class="pgrid mini">${estStacks(q.estates, hit).map(g => stackCard(g, q.i)).join('')}</div>
       ${seatsHtml(q, false)}
-      <div class="sec-h"><h3>Карты двора</h3><span>все ${courtOf(q).reduce((a, x) => a + x[1], 0)}: в колоде, сбросе и руке</span></div><div class="pgrid mini">${courtOf(q).map(([id, n]) => pcard('court', id, { badge: n > 1 ? `<span class="pcb own">×${n}</span>` : '' })).join('')}</div>
+      ${pilesOf(q)}<div class="sec-h"><h3>Карты двора</h3><span>все ${courtOf(q).reduce((a, x) => a + x[1], 0)}: в колоде, сбросе и руке</span></div><div class="pgrid mini">${courtOf(q).map(([id, n]) => pcard('court', id, { badge: n > 1 ? `<span class="pcb own">×${n}</span>` : '' })).join('')}</div>
       <p class="muted" style="font-size:13px;margin:6px 0 0">Покупки видят все, поэтому состав колоды открыт. Какие карты сейчас в руке и какие отложены замыслом — не видно.</p>${rollView ? `<p class="muted" style="font-size:13px;margin:6px 0 0">Подсвечено сработавшее на последнем броске (${rollView.r}).</p>` : ''}`;
     openSheet({ title: `${H(q).sigil} ${esc(H(q).name)}`, body: `<div class="oppbody">${body}</div>` });
   }
@@ -4686,7 +4693,7 @@
       case 'coin': takeCoin(+el.dataset.k); break;
       case 'coin-card': e.stopPropagation(); for (const k of String(el.dataset.coins || '').split(',').filter(Boolean)) takeCoin(+k); break;
       case 'coin-all': for (const c of myCoins()) takeCoin(c.k); break;
-      case 'pile': if (S) showPile(S.players[viewIdx()], el.dataset.w); break;
+      case 'pile': if (S) showPile(S.players[el.dataset.i != null ? +el.dataset.i : viewIdx()], el.dataset.w); break; // data-i — стопки соперника (v10.18)
       case 'adj-reroll': if (adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'reroll' }); schedule(); } break;
       case 'adj-one': if (adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'one', k: +el.dataset.k }); schedule(); } break;
       case 'adj-shift': if (adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'shift', d: +el.dataset.d }); schedule(); } break;
