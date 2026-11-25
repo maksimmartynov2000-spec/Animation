@@ -65,6 +65,38 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   const sheetOf = (d) => p.evaluate((d) => { const x = document.createElement('div'); x.innerHTML = window.__VD.infoParts(d).body; return x.innerText.replace(/\s+/g, ' '); }, d);
   const ls = await sheetOf({ act: 'info-court', id: 'sin_sloth' });
   ok('лист Лени: «Сейчас», «До конца игры», «снять — только покаянием»', /Сейчас/.test(ls) && /До конца/.test(ls) && /покаянием/.test(ls) && /Дубль/.test(ls), ls.slice(0, 140));
+  // 6. Похоть (v10.18): окно «какие карты забрать» — ровно 3 карты из сброса соперника, козни не берутся; подсказка до броска
+  await p.evaluate(() => { const V = window.__VD, S = V.S, me = S.players[V.ME], op = S.players[1 - V.ME]; me.turn.rolled = true; me.turn.buysUsed = 0; op.discard = ['spicer', 'collector', 'tax', 'arson']; S.courtRow[0] = 'sin_lust'; V.redraw(); });
+  await p.waitForTimeout(300);
+  const h6 = await p.evaluate(() => window.__VD.S.players[window.__VD.ME].hand.length);
+  await buySin('sin_lust');
+  const ls6 = await waitSheet(/Похоть: какие карты забрать/);
+  const nOpt = await p.evaluate(() => document.querySelectorAll('.scrim:not(.out) .optlist [data-i]').length);
+  ok('Похоть: окно «какие карты забрать», козней в списке нет', /Похоть: какие карты забрать/.test(ls6) && nOpt === 3, `${nOpt} · ${ls6.slice(0, 90)}`);
+  for (let k = 0; k < 3; k++) { await p.evaluate((k) => { const bs = document.querySelectorAll('.scrim:not(.out) .optlist [data-i]'); if (bs[k]) bs[k].click(); }, k); await p.waitForTimeout(150); }
+  await p.evaluate(() => { const okb = document.querySelector('.scrim:not(.out) [data-ok]'); if (okb) okb.click(); }); await p.waitForTimeout(900);
+  const st6 = await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME], op = V.S.players[1 - V.ME]; return { hand: me.hand.length, sins: me.sins, op: op.discard }; });
+  ok('Похоть: 3 карты соперника — в руке, Поджог остался у него', st6.hand === h6 + 3 && st6.sins.includes('sin_lust') && st6.op.join() === 'arson', JSON.stringify(st6));
+  await closeAll();
+  await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME]; me.turn.rolled = false; V.redraw(); }); await p.waitForTimeout(400);
+  const hint6 = await p.evaluate(() => (document.querySelector('.turnrow .hint') || {}).innerText || '');
+  ok('до броска: «Похоть: итог 1–2 — карта уйдёт сопернику»', /Похоть: итог 1–2 — карта уйдёт сопернику/.test(hint6), hint6);
+  // 7. Похоть: итог 1–2 — окно «откуда возьмут карту» (рука или сброс); выбрали сброс — оттуда одна карта ушла сопернику
+  await p.evaluate(() => { const V = window.__VD, S = V.S, me = S.players[V.ME]; me.discard = ['tax', 'tax']; me.inPlay = []; me.turn.rolled = false; me.turn.setUsed = true; V.redraw();
+    const step = (x) => { x = (x + 0x6D2B79F5) | 0; let t = x; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return [x, ((t ^ (t >>> 14)) >>> 0) / 4294967296]; };
+    for (let k = 1; k < 300000; k++) { const s0 = (S.seed + k * 7919) | 0; if (1 + Math.floor(step(s0)[1] * 6) === 2) { S.seed = s0; break; } } });
+  await p.waitForTimeout(400);
+  const b7 = await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME], op = V.S.players[1 - V.ME]; return { hand: me.hand.length, disc: me.discard.length, op: op.discard.length }; });
+  await p.evaluate(() => { const r = document.querySelector('.abar [data-act="roll"][data-n="1"]'); if (r) r.click(); });
+  let ls7 = '';
+  for (let k = 0; k < 60; k++) { ls7 = await sheet(); if (/откуда/.test(ls7)) break; await p.evaluate(() => { const o = document.querySelector('[data-act="adj-ok"]'); if (o) o.click(); }); await p.waitForTimeout(150); }
+  ok('Похоть: итог 2 — окно «откуда возьмут карту»: из руки или из сброса', /Похоть: итог 2 — откуда/.test(ls7) && /Из руки/.test(ls7) && /Из сброса/.test(ls7), ls7.slice(0, 110));
+  await p.evaluate(() => { const o = [...document.querySelectorAll('.scrim:not(.out) .optlist [data-v]')].find(x => /Из сброса/.test(x.innerText)); if (o) o.click(); }); await p.waitForTimeout(1000);
+  const a7 = await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME], op = V.S.players[1 - V.ME]; return { hand: me.hand.length, disc: me.discard.length, op: op.discard.length }; });
+  ok('выбрали «из сброса» — одна карта из сброса ушла сопернику, рука цела', a7.hand === b7.hand && a7.disc === b7.disc - 1 && a7.op === b7.op + 1, JSON.stringify(b7) + ' → ' + JSON.stringify(a7));
+  await closeAll();
+  const lw = await sheetOf({ act: 'info-court', id: 'sin_wrath' });
+  ok('лист Гнева: «чужие Набеги срабатывают на вас ещё раз», модуль — только «Вера»', /Набеги срабатывают на вас ещё раз/.test(lw) && !/Вражд/.test(lw), lw.slice(0, 160));
   console.log(res.join('\n')); console.log('ошибки', errs.slice(0, 5));
   await b.close();
 })();
