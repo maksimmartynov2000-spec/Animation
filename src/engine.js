@@ -1739,15 +1739,15 @@ const Engine = (() => {
       const e0 = el.find(e => e.uid === uid) || el[0];
       const e = moveEstate(S, t, p, e0.uid);
       if (e) { e.ruined = true; p.stats.captured++; t.stats.lost++; log(S, `   Гнев: «${ES(e).name}» ${nmG(t)} — теперь у ${nmG(p)}, в руинах`, p.i, 'steal'); emit(S, 'capture', { a: p.i, t: t.i, id: e.id, wrath: true }); }
-    } else if (key === 'envy') { // Зависть: вассал лидера — ваш
-      if (tierList(p, 'v').length >= needOf(S, 'v')) { log(S, `   Зависть: вассалов у вас уже достаточно`, p.i, 'quiet'); return; }
+    } else if (key === 'envy') { // Зависть: любое знамя лидера — ваше, даже великий лорд (из тех рядов, где вам ещё нужно)
       const top = Math.max(...opps(S, p).map(regCount));
-      const opts = []; for (const o of opps(S, p)) if (regCount(o) === top) for (const id of o.vassals) opts.push({ i: o.i, id });
-      if (!opts.length) { log(S, `   Зависть: у лидера нет вассалов`, p.i, 'quiet'); return; }
-      const ch = await ask(S, p, { type: 'sinVassal', options: opts });
-      const o = (ch != null && opts[ch]) || opts[0], t = S.players[o.i];
-      t.vassals.splice(t.vassals.indexOf(o.id), 1); p.vassals.push(o.id);
-      log(S, `   Зависть: вассал «${D.regName(D.BAN[o.id])}» ушёл от ${nmG(t)} к ${nmD(p)}`, p.i, 'steal');
+      const opts = []; for (const o of opps(S, p)) if (regCount(o) === top) for (const t of TIERS) if (tierList(p, t).length < needOf(S, t)) for (const id of tierList(o, t)) opts.push({ i: o.i, id });
+      if (!opts.length) { log(S, `   Зависть: забрать нечего — у лидера нет знамён, которые вам нужны`, p.i, 'quiet'); return; }
+      const ch = await ask(S, p, { type: 'sinBanner', options: opts });
+      const o = (ch != null && opts[ch]) || opts[0], t = S.players[o.i], b = D.BAN[o.id];
+      const from = tierList(t, b.tier); from.splice(from.indexOf(o.id), 1); tierList(p, b.tier).push(o.id);
+      if (t.distracted && t.distracted.id === o.id) t.distracted = null;
+      log(S, `   Зависть: ${b.tier === 'v' ? 'вассал' : b.tier === 'l' ? 'лорд' : 'великий лорд'} «${D.regName(b)}» ушёл от ${nmG(t)} к ${nmD(p)}`, p.i, 'steal');
       emit(S, 'poach', { a: p.i, t: t.i, id: o.id, envy: true });
       checkGoal(S, p);
     } else if (key === 'gluttony') { // Чревоугодие: 5 карт
@@ -2097,7 +2097,7 @@ const Engine = (() => {
       if (key === 'pride') { const opts = [...(rowOf(S, 'v') || []), ...(rowOf(S, 'l') || [])].filter(x => !hireBlock(S, p, x)); now = opts.length ? Math.max(...opts.map(x => banCost(S, p, x).total + this.banWorth(S, p, x))) + 3 : 0; }
       else if (key === 'greed') now = p.gold;
       else if (key === 'wrath') { for (const o of opps(S, p)) now = Math.max(now, this.lootSwing(S, p, o, R.wrathLoot || 6, false).v); }
-      else if (key === 'envy') { if (tierList(p, 'v').length < needOf(S, 'v')) { const top = Math.max(...opps(S, p).map(regCount)); for (const o of opps(S, p)) if (regCount(o) === top) for (const v of o.vassals) now = Math.max(now, D.BAN[v].cost * (1 + this.zs(S) / 2) + this.banWorth(S, p, v)); } }
+      else if (key === 'envy') { const top = Math.max(...opps(S, p).map(regCount)); for (const o of opps(S, p)) if (regCount(o) === top) for (const t of TIERS) if (tierList(p, t).length < needOf(S, t)) for (const v of tierList(o, t)) now = Math.max(now, D.BAN[v].cost * (1 + this.zs(S) / 2) + this.banWorth(S, p, v)); }
       else if (key === 'gluttony') now = Math.min(5, p.deck.length + p.discard.length) * this.avgPower(S, p) * 0.8;
       else if (key === 'sloth') now = this.incomeEst(S, p) + 8;
       else if (key === 'lust') { if (on(S, 'seats')) for (const o of unseatOptions(S, p)) now = Math.max(now, this.seatWorth(S, p, o.id) * (1 + this.zs(S) / 2)); }
@@ -3116,7 +3116,7 @@ const Engine = (() => {
         case 'distract': { const t = S.players[q.from]; let b = q.options[0], bv = -Infinity; for (const id of q.options) { const v = this.modValue(S, t, D.BAN[id].mods || {}, {}); if (v > bv) { bv = v; b = id; } } return b; }
         case 'raze': { const t = S.players[q.from]; let b = q.options[0], bv = -Infinity; for (const uid of q.options) { const e = t.estates.find(x => x.uid === uid); if (!e) continue; const v = this.estateValue(S, t, e.id); if (v > bv) { bv = v; b = uid; } } return b; }
         case 'sinHire': case 'summon': { let b = q.options[0], bv = -Infinity; for (const id of q.options) { const v = banCost(S, p, id).total + this.banWorth(S, p, id); if (v > bv) { bv = v; b = id; } } return b; }
-        case 'sinVassal': { let bk = 0, bv = -Infinity; q.options.forEach((o, k) => { const v = D.BAN[o.id].cost + this.banWorth(S, p, o.id); if (v > bv) { bv = v; bk = k; } }); return bk; }
+        case 'sinBanner': { let bk = 0, bv = -Infinity; q.options.forEach((o, k) => { const v = D.BAN[o.id].cost + this.banWorth(S, p, o.id); if (v > bv) { bv = v; bk = k; } }); return bk; }
         case 'sinCourtier': { let bk = 0, bv = -Infinity; q.options.forEach((o, k) => { const v = this.seatWorth(S, p, o.id) * this.leaderBias(S, p, S.players[o.i]); if (v > bv) { bv = v; bk = k; } }); return bk; }
         case 'penanceEstate': { let b = q.options[0], bv = Infinity; for (const uid of q.options) { const e = p.estates.find(x => x.uid === uid); if (!e) continue; const v = this.estateValue(S, p, e.id); if (v < bv) { bv = v; b = uid; } } return b; }
         case 'penanceSin': { let b = q.options[0], bv = -Infinity; for (const id of q.options) { const v = this.sinPen(S, p, D.COURT[id].sin); if (v > bv) { bv = v; b = id; } } return b; }

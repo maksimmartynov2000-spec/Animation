@@ -90,9 +90,12 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     const s0 = E.siegeOdds(S, b, a, 2).A, p0 = E.spyInfo(S, b, a, 2).A; a.sins = []; eq(s0 - E.siegeOdds(S, b, a, 2).A, 3, 'Гнев: нападения против грешника +3'); eq(p0 - E.spyInfo(S, b, a, 2).A, 3, 'Гнев: шпионаж против грешника +3');
     const S2 = mk(), [c, d] = S2.players; c.faiths = ['grain']; d.faiths = ['grain']; const before = E.targetsOf(S2, c).length; d.sins = ['sin_wrath'];
     ok(E.targetsOf(S2, c).length === before + 1, 'Гнев: перемирие единоверцев на грешника не действует'); }
-  { // Зависть: вассал лидера — ваш; потом: соперник нанял — 1🪙 в банк, догоняющего найма нет
+  { // Зависть: любое знамя лидера — ваше (даже лорд, когда вассалов хватает); потом: соперник нанял — 1🪙 в банк
     const S = mk(), [a, b] = S.players; a.turn.rolled = true; b.vassals = ['fuller', 'grain']; S.courtRow = ['sin_envy'];
     await E.buy(S, a, 'court', 0); ok(a.vassals.length === 1 && b.vassals.length === 1, 'Зависть: вассал лидера — ваш');
+    { const S2 = mk(), [c, d] = S2.players; c.turn.rolled = true; const vs = Object.keys(D.BAN).filter(id => D.BAN[id].tier === 'v' && !D.BAN[id].heir); c.vassals = vs.slice(0, E.needOf(S2, 'v'));
+      const ls = Object.keys(D.BAN).filter(id => D.BAN[id].tier === 'l' && !D.BAN[id].heir); d.vassals = vs.slice(-2); d.lords = ls.slice(0, 2); S2.courtRow = ['sin_envy'];
+      await E.buy(S2, c, 'court', 0); ok(c.lords.length === 1 && d.lords.length === 1 && d.vassals.length === 2, 'Зависть: вассалов хватает — забирает лорда'); }
     S.cur = 1; b.turn.rolled = true; b.gold = 50; S.vRow = ['baltazar']; const ga = a.gold; await E.hire(S, b, 'baltazar'); eq(ga - a.gold, 1, 'Зависть: соперник нанял — 1🪙 в банк'); }
   { // Чревоугодие: 5 карт сейчас, рука на 1 меньше
     const S = mk(), [a] = S.players; const h0 = E.handSize(S, a); a.turn.rolled = true; S.courtRow = ['sin_gluttony']; const n0 = a.hand.length;

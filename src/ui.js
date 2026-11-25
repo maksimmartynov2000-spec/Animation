@@ -1045,8 +1045,8 @@
       case 'sinHire': return askPickBan(p, q, '😈 Гордыня: кого нанять?', () => 'бесплатно и без траты действия');
       case 'summon': return choiceSheet(`😈 Призыв семи грехов: осталось ${D.banners(q.left)}`, '<p class="note">Знамя из ряда — бесплатно и без действия, ряд пополняется после каждого. Выполните цель — победа в конце круга.</p>',
         [...q.options.map(id => ({ icon: D.SYM[D.BAN[id].dir], value: id, right: D.BAN[id].tier === 'v' ? 'вассал' : D.BAN[id].tier === 'l' ? 'лорд' : 'великий', html: banLine(id) })), { icon: '✋', value: null, html: '<b>Хватит</b>' }]);
-      case 'sinVassal': return choiceSheet('😈 Зависть: какого вассала забрать?', '<p class="note">Вассал лидера переходит к вам бесплатно.</p>',
-        q.options.map((o, k) => ({ icon: H(S.players[o.i]).sigil, value: k, right: '', html: `${banLine(o.id)}<br><span class="muted">сейчас у ${esc(E.shortG(S.players[o.i]))}</span>` })));
+      case 'sinBanner': return choiceSheet('😈 Зависть: какое знамя забрать?', '<p class="note">Знамя лидера переходит к вам бесплатно — вассал, лорд или даже великий лорд.</p>',
+        q.options.map((o, k) => ({ icon: H(S.players[o.i]).sigil, value: k, right: D.BAN[o.id].tier === 'v' ? 'вассал' : D.BAN[o.id].tier === 'l' ? 'лорд' : 'великий', html: `${banLine(o.id)}<br><span class="muted">сейчас у ${esc(E.shortG(S.players[o.i]))}</span>` })));
       case 'sinCourtier': return choiceSheet('😈 Похоть: кого переманить к своему двору?', '<p class="note">Придворный соперника садится при вашем дворе. Мест не хватит — один из ваших уйдёт в сброс.</p>',
         q.options.map((o, k) => { const t = S.players[o.i]; return { icon: H(t).sigil, value: k, right: '', html: `<b>${esc(D.COURT[o.id].name)}</b> · ${esc(H(t).short)}<br><span class="muted">даёт: ${esc(D.COURT[o.id].stext)}</span>` }; }));
       case 'penanceEstate': return choiceSheet('🕯 Покаяние, шаг 4: какое владение уходит из игры?', '<p class="note">Владение уходит из игры навсегда. Потом вы снимете один грех.</p>',
