@@ -530,6 +530,13 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { const S = mk(), [a] = S.players; a.hand = ['scribe', 'doublegame']; await E.play(S, a, 0); const g = a.gold, h = a.hand.length; await E.play(S, a, a.hand.indexOf('doublegame')); ok(a.gold - g === 1 && a.hand.length === h, 'Двойная игра: ещё раз Писарь (+1🪙 и карта)'); }
   { const S = mk(), [a, b] = S.players; b.discard = ['spicer']; await fx(S, a, [['snatch']]); ok(a.hand.includes('spicer') && !b.discard.includes('spicer'), 'Перехват: карта из сброса соперника — в руку'); }
   { const S = mk(), [a] = S.players; a.discard = ['spicer']; await fx(S, a, [['fetchOne']]); ok(a.hand.includes('spicer') && !a.discard.length, 'Святые мощи: из своего сброса в руку'); }
+  { // v10.17: мощи не возвращают сами себя и сыгранные в этот ход — раньше бесконечные монеты (и вдвоём с «Двойной игрой»)
+    const S = mk(), [a] = S.players; a.turn.rolled = true; a.hand = ['relics']; a.discard = []; const g0 = a.gold;
+    await E.play(S, a, 0); ok(!a.hand.includes('relics') && a.gold === g0 + 1, 'Святые мощи: сами себя не вернули, +1🪙');
+    const S2 = mk(), [b] = S2.players; b.turn.rolled = true; b.hand = ['relics', 'doublegame']; b.discard = ['spicer']; const h0 = b.gold;
+    await E.play(S2, b, 0); ok(b.hand.includes('spicer') && b.hand.length === 2, 'Святые мощи: из сброса — Пряностей торговец');
+    await E.play(S2, b, b.hand.indexOf('doublegame')); ok(!b.hand.includes('relics') && !b.hand.includes('doublegame'), 'Двойная игра повторила мощи — ни мощи, ни она сама в руку не вернулись');
+    eq(b.gold - h0, 2, 'мощи + Двойная игра: ровно 2🪙, без петли'); }
   { const S = mk(), [a] = S.players; a.vassals = ['ida', 'gunnar']; a.lords = ['anselm']; await fx(S, a, [['goldPerBanner', 1]]); eq(a.gold, 23, 'Знамя ордена: +1 за каждое знамя'); }
   { const S = mk(['tA', 'tB']), [a, b] = S.players; est(S, b, 'barracks'); a.turn.rolled = true; await fx(S, a, [['shield']]); const g0 = a.gold; await T.resolveRoll(S, a, 4); eq(a.gold, g0, 'Щит ордена: Набег ничего не забирает'); E.endTurn(S, a); E.endTurn(S, a); await T.resolveRoll(S, a, 4); eq(g0 - a.gold, 2, 'щит кончился после следующего хода'); }
   { const S = mk(), [a, b] = S.players; a.temp.int = 60; b.lords = []; ans = (q) => (q.type === 'target' ? 1 : null); const g = a.gold, gb = b.gold; await fx(S, a, D.COURT.courtesan.fx); ok(a.gold === g && b.gold === gb, 'Куртизанка: лордов нет — ничего'); ans = null; }

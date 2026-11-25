@@ -632,13 +632,14 @@ const Engine = (() => {
           emit(S, 'spy', { a: p.i, t: o.i, ok: true, grab: id });
           break;
         }
-        // Святые мощи: карта из своего сброса — в руку
+        // Святые мощи: карта из своего сброса — в руку. Сыгранные в этот ход не берутся (v10.17): иначе мощи возвращали
+        // сами себя — и через «Двойную игру» — без конца, каждый раз +1🪙. «Даже сыгранную в этот ход» — только у Аврелия и Летописца
         case 'fetchOne': {
-          const opts = [...new Set(discardOf(p))];
-          if (!opts.length) { log(S, `   Сброс пуст`, p.i, 'quiet'); break; }
+          const opts = [...new Set(p.discard)];
+          if (!opts.length) { log(S, `   В сбросе нет карт${(p.inPlay || []).length ? ' — сыгранные в этот ход не берутся' : ''}`, p.i, 'quiet'); break; }
           const ch = await ask(S, p, { type: 'fetchOne', options: opts });
           const id = opts.includes(ch) ? ch : opts[0];
-          takeFromDiscard(p, id); p.hand.push(id);
+          p.discard.splice(p.discard.indexOf(id), 1); p.hand.push(id);
           log(S, `   ${nm(p)} вернули в руку «${D.COURT[id].name}»`, p.i, 'draw');
           break;
         }

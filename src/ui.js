@@ -1046,7 +1046,7 @@
       case 'dream': return askDream(p, q);
       case 'grab': return askPickCard(p, q, '🗝 Перехват: какую карту забрать?', 'Карта из сброса соперника уйдёт в ваш сброс.');
       case 'snatch': return askPickCard(p, q, '🌑 Перехват: какую карту взять?', 'Карта из сброса соперника — вам в руку, её можно сыграть уже в этот ход.');
-      case 'fetchOne': return askPickCard(p, q, '⛪ Святые мощи: что вернуть в руку?', 'Карта из вашего сброса — в руку.');
+      case 'fetchOne': return askPickCard(p, q, '⛪ Святые мощи: что вернуть в руку?', 'Карта из вашего сброса — в руку. Сыгранные в этот ход не берутся.');
       case 'buyoff': return askBuyoff(p, q);
       case 'burn': return askBurn(p, q);
       case 'poach': return askPickBan(p, q, '🗝 Вербовка: кого переманить?', (id) => (R.poachHalf ? `заплатите в банк ${Math.ceil(D.BAN[id].cost / 2)}🪙` : `заплатите ${esc(H(S.players[q.from]).dat)} ${D.BAN[id].cost}🪙`));
