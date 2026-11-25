@@ -70,9 +70,9 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   await p.waitForTimeout(300);
   const h6 = await p.evaluate(() => window.__VD.S.players[window.__VD.ME].hand.length);
   await buySin('sin_lust');
-  const ls6 = await waitSheet(/Похоть: какие карты забрать/);
+  const ls6 = await waitSheet(/Похоть: что забрать/);
   const nOpt = await p.evaluate(() => document.querySelectorAll('.scrim:not(.out) .optlist [data-i]').length);
-  ok('Похоть: окно «какие карты забрать», козней в списке нет', /Похоть: какие карты забрать/.test(ls6) && nOpt === 3, `${nOpt} · ${ls6.slice(0, 90)}`);
+  ok('Похоть: окно «какие карты забрать», козней в списке нет', /Похоть: что забрать/.test(ls6) && nOpt === 3, `${nOpt} · ${ls6.slice(0, 90)}`);
   for (let k = 0; k < 3; k++) { await p.evaluate((k) => { const bs = document.querySelectorAll('.scrim:not(.out) .optlist [data-i]'); if (bs[k]) bs[k].click(); }, k); await p.waitForTimeout(150); }
   await p.evaluate(() => { const okb = document.querySelector('.scrim:not(.out) [data-ok]'); if (okb) okb.click(); }); await p.waitForTimeout(900);
   const st6 = await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME], op = V.S.players[1 - V.ME]; return { hand: me.hand.length, sins: me.sins, op: op.discard }; });

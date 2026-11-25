@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.18'; // все 7 грехов с одной «Верой»: новые Гнев (чужие Набеги — ещё раз) и Похоть (3 карты из сброса соперника; итог 1–2 — карта ему); колода и сброс соперника
+  const VERSION = '10.19'; // Похоть — до 3 карт на выбор; чистка после 10.18: правила «Веры», iPad mini лёжа, «+ замысел» в окне броска
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -1208,7 +1208,7 @@
     ? `Нападение: ваши ⚔️ и +${n != null ? n : 'число с карты'} против ⚔️ и 🧱 соперника, каждый ещё бросает по кубику. У кого больше — тот победил, поровну — он отбился.`
     : `Шпионаж: ваши 🔗 и +${n != null ? n : 'число с карты'} против 🔗 и 🧱 соперника, каждый ещё бросает по кубику. Больше — успех, поровну — провал.`);
   function askTarget(p, q) {
-    if (q.kind === 'lust') return choiceSheet('😈 Похоть: из чьего сброса взять карты?', '<p class="note">Три карты из его сброса — вам в руку. Козни и грехи не берутся.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: '', html: `<b>${esc(H(t).short)}</b><br><span class="muted">в сбросе ${D.cards(o.n)}</span>` }; }));
+    if (q.kind === 'lust') return choiceSheet('😈 Похоть: из чьего сброса взять карты?', '<p class="note">До трёх карт из его сброса — вам в руку, сколько захотите. Козни не берутся.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: '', html: `<b>${esc(H(t).short)}</b><br><span class="muted">в сбросе ${D.cards(o.n)}</span>` }; }));
     if (q.kind === 'wrath') return choiceSheet('😈 Гнев: у кого забрать владение?', '<p class="note">Владение до 6🪙 — без нападения, оно придёт к вам в руинах.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: '', html: `<b>${esc(H(t).short)}</b><br><span class="muted">можно забрать: ${o.loot}</span>` }; }));
     if (q.kind === 'penancePoor' || q.kind === 'ritualPoor') return choiceSheet(q.kind === 'ritualPoor' ? '✨ Милостыня: кому отдать?' : '🕯 Покаяние, шаг 1: кому отдать 5🪙?', '<p class="note">Самых бедных несколько — выберите любого.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: `${o.gold}🪙`, html: `<b>${esc(H(t).short)}</b>` }; }));
     if (q.kind === 'plantEstate') {
@@ -1336,19 +1336,18 @@
       });
     });
   }
-  // Похоть (v10.18): из сброса соперника — ровно q.max карт себе в руку
+  // Похоть: из сброса соперника — до q.max карт себе в руку, сколько захотите (v10.19: можно и ни одной)
   function askLustTake(p, q) {
     return new Promise(res => {
       let sel = [];
       const t = S.players[q.from], src = q.options;
       const list = () => src.map((id, i) => { const c = D.COURT[id]; return `<button class="opt" data-i="${i}"><span class="big">${sel.includes(i) ? '☑️' : '⬜'}</span><span><b>${esc(c.name)}</b><br><span class="muted">${esc(roleName(c))} · ${c.cost}🪙</span></span><span class="r"></span></button>`; }).join('');
-      const left = () => q.max - sel.length;
-      const okTxt = () => (left() > 0 ? `Выберите ещё ${D.cards(left())}` : `Забрать ${D.cards(sel.length)}`);
-      const sh = openSheet({ title: `😈 Похоть: какие карты забрать у ${esc(E.shortG(t))}?`, body: `<p class="note">${D.cards(q.max)} из сброса соперника — вам в руку, теперь они ваши. Козни и грехи не берутся.</p><div class="optlist">${list()}</div><button class="btn primary" data-ok disabled>${okTxt()}</button>`, dismiss: false });
+      const okTxt = () => (sel.length ? `Забрать ${D.cards(sel.length)}` : 'Ничего не брать');
+      const sh = openSheet({ title: `😈 Похоть: что забрать у ${esc(E.shortG(t))}? (до ${q.max})`, body: `<p class="note">До ${q.max} ${D.plural(q.max, 'карты', 'карт', 'карт')} из сброса соперника — вам в руку, теперь они ваши. Сколько взять — решаете вы, можно и ни одной. Козни не берутся.</p><div class="optlist">${list()}</div><button class="btn primary" data-ok>${okTxt()}</button>`, dismiss: false });
       sh.el.addEventListener('click', (e) => {
         const b = e.target.closest('[data-i]');
-        if (b) { const i = +b.dataset.i; if (sel.includes(i)) sel = sel.filter(x => x !== i); else if (sel.length < q.max) sel.push(i); sh.el.querySelector('.optlist').innerHTML = list(); const ok = sh.el.querySelector('[data-ok]'); ok.textContent = okTxt(); ok.disabled = left() > 0; return; }
-        if (e.target.closest('[data-ok]') && left() <= 0) { sh.close(); res(sel); }
+        if (b) { const i = +b.dataset.i; if (sel.includes(i)) sel = sel.filter(x => x !== i); else if (sel.length < q.max) sel.push(i); sh.el.querySelector('.optlist').innerHTML = list(); sh.el.querySelector('[data-ok]').textContent = okTxt(); return; }
+        if (e.target.closest('[data-ok]')) { sh.close(); res(sel); }
       });
     });
   }
@@ -2647,7 +2646,7 @@
     const shC = q.shiftCost || 0, shOpts = q.shifts > 0 && p.gold >= shC ? [-1, 1].filter(d => q.total + d >= 1 && q.total + d <= 12) : [];
     const worth = (r, c) => gold(r) + 4 * plotsOn(r) - c;
     const shBest = shOpts.reduce((bb, d) => (worth(q.total + d, shC) > (bb == null ? worth(q.total, 0) : worth(q.total + bb, shC)) ? d : bb), null);
-    const shifts = shOpts.map(d => { const v = gold(q.total + d) - shC, o = pvLine(p, q.total + d, true); return `<button class="adjb${d === shBest && !better ? ' best' : ''}" data-act="adj-shift" data-d="${d}"><b>Сдвиг на ${q.total + d}</b><small class="${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}">${fmt(v)}${shC ? ' с платой' : ''}${o ? ` · ${o}` : ''}</small></button>`; }).join('');
+    const shifts = shOpts.map(d => { const v = gold(q.total + d) - shC, o = pvLine(p, q.total + d, true); return `<button class="adjb${d === shBest && !better ? ' best' : ''}" data-act="adj-shift" data-d="${d}"><b>Сдвиг на ${q.total + d}</b><small class="${v > 0 ? 'pos' : v < 0 ? 'neg' : ''}">${fmt(v)}${plotsOn(q.total + d) ? ' + замысел' : ''}${shC ? ' с платой' : ''}${o ? ` · ${o}` : ''}</small></button>`; }).join(''); // v10.19: замысел на этом числе — видно сразу
     const rr = q.rerolls > 0 ? `<button class="adjb${better ? ' best' : ''}" data-act="adj-reroll"><b>Переброс${q.rerolls > 1 ? ' ×' + q.rerolls : ''}</b><small>в среднем ${f1x(ev)}</small></button>` : '';
     // чудо «Перст судьбы»: повернуть один кубик на любую грань — варианты в отдельном листе
     const setB = q.sets > 0 ? (() => { const best = setChoices(p, q)[0]; return `<button class="adjb${best && best.g > gold(q.total) && !better ? ' best' : ''}" data-act="adj-setsheet"><b>Перст судьбы</b><small>${best ? `лучше: ${best.t} · ${fmt(best.g)}` : 'любая грань'}</small></button>`; })() : '';
@@ -4706,7 +4705,7 @@
         e.stopPropagation();
         const q = adjustReq.q, fmtG = (v) => (v > 0 ? `+${v}` : v < 0 ? `−${-v}` : '0') + '🪙';
         choiceSheet('🌟 Перст судьбы: какой кубик повернуть?', `<p class="note">Один кубик — на любую грань, раз в ход.${q.n > 1 ? ' Дубль от поворота не считается.' : ''} Справа — ваш доход по броску.</p>`,
-          [...setChoices(S.players[ME], q).map(c => { const o = pvLine(S.players[ME], c.t, false) + (c.t <= 2 && E.sinned(S.players[ME], 'lust') ? ' · 😈 карта сопернику' : ''); return { icon: '🎲', value: c, right: fmtG(c.g), html: `${q.n > 1 ? `<b>${c.from} → ${c.v}</b> · сумма ${c.t}` : `<b>${c.from} → ${c.v}</b>`}${o ? `<br><span class="muted">${o}</span>` : ''}` }; }), { icon: '▾', value: null, right: '', html: '<b>Свернуть — посмотреть стол</b><br><span class="muted">вернуться — кнопка «Перст судьбы»</span>' }])
+          [...setChoices(S.players[ME], q).map(c => { const pl = S.players[ME].plots.filter(x => x.kind === 'dice' && x.nums && x.nums.includes(c.t)).length; const o = pvLine(S.players[ME], c.t, false) + (pl ? ` · + ${pl > 1 ? `${pl} замысла` : 'замысел'}` : '') + (c.t <= 2 && E.sinned(S.players[ME], 'lust') ? ' · 😈 карта сопернику' : ''); return { icon: '🎲', value: c, right: fmtG(c.g), html: `${q.n > 1 ? `<b>${c.from} → ${c.v}</b> · сумма ${c.t}` : `<b>${c.from} → ${c.v}</b>`}${o ? `<br><span class="muted">${o}</span>` : ''}` }; }), { icon: '▾', value: null, right: '', html: '<b>Свернуть — посмотреть стол</b><br><span class="muted">вернуться — кнопка «Перст судьбы»</span>' }])
           .then(c => { if (c && adjustReq) { const r = adjustReq; adjustReq = null; r.res({ a: 'set', k: c.k, v: c.v }); schedule(); } });
       } break;
       case 'play': if (isMyTurn()) { e.stopPropagation(); playCard(+el.dataset.i); } break;
@@ -4873,7 +4872,7 @@
   try { window.claude && window.claude.hot && window.claude.hot.snapshot && window.claude.hot.snapshot(() => ({ save: S && S.winner === null ? lastSafe : null, ME, WATCH })); } catch (e) { /* нет хука */ }
   const hot = window.claude && window.claude.hot;
   if (hot && hot.ready) hot.ready(boot); else boot((hot && hot.data) || {});
-  window.__VD = { upd: { get build() { return BUILD; }, get on() { return UPD_ON; }, get found() { return updNew; }, get last() { return updLast; }, check: () => updCheck(true) }, anc: ANC, info: (d) => showInfo(d), infoParts: (d) => infoParts(d), get flips() { return [...flips.entries()].map(([k, t]) => k + '@' + Math.round(performance.now() - t)); }, get fresh() { return [...freshHand]; }, get S() { return S; }, get ME() { return ME; }, startGame, isMyTurn, ev: (t, d) => onEvent(t, d), redraw: () => schedule(), netRoom: () => (NETG ? NETG.room : null), get errs() { return errLog; }, get adjust() { return adjustReq; }, get waitNext() { return !!nextReq; }, get view() { return S ? 'game' : view; }, get sel() { return selCard; }, get drawer() { return drawer; }, get layout() { return L; }, get coins() { return myCoins().length; }, get step() { return stepReq ? stepReq.d.kind : null; }, ask: (q) => askHuman(S.players[ME], q),
+  window.__VD = { upd: { get build() { return BUILD; }, get on() { return UPD_ON; }, get found() { return updNew; }, get last() { return updLast; }, check: () => updCheck(true) }, anc: ANC, info: (d) => showInfo(d), infoParts: (d) => infoParts(d), get flips() { return [...flips.entries()].map(([k, t]) => k + '@' + Math.round(performance.now() - t)); }, get fresh() { return [...freshHand]; }, get S() { return S; }, get ME() { return ME; }, startGame, isMyTurn, ev: (t, d) => onEvent(t, d), redraw: () => schedule(), netSync: () => { if (hostNet()) netFlush(true); }, /* netSync — для тестов сети: отправить гостю стол после правки */ netRoom: () => (NETG ? NETG.room : null), get errs() { return errLog; }, get adjust() { return adjustReq; }, get waitNext() { return !!nextReq; }, get view() { return S ? 'game' : view; }, get sel() { return selCard; }, get drawer() { return drawer; }, get layout() { return L; }, get coins() { return myCoins().length; }, get step() { return stepReq ? stepReq.d.kind : null; }, ask: (q) => askHuman(S.players[ME], q),
     get cover() { return coverReq ? { p: coverReq.p, why: coverReq.why } : null; }, get busy() { return busy; },
     get net() { return NETG ? { rtt: NETG.rtt != null ? NETG.rtt : null, role: NETG.role, code: NETG.code, started: !!NETG.started, n: NETG.n, joined: !!NETG.joined, online: NETG.room ? NETG.room.online : 0, pending: !!NETG.pending, turn: NETG.role === 'host' ? (NETG.turn ? NETG.turn.pi : null) : (NETG.w ? NETG.w.turn : null), asks: NETG.role === 'host' ? NETG.asks.size : NETG.asksOpen.size, status: NETG.status || '' } : null; } };
 })();

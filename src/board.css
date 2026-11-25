@@ -479,6 +479,8 @@ body[data-view="game"] .coachw { z-index: 9; }
 .board.tabp .sdie i, .board.wide .sdie i { width: calc(var(--ds) * .175); height: calc(var(--ds) * .175); }
 .board.tabp .well .rnum b, .board.wide .well .rnum b { font-size: clamp(40px, calc(var(--c-h, 160px) * .2), 58px); }
 .board.tabp .center.stale .well .rnum b, .board.wide .center.stale .well .rnum b { font-size: clamp(30px, calc(var(--c-h, 160px) * .15), 44px); }
+/* v10.19: iPad mini лёжа (низкий центр стола) — кубики и итог броска компактнее, чтобы не наезжать на «Ваш ход» и ленту */
+@media (max-height: 780px) { .board.wide .sdie { --ds: 34px; } .board.wide .well { padding: 5px 14px 5px 10px; } .board.wide .well .rnum b, .board.wide .center.stale .well .rnum b { font-size: 32px; } }
 .board.tabp .abar .sq[data-act="drawer"], .board.wide .abar .sq[data-act="drawer"] { display: none; }
 .dbody.tight { gap: 6px; padding-top: 6px; }
 .dbody.tight .drow { gap: 3px; }

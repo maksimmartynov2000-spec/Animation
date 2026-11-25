@@ -1911,7 +1911,7 @@ const Engine = (() => {
     } else if (key === 'sloth') { // Лень: после этого хода (и хода за дубль, если он будет) — ещё один полный ход
       p.slothNext = (p.slothNext || 0) + 1;
       log(S, `   Лень: после этого хода — ещё один`, p.i, 'extra');
-    } else if (key === 'lust') { // Похоть (v10.18): 3 карты из сброса соперника — себе в руку; козни не берутся
+    } else if (key === 'lust') { // Похоть: до 3 карт из сброса соперника — себе в руку, сколько захотите (v10.19: и 0); козни не берутся
       const ok = (id) => D.COURT[id] && !D.COURT[id].scheme && !D.COURT[id].sin && !D.COURT[id].rule;
       const os = opps(S, p).filter(o => o.discard.some(ok));
       if (!os.length) { log(S, `   Похоть: в сбросах соперников брать нечего`, p.i, 'quiet'); return; }
@@ -1919,11 +1919,10 @@ const Engine = (() => {
       if (os.length > 1) { const ti = await ask(S, p, { type: 'target', kind: 'lust', options: os.map(o => ({ i: o.i, n: o.discard.filter(ok).length })) }); t = os.find(o => o.i === ti) || os[0]; }
       const opts = t.discard.filter(ok), n = Math.min(R.lustTake || 3, opts.length);
       let pick = await ask(S, p, { type: 'lustTake', from: t.i, options: opts.slice(), max: n });
-      pick = [...new Set((Array.isArray(pick) ? pick : []).map(Number).filter(k => Number.isInteger(k) && k >= 0 && k < opts.length))].slice(0, n);
-      for (let k = 0; pick.length < n && k < opts.length; k++) if (!pick.includes(k)) pick.push(k); // выбрали меньше — добираем по порядку
+      pick = [...new Set((Array.isArray(pick) ? pick : []).map(Number).filter(k => Number.isInteger(k) && k >= 0 && k < opts.length))].slice(0, n); // сколько выбрали — столько и берём, хоть ни одной
       const got = pick.map(k => opts[k]);
       for (const id of got) { const j = t.discard.indexOf(id); if (j >= 0) { t.discard.splice(j, 1); p.hand.push(id); } }
-      log(S, `   Похоть: ${nm(p)} забрали из сброса ${nmG(t)} — ${got.map(id => `«${D.COURT[id].name}»`).join(', ')}`, p.i, 'steal');
+      log(S, got.length ? `   Похоть: ${nm(p)} забрали из сброса ${nmG(t)} — ${got.map(id => `«${D.COURT[id].name}»`).join(', ')}` : `   Похоть: ${nm(p)} ничего не взяли из сброса ${nmG(t)}`, p.i, got.length ? 'steal' : 'quiet');
       emit(S, 'lust', { a: p.i, t: t.i, ids: got });
     }
   }
@@ -2538,7 +2537,7 @@ const Engine = (() => {
       else if (key === 'envy') { const top = Math.max(...opps(S, p).map(regCount)); for (const o of opps(S, p)) if (regCount(o) === top) for (const t of TIERS) if (tierList(p, t).length < needOf(S, t)) for (const v of tierList(o, t)) now = Math.max(now, D.BAN[v].cost * (1 + this.zs(S) / 2) + this.banWorth(S, p, v)); }
       else if (key === 'gluttony') now = Math.min(5, p.deck.length + p.discard.length) * this.avgPower(S, p) * 0.8;
       else if (key === 'sloth') now = this.incomeEst(S, p) + 8;
-      else if (key === 'lust') { const avg = this.avgPower(S, p); for (const o of opps(S, p)) { const vs = o.discard.filter(id => D.COURT[id] && !D.COURT[id].scheme && !D.COURT[id].sin && !D.COURT[id].rule).map(id => this.power(S, p, id, avg)).sort((x, y) => y - x).slice(0, R.lustTake || 3); now = Math.max(now, vs.reduce((t, x) => t + x, 0) * 1.2 + vs.length * 0.5); } }
+      else if (key === 'lust') { const avg = this.avgPower(S, p); for (const o of opps(S, p)) { const vs = o.discard.filter(id => D.COURT[id] && !D.COURT[id].scheme && !D.COURT[id].sin && !D.COURT[id].rule).map(id => this.power(S, p, id, avg)).sort((x, y) => y - x).slice(0, R.lustTake || 3); const good = vs.filter(x => x > avg); now = Math.max(now, good.reduce((t, x) => t + x, 0) * 1.2 + good.length * 0.5); } }
       let pen = this.sinPen(S, p, key) * T;
       if (on(S, 'faith') && faithsOf(S, p).length) pen = Math.min(pen, 16); // с верой штраф снимается покаянием
       if (p.ritual) pen += 3 * p.ritual.marks.filter(Boolean).length + 2; // грех сожжёт отметки ритуала
@@ -3643,7 +3642,7 @@ const Engine = (() => {
         case 'sinHire': case 'summon': { let b = q.options[0], bv = -Infinity; for (const id of q.options) { const v = banCost(S, p, id).total + this.banWorth(S, p, id); if (v > bv) { bv = v; b = id; } } return b; }
         case 'sinBanner': { let bk = 0, bv = -Infinity; q.options.forEach((o, k) => { const v = D.BAN[o.id].cost + this.banWorth(S, p, o.id); if (v > bv) { bv = v; bk = k; } }); return bk; }
         case 'lustFrom': { const avg = this.avgPower(S, p), bid = p.borrow ? p.borrow.id : null, ok = (id) => D.COURT[id] && !D.COURT[id].scheme && id !== bid; const mean = (xs) => { const v = xs.filter(ok).map(id => this.power(S, p, id, avg)); return v.length ? v.reduce((t, x) => t + x, 0) / v.length : Infinity; }; return mean(p.hand) < mean([...p.discard, ...(p.inPlay || [])]) - 0.3 ? 'hand' : 'discard'; } // Похоть: отдать из стопки, где карты слабее
-        case 'lustTake': { const avg = this.avgPower(S, p); return q.options.map((id, k) => ({ k, v: this.power(S, p, id, avg) })).sort((x, y) => y.v - x.v).slice(0, q.max).map(x => x.k); } // Похоть: лучшие карты
+        case 'lustTake': { const avg = this.avgPower(S, p); return q.options.map((id, k) => ({ k, v: this.power(S, p, id, avg) })).filter(x => x.v > avg).sort((x, y) => y.v - x.v).slice(0, q.max).map(x => x.k); } // Похоть: только то, что лучше средней своей карты
         case 'penanceEstate': { let b = q.options[0], bv = Infinity; for (const uid of q.options) { const e = p.estates.find(x => x.uid === uid); if (!e) continue; const v = this.estateValue(S, p, e.id); if (v < bv) { bv = v; b = uid; } } return b; }
         case 'penanceSin': { let b = q.options[0], bv = -Infinity; for (const id of q.options) { const v = this.sinPen(S, p, D.COURT[id].sin); if (v > bv) { bv = v; b = id; } } return b; }
         case 'capture': {
