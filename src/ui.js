@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.18'; // все 7 грехов с одной «Верой»: новые Гнев (чужие Набеги — ещё раз) и Похоть (3 карты из сброса соперника; итог 1–2 — карта ему); колода и сброс соперника
+  const VERSION = '10.19'; // Похоть — до 3 карт на выбор; чистка после 10.18: правила «Веры», iPad mini лёжа, «+ замысел» в окне броска
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -1208,7 +1208,7 @@
     ? `Нападение: ваши ⚔️ и +${n != null ? n : 'число с карты'} против ⚔️ и 🧱 соперника, каждый ещё бросает по кубику. У кого больше — тот победил, поровну — он отбился.`
     : `Шпионаж: ваши 🔗 и +${n != null ? n : 'число с карты'} против 🔗 и 🧱 соперника, каждый ещё бросает по кубику. Больше — успех, поровну — провал.`);
   function askTarget(p, q) {
-    if (q.kind === 'lust') return choiceSheet('😈 Похоть: из чьего сброса взять карты?', '<p class="note">Три карты из его сброса — вам в руку. Козни и грехи не берутся.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: '', html: `<b>${esc(H(t).short)}</b><br><span class="muted">в сбросе ${D.cards(o.n)}</span>` }; }));
+    if (q.kind === 'lust') return choiceSheet('😈 Похоть: из чьего сброса взять карты?', '<p class="note">До трёх карт из его сброса — вам в руку, сколько захотите. Козни не берутся.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: '', html: `<b>${esc(H(t).short)}</b><br><span class="muted">в сбросе ${D.cards(o.n)}</span>` }; }));
     if (q.kind === 'wrath') return choiceSheet('😈 Гнев: у кого забрать владение?', '<p class="note">Владение до 6🪙 — без нападения, оно придёт к вам в руинах.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: '', html: `<b>${esc(H(t).short)}</b><br><span class="muted">можно забрать: ${o.loot}</span>` }; }));
     if (q.kind === 'penancePoor' || q.kind === 'ritualPoor') return choiceSheet(q.kind === 'ritualPoor' ? '✨ Милостыня: кому отдать?' : '🕯 Покаяние, шаг 1: кому отдать 5🪙?', '<p class="note">Самых бедных несколько — выберите любого.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: `${o.gold}🪙`, html: `<b>${esc(H(t).short)}</b>` }; }));
     if (q.kind === 'plantEstate') {
@@ -1336,19 +1336,18 @@
       });
     });
   }
-  // Похоть (v10.18): из сброса соперника — ровно q.max карт себе в руку
+  // Похоть: из сброса соперника — до q.max карт себе в руку, сколько захотите (v10.19: можно и ни одной)
   function askLustTake(p, q) {
     return new Promise(res => {
       let sel = [];
       const t = S.players[q.from], src = q.options;
       const list = () => src.map((id, i) => { const c = D.COURT[id]; return `<button class="opt" data-i="${i}"><span class="big">${sel.includes(i) ? '☑️' : '⬜'}</span><span><b>${esc(c.name)}</b><br><span class="muted">${esc(roleName(c))} · ${c.cost}🪙</span></span><span class="r"></span></button>`; }).join('');
-      const left = () => q.max - sel.length;
-      const okTxt = () => (left() > 0 ? `Выберите ещё ${D.cards(left())}` : `Забрать ${D.cards(sel.length)}`);
-      const sh = openSheet({ title: `😈 Похоть: какие карты забрать у ${esc(E.shortG(t))}?`, body: `<p class="note">${D.cards(q.max)} из сброса соперника — вам в руку, теперь они ваши. Козни и грехи не берутся.</p><div class="optlist">${list()}</div><button class="btn primary" data-ok disabled>${okTxt()}</button>`, dismiss: false });
+      const okTxt = () => (sel.length ? `Забрать ${D.cards(sel.length)}` : 'Ничего не брать');
+      const sh = openSheet({ title: `😈 Похоть: что забрать у ${esc(E.shortG(t))}? (до ${q.max})`, body: `<p class="note">До ${q.max} ${D.plural(q.max, 'карты', 'карт', 'карт')} из сброса соперника — вам в руку, теперь они ваши. Сколько взять — решаете вы, можно и ни одной. Козни не берутся.</p><div class="optlist">${list()}</div><button class="btn primary" data-ok>${okTxt()}</button>`, dismiss: false });
       sh.el.addEventListener('click', (e) => {
         const b = e.target.closest('[data-i]');
-        if (b) { const i = +b.dataset.i; if (sel.includes(i)) sel = sel.filter(x => x !== i); else if (sel.length < q.max) sel.push(i); sh.el.querySelector('.optlist').innerHTML = list(); const ok = sh.el.querySelector('[data-ok]'); ok.textContent = okTxt(); ok.disabled = left() > 0; return; }
-        if (e.target.closest('[data-ok]') && left() <= 0) { sh.close(); res(sel); }
+        if (b) { const i = +b.dataset.i; if (sel.includes(i)) sel = sel.filter(x => x !== i); else if (sel.length < q.max) sel.push(i); sh.el.querySelector('.optlist').innerHTML = list(); sh.el.querySelector('[data-ok]').textContent = okTxt(); return; }
+        if (e.target.closest('[data-ok]')) { sh.close(); res(sel); }
       });
     });
   }

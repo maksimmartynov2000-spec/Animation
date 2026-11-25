@@ -119,6 +119,10 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     const S = mk(), [a, b] = S.players; a.turn.rolled = true; b.discard = ['spicer', 'arson', 'collector', 'tax', 'tax']; S.courtRow = ['sin_lust']; const h0 = a.hand.length;
     ans = (q) => (q.type === 'lustTake' ? [0, 1, 2] : null); await E.buy(S, a, 'court', 0); ans = null;
     ok(a.hand.length === h0 + 3 && a.hand.includes('spicer') && a.hand.includes('collector') && !a.hand.includes('arson') && b.discard.includes('arson'), `Похоть: 3 карты из сброса соперника — ваши, козни не берутся (${a.hand.join(',')})`);
+    for (const [pick, n] of [[[], 0], [[1], 1]]) { // v10.19: до 3 карт — сколько захотите, хоть ни одной; не добираем за игрока
+      const S9 = mk(), [c9, d9] = S9.players; c9.turn.rolled = true; d9.discard = ['tax', 'spicer', 'tax']; S9.courtRow = ['sin_lust']; const g0 = c9.hand.length;
+      ans = (q) => (q.type === 'lustTake' ? pick : null); await E.buy(S9, c9, 'court', 0); ans = null;
+      ok(c9.hand.length === g0 + n && d9.discard.length === 3 - n && c9.sins.includes('sin_lust'), `Похоть: выбрали ${n} — взяли ${c9.hand.length - g0}`); }
     const S2 = mk(), [c, d] = S2.players; c.sins = ['sin_lust']; c.hand = ['spicer']; c.discard = []; c.inPlay = []; d.discard = [];
     await T.resolveRoll(S2, c, 5); eq(c.hand.length, 1, 'Похоть: итог 5 — ничего не уходит');
     S2.cur = 0; c.turn = fresh(); ans = (q) => (q.type === 'adjust' ? { a: 'accept' } : null);

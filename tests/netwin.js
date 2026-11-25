@@ -122,7 +122,7 @@ function broker() {
   await gClick('.abar [data-act="drawer"][data-d="market"]'); await guest.waitForTimeout(500);
   await guest.evaluate(() => { const c = document.querySelector('.drawer .mcard[data-id="sin_lust"]'); if (c) c.click(); }); await guest.waitForTimeout(500);
   await gClick('.scrim:not(.out) .buybar [data-buyproxy]');
-  const lt = await gSheet(/Похоть: какие карты забрать/);
+  const lt = await gSheet(/Похоть: что забрать/);
   ok('Похоть: окно «какие карты забрать» пришло гостю, козней в нём нет', !!lt && !/Поджог/.test(lt), lt.slice(0, 80));
   for (const k of [0, 1, 2]) { await guest.evaluate((k) => { const bs = document.querySelectorAll('.scrim:not(.out) .optlist [data-i]'); if (bs[k]) bs[k].click(); }, k); await guest.waitForTimeout(200); }
   await gClick('.scrim:not(.out) [data-ok]');
