@@ -85,6 +85,8 @@ function broker() {
   const gClick = (sel) => guest.evaluate((sel) => { const el = [...document.querySelectorAll(sel)].pop(); if (el) { el.click(); return true; } return false; }, sel);
   const gCloseAll = async () => { await guest.evaluate(() => { for (const s of document.querySelectorAll('.page, .scrim')) if (s.close) s.close(); }); await guest.waitForTimeout(400); };
   const until = async (fn, arg, ms = 6000) => { for (let t = 0; t < ms; t += 150) { if (await hostQ(fn, arg)) return true; await host.waitForTimeout(150); } return false; };
+  // завершить ход гостя: жать «Завершить», пока ход правда не перейдёт (после броска на экране гостя ещё идут анимации)
+  const gEnd = async () => { for (let k = 0; k < 60; k++) { const h = await st(host); if (!h || h.cur !== GI) return true; await gCloseAll(); await guest.evaluate(() => { const e = document.querySelector('.abar [data-act="end"]'); if (e && !e.disabled && !window.__VD.busy) e.click(); }); await guest.waitForTimeout(350); } return false; };
   const seedDie = (vals) => hostSet((S, g, h, vals) => { const step = (x) => { x = (x + 0x6D2B79F5) | 0; let t = x; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return [x, ((t ^ (t >>> 14)) >>> 0) / 4294967296]; };
     for (let k = 1; k < 400000; k++) { let x = (S.seed + k * 7919) | 0; let okk = true; for (const v of vals) { const [x2, r] = step(x); x = x2; if (1 + Math.floor(r * 6) !== v) { okk = false; break; } } if (okk) { S.seed = (S.seed + k * 7919) | 0; return; } } }, vals);
 
@@ -129,7 +131,7 @@ function broker() {
   ok('Похоть по сети: 3 карты в руке гостя, Поджог остался у хозяина', await until((S, g, h, h0) => g.hand.length === h0 + 3 && h.discard.join() === 'arson' && g.sins.includes('sin_lust'), h0), JSON.stringify(await hostQ((S, g, h) => ({ hand: g.hand, hd: h.discard }))) + ' было ' + h0);
   await gCloseAll();
   // 3. Похоть: итог 2 на одном кубике — окно «откуда возьмут карту» у гостя
-  await gClick('.abar [data-act="end"]'); await guest.waitForTimeout(300); await gClick('.abar [data-act="end"]'); await guest.waitForTimeout(800);
+  ok('гость завершил ход', await gEnd());
   ok('следующий ход гостя', await guestTurn());
   await hostSet((S, g) => { g.discard = ['tax', 'tax']; g.inPlay = []; g.miracles = []; g.turn.setUsed = true; });
   await seedDie([2]);
@@ -142,7 +144,7 @@ function broker() {
   ok('выбрали «из сброса» — у хозяина ушла карта из сброса гостя, рука цела', await until((S, g, h, b) => g.discard.length + g.inPlay.length === b.disc - 1 && g.hand.length === b.hand && h.discard.length === b.hd + 1, b3), JSON.stringify([b3, await hostQ((S, g, h) => ({ hand: g.hand.length, disc: g.discard.length + g.inPlay.length, hd: h.discard.length }))]));
   await gCloseAll();
   // 4. «Перст судьбы»: в окне броска гостя — кнопка, лист вариантов, кубик повёрнут
-  await gClick('.abar [data-act="end"]'); await guest.waitForTimeout(300); await gClick('.abar [data-act="end"]'); await guest.waitForTimeout(800);
+  ok('гость завершил ход', await gEnd());
   ok('ещё ход гостя', await guestTurn());
   await hostSet((S, g) => { g.faiths = ['seer']; g.miracles = ['seer_a']; g.sins = []; g.ritual = null; g.turn.setUsed = false; });
   await seedDie([1, 3]);
@@ -158,7 +160,7 @@ function broker() {
   }
   await gCloseAll();
   // 5. покаяние: гость с верой и грехом начинает с «Двора»; шаг 1 — 5🪙 сопернику
-  await gClick('.abar [data-act="end"]'); await guest.waitForTimeout(300); await gClick('.abar [data-act="end"]'); await guest.waitForTimeout(800);
+  ok('гость завершил ход', await gEnd());
   ok('ход гостя для покаяния', await guestTurn());
   await hostSet((S, g) => { g.faiths = ['grain']; g.miracles = []; g.ritual = null; g.sins = ['sin_greed']; g.penance = null; g.gold = 20; });
   const hg = await hostQ((S, g, h) => h.gold);
