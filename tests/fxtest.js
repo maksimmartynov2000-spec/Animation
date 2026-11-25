@@ -660,11 +660,18 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     const S = mk(), [a] = S.players; a.faiths = ['blade']; a.turn.rolled = true; await E.startRitual(S, a, 'blade_b'); addEst(S, a, 'cursedrelic');
     ok(/реликвия/i.test(E.ritualActBlock(S, a, 4) || ''), 'реликвия: милостыню не подать'); a.estates = []; eq(E.ritualActBlock(S, a, 4), null, 'реликвию сняли — можно'); }
   const miracle = (S, p, id) => { p.faiths = [D.RITUALS[id].faith]; p.miracles = [id]; };
-  { // «Щедрая нива» и «Рог изобилия»: Земли и Ремёсла — вдвое
-    const S = mk(), [a] = S.players; miracle(S, a, 'grain_b'); est(S, a, 'field'); const g0 = a.gold; await T.resolveRoll(S, a, 1); eq(a.gold - g0, 2 * (1 + 1), 'Щедрая нива: Пашня 1+1 (вера I) ×2');
-    const S2 = mk(), [c] = S2.players; miracle(S2, c, 'harvest_b'); est(S2, c, 'shop'); const g1 = c.gold; await T.resolveRoll(S2, c, 4); eq(c.gold - g1, 2 * (1 + 1), 'Рог изобилия: Лавка 1+1 (вера I) ×2'); }
-  { // «Двойная добыча»: Набеги забирают вдвое
-    const S = mk(), [a, b] = S.players; miracle(S, b, 'flame_b'); est(S, b, 'barracks'); a.gold = 20; await T.resolveRoll(S, a, 4); eq(20 - a.gold, (2 + 1) * 2, 'Набег (2 +1 Пламя I) ×2'); }
+  { // «Щедрая нива» и «Рог изобилия»: Земля и Ремесло срабатывают ещё раз — каждое срабатывание отдельно
+    const S = mk(), [a] = S.players; miracle(S, a, 'grain_b'); est(S, a, 'field'); const g0 = a.gold; await T.resolveRoll(S, a, 1); eq(a.gold - g0, 2 * (1 + 1), 'Щедрая нива: Пашня 1+1 (вера I) — дважды');
+    const S1 = mk(), [b1] = S1.players; miracle(S1, b1, 'grain_b'); addEst(S1, b1, 'field', { ruined: true }); const gr = b1.gold; await T.resolveRoll(S1, b1, 1);
+    ok(!b1.estates[0].ruined && b1.gold - gr === 2, 'Щедрая нива: Земля в руинах — первое срабатывание ремонт, второе доход');
+    const S2 = mk(), [c] = S2.players; miracle(S2, c, 'harvest_b'); est(S2, c, 'shop'); const g1 = c.gold; await T.resolveRoll(S2, c, 4); eq(c.gold - g1, 2 * (1 + 1), 'Рог изобилия: Лавка 1+1 (вера I) — дважды'); }
+  { // «Двойная добыча»: Набег срабатывает ещё раз — и «за срабатывание Набега» (Вигго Следопыт) тоже дважды
+    const S = mk(), [a, b] = S.players; miracle(S, b, 'flame_b'); est(S, b, 'barracks'); b.vassals = ['vigo']; b.deck = Array(6).fill('tax'); b.hand = []; a.gold = 20; await T.resolveRoll(S, a, 4);
+    eq(20 - a.gold, (2 + 1) * 2, 'Двойная добыча: Набег (2 +1 Пламя I) — дважды'); eq(b.hand.length, 2, 'Вигго: за каждое срабатывание Набега — карта, всего 2');
+    const S3 = mk(), [c3, d3] = S3.players; miracle(S3, d3, 'flame_b'); est(S3, d3, 'barracks'); c3.gold = 4; await T.resolveRoll(S3, c3, 4); eq(c3.gold, 0, 'второй раз Набег берёт, сколько осталось'); }
+  { // «Сбор»: владения в руинах не считаются
+    const S = mk(), [a] = S.players; a.faiths = ['grain']; a.turn.rolled = true; est(S, a, 'field', 'pasture'); addEst(S, a, 'vineyard', { ruined: true });
+    await E.startRitual(S, a, 'grain_a'); ok(!a.ritual.marks[1], 'Сбор: 2 Земли и одна в руинах — ещё не 3'); a.estates[2].ruined = false; T.ritualTick(S, a); ok(a.ritual.marks[1], 'отстроили — Сбор готов'); }
   { // «Вечная ярмарка»: одна покупка без действия
     const S = mk(), [a] = S.players; miracle(S, a, 'harvest_a'); a.turn.rolled = true; a.gold = 30; S.estateRow = ['field', 'pasture', 'vineyard', 'shop'];
     const r1 = await E.buy(S, a, 'estate', 0); const r2 = await E.buy(S, a, 'estate', 0); const r3 = await E.buy(S, a, 'estate', 0);

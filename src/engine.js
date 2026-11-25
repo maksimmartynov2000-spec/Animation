@@ -1431,8 +1431,6 @@ const Engine = (() => {
     if (d.t === 'land' && roller && q === roller && m.landOwn) src('landOwn');
     const tot = parts.reduce((a, x) => a + x.v, 0);
     if (tot < 0) parts.push({ v: -tot, l: 'не меньше 0' });
-    const dbl = d.t === 'land' && m.landDouble ? 'landDouble' : d.t === 'craft' && m.craftDouble ? 'craftDouble' : null;
-    if (dbl && tot > 0) parts.push({ v: tot, l: `${miracleName(dbl)} ×2` });
     return parts;
   }
   // Набег / Твердыня: из чего сложилось, сколько взяли (bonusKey — redBonus / holdBonus; shieldOf — у кого берут)
@@ -1441,7 +1439,6 @@ const Engine = (() => {
     for (const x of modParts(S, o, bonusKey)) parts.push({ v: x.v, l: x.name });
     if (d.p) for (const x of modParts(S, o, 'provBonus_' + d.p)) parts.push({ v: x.v, l: x.name });
     if (victim) for (const x of modParts(S, victim, 'raidShield')) parts.push({ v: -x.v, l: x.name });
-    if (bonusKey === 'redBonus' && mods(S, o).raidDouble) { const t0 = Math.max(0, parts.reduce((a, x) => a + x.v, 0)); if (t0) parts.push({ v: t0, l: `${miracleName('raidDouble')} ×2` }); }
     const tot = parts.reduce((a, x) => a + x.v, 0);
     if (amt != null && amt < tot) parts.push({ v: amt - tot, l: amt === 0 ? 'брать нечего' : 'больше у них нет' });
     return parts;
@@ -1464,10 +1461,13 @@ const Engine = (() => {
         const d = ES(e);
         if (d.t !== 'raid' || !d.n.includes(r)) continue;
         if (bandit) { ev.push({ to: o.i, from: a.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: 'raid', zero: true, bandit: true }); continue; } // не срабатывает: ни дохода, ни отстройки
-        if (e.ruined) { repair(S, o, e, ev); continue; }
-        const amt = a.shield > 0 ? 0 : Math.min(Math.max(0, d.inc + (m.redBonus || 0) + provB(m, d) - (mods(S, a).raidShield || 0)) * (m.raidDouble ? 2 : 1), a.gold); // чудо «Двойная добыча»
-        if (amt > 0) { const parts = raidParts(S, o, d, 'redBonus', a, amt); a.gold -= amt; o.gold += amt; o.stats.raidInc += amt; ev.push({ to: o.i, from: a.i, amt, src: d.name, id: e.id, uid: e.uid, t: 'raid', parts }); }
-        else ev.push({ to: o.i, from: a.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: 'raid', zero: true });
+        for (let x = 0; x < (m.raidDouble ? 2 : 1); x++) { // чудо «Двойная добыча»: Набег срабатывает ещё раз
+          const src = x ? `${d.name} · ещё раз` : d.name;
+          if (e.ruined) { repair(S, o, e, ev); continue; }
+          const amt = a.shield > 0 ? 0 : Math.min(Math.max(0, d.inc + (m.redBonus || 0) + provB(m, d) - (mods(S, a).raidShield || 0)), a.gold);
+          if (amt > 0) { const parts = raidParts(S, o, d, 'redBonus', a, amt); a.gold -= amt; o.gold += amt; o.stats.raidInc += amt; ev.push({ to: o.i, from: a.i, amt, src, id: e.id, uid: e.uid, t: 'raid', parts }); }
+          else ev.push({ to: o.i, from: a.i, amt: 0, src, id: e.id, uid: e.uid, t: 'raid', zero: true });
+        }
       }
     }
     for (const q of S.players) {
@@ -1480,15 +1480,18 @@ const Engine = (() => {
         if (!d.n.includes(r)) continue;
         // Земля: в ход любого игрока (старый вариант: в свой ход и в ход того, кто ходит перед вами)
         if ((d.t === 'land' && (q === a || R.landNeighbor === false || prevOf(S, q) === a)) || (d.t === 'craft' && (q === a || m.craftAny))) { // Праздник Урожая II: Ремёсла и в чужой ход
-          if (e.ruined) { repair(S, q, e, ev); continue; }
-          if (blight && d.t === 'land') { ev.push({ to: q.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: d.t, zero: true, blight: true }); continue; }
-          let v = estateIncome(S, q, d, m);
-          if (d.t === 'land' && q !== a && m.landOthers) v += m.landOthers; // на чужих бросках
-          if (d.t === 'land' && q === a && m.landOwn) v += m.landOwn;       // на своём броске (Медовар)
-          if ((d.t === 'land' && m.landDouble) || (d.t === 'craft' && m.craftDouble)) v *= 2; // чудеса «Щедрая нива» и «Рог изобилия»
-          if (v > 0) {
-            q.gold += v; q.stats.rollInc += v; ev.push({ to: q.i, amt: v, src: d.name, id: e.id, uid: e.uid, t: d.t, parts: incomeParts(S, q, d, m, a) });
-            if (taxTo && d.t === 'craft') { q.gold -= v; q.stats.rollInc -= v; taxTo.gold += v; taxTo.stats.stolen += v; ev.push({ to: taxTo.i, from: q.i, amt: v, src: ES(taxE).name, id: taxE.id, uid: taxE.uid, t: 'bad' }); }
+          const times = (d.t === 'land' && m.landDouble) || (d.t === 'craft' && m.craftDouble) ? 2 : 1; // чудеса «Щедрая нива» и «Рог изобилия»: срабатывает ещё раз
+          for (let x = 0; x < times; x++) {
+            const src = x ? `${d.name} · ещё раз` : d.name;
+            if (e.ruined) { repair(S, q, e, ev); continue; } // в руинах: первое срабатывание — ремонт, второе — уже доход
+            if (blight && d.t === 'land') { ev.push({ to: q.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: d.t, zero: true, blight: true }); break; }
+            let v = estateIncome(S, q, d, m);
+            if (d.t === 'land' && q !== a && m.landOthers) v += m.landOthers; // на чужих бросках
+            if (d.t === 'land' && q === a && m.landOwn) v += m.landOwn;       // на своём броске (Медовар)
+            if (v > 0) {
+              q.gold += v; q.stats.rollInc += v; ev.push({ to: q.i, amt: v, src, id: e.id, uid: e.uid, t: d.t, parts: incomeParts(S, q, d, m, a) });
+              if (taxTo && d.t === 'craft') { q.gold -= v; q.stats.rollInc -= v; taxTo.gold += v; taxTo.stats.stolen += v; ev.push({ to: taxTo.i, from: q.i, amt: v, src: ES(taxE).name, id: taxE.id, uid: taxE.uid, t: 'bad' }); }
+            }
           }
         }
       }
@@ -1499,9 +1502,11 @@ const Engine = (() => {
         const d = ES(e);
         if (d.t !== 'raid' || !d.n.includes(r)) continue;
         if (bandit) { ev.push({ to: a.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: 'raid', own: true, zero: true, bandit: true }); continue; }
-        if (e.ruined) { repair(S, a, e, ev); continue; }
-        const v = (d.inc + (m.redBonus || 0) + provB(m, d)) * (m.raidDouble ? 2 : 1);
-        a.gold += v; a.stats.raidInc += v; ev.push({ to: a.i, amt: v, src: d.name, id: e.id, uid: e.uid, t: 'raid', own: true, parts: raidParts(S, a, d, 'redBonus', null, v) });
+        for (let x = 0; x < (m.raidDouble ? 2 : 1); x++) { // «Двойная добыча»: ещё раз
+          if (e.ruined) { repair(S, a, e, ev); continue; }
+          const v = d.inc + (m.redBonus || 0) + provB(m, d);
+          a.gold += v; a.stats.raidInc += v; ev.push({ to: a.i, amt: v, src: x ? `${d.name} · ещё раз` : d.name, id: e.id, uid: e.uid, t: 'raid', own: true, parts: raidParts(S, a, d, 'redBonus', null, v) });
+        }
       }
       for (const e of a.estates) {
         const d = ES(e);
@@ -1993,9 +1998,9 @@ const Engine = (() => {
     emit(S, 'miracle', { p: p.i, id });
     checkGoal(S, p); // «Небесный стяг» сразу приближает победу
   }
-  // сбор: что у игрока есть сейчас (Земли и Ремёсла — все свои, и в руинах; значки — со знамён, владений и «до конца хода»)
+  // сбор: что у игрока есть сейчас (владения в руинах не считаются — пока не отстроены; значки — со знамён, владений и «до конца хода»)
   function haveNow(S, p, st) {
-    const est = (t) => p.estates.filter(e => ES(e).t === t).length;
+    const est = (t) => p.estates.filter(e => ES(e).t === t && !e.ruined).length;
     switch (st.what) {
       case 'land': case 'craft': case 'raid': return est(st.what);
       case 'gold': return p.gold;
@@ -2155,10 +2160,11 @@ const Engine = (() => {
     for (const e of p.estates) {
       const d = ES(e);
       if (d.t !== 'land') continue;
-      if (e.ruined) { repair(S, p, e, []); continue; }
-      let v = estateIncome(S, p, d, m);
-      if (m.landDouble) v *= 2;
-      if (v > 0) g += v;
+      for (let x = 0; x < (m.landDouble ? 2 : 1); x++) { // «Щедрая нива»: Земля срабатывает ещё раз
+        if (e.ruined) { repair(S, p, e, []); continue; }
+        const v = estateIncome(S, p, d, m);
+        if (v > 0) g += v;
+      }
     }
     if (g) { p.gold += g; p.stats.rollInc += g; log(S, `🔔 ${nm(p)}: ${miracleName('landDawn')} — Земли принесли +${g}🪙`, p.i, 'gold'); }
   }

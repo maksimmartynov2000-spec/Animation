@@ -466,7 +466,7 @@ const DATA = (() => {
       { k: 'deed', what: 'buyLand', n: 2, t: 'Купите 2 🟦 Земли.' },
       { k: 'abst', what: 'hire', n: 3, t: '3 своих хода подряд не нанимайте знамён.' },
       { k: 'alms', what: 'land', t: 'Отдайте самому бедному сопернику одну свою 🟦 Землю.' }],
-      miracle: { name: 'Щедрая нива', text: 'Ваши 🟦 Земли приносят вдвое больше.', mods: { landDouble: 1 } } },
+      miracle: { name: 'Щедрая нива', text: 'Сработала ваша 🟦 Земля — она срабатывает ещё раз.', mods: { landDouble: 1 } } },
     harvest_a: { faith: 'harvest', name: 'Осенняя ярмарка', steps: [
       { k: 'trash', what: 'estate', only: 'land', t: 'Уберите из игры одну свою 🟦 Землю.' },
       { k: 'have', what: 'craft', n: 3, t: 'У вас 3 🟩 Ремесла.' },
@@ -480,7 +480,7 @@ const DATA = (() => {
       { k: 'deed', what: 'rite', n: 2, t: 'Проведите обряд «Пир» 2 раза.' },
       { k: 'abst', what: 'attack', n: 3, t: '3 своих хода подряд не нападайте и не шпионьте.' },
       { k: 'alms', what: 'each', n: 3, t: 'Отдайте каждому сопернику по 3🪙.' }],
-      miracle: { name: 'Рог изобилия', text: 'Ваши 🟩 Ремёсла приносят вдвое больше.', mods: { craftDouble: 1 } } },
+      miracle: { name: 'Рог изобилия', text: 'Сработало ваше 🟩 Ремесло — оно срабатывает ещё раз.', mods: { craftDouble: 1 } } },
     seer_a: { faith: 'seer', name: 'Бдение', steps: [
       { k: 'trash', what: 'estate', t: 'Уберите из игры одно своё владение.' },
       { k: 'have', what: 'faith', n: 4, t: 'У вас 🕯4.' },
@@ -522,7 +522,7 @@ const DATA = (() => {
       { k: 'deed', what: 'rite', n: 3, t: 'Проведите обряд «Боевой клич» 3 раза.' },
       { k: 'abst', what: 'buyEstate', n: 3, t: '3 своих хода подряд не покупайте владений.' },
       { k: 'alms', what: 'each', n: 2, t: 'Отдайте каждому сопернику по 2🪙.' }],
-      miracle: { name: 'Двойная добыча', text: 'Ваши 🟥 Набеги забирают вдвое больше.', mods: { raidDouble: 1 } } },
+      miracle: { name: 'Двойная добыча', text: 'Сработал ваш 🟥 Набег — он срабатывает ещё раз.', mods: { raidDouble: 1 } } },
     blade_a: { faith: 'blade', name: 'Посвящение', needs: 'lords', steps: [
       { k: 'trash', what: 'estate', t: 'Уберите из игры одно своё владение.' },
       { k: 'have', what: 'war', n: 5, t: 'У вас ⚔️5.' },
