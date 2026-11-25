@@ -89,6 +89,10 @@ const Engine = (() => {
   const isCursed = (p, id) => !!(p.turn && p.turn.curse && p.turn.curse[id]);
   // проклятие (v10.14): лежит у игрока на столе и действует всегда, пока он его не снимет; key — поле bad у карты
   const cursed = (p, key) => !!(p && p.estates && p.estates.some(e => ES(e).bad === key));
+  // грех (v10.15): лежит перед игроком (p.sins) и действует, пока его не снимет покаяние; key — поле sin у карты
+  const sinned = (p, key) => !!(p && p.sins && p.sins.some(id => D.COURT[id] && D.COURT[id].sin === key));
+  const sinCount = (p) => new Set((p.sins || []).map(id => D.COURT[id] && D.COURT[id].sin).filter(Boolean)).size;
+  const wrathOn = (t) => (sinned(t, 'wrath') ? (R.wrathBonus || 3) : 0); // Гнев: нападения и шпионаж против грешника сильнее
   // сыгранные в этот ход карты — по порядку розыгрыша (карта уже лежит в сбросе, но для свиты и «за каждую сыгранную» считается здесь)
   const playedOf = (p) => (p.turn && p.turn.played) || p.inPlay || [];
   const faithActive = (S, p) => !cursed(p, 'relic');
@@ -214,7 +218,7 @@ const Engine = (() => {
     w += mods(S, p).walls || 0;
     return w;
   }
-  const handSize = (S, p) => R.hand + (mods(S, p).hand || 0) + (R.sciStep ? Math.floor(prod(S, p).sci / R.sciStep) : 0); // 📜 Знания
+  const handSize = (S, p) => R.hand + (mods(S, p).hand || 0) + (R.sciStep ? Math.floor(prod(S, p).sci / R.sciStep) : 0) - (sinned(p, 'gluttony') ? 1 : 0); // 📜 Знания; грех Чревоугодие — на 1 меньше
   const plotSlots = (S, p) => (on(S, 'plots') ? R.plotSlots + (mods(S, p).plotSlots || 0) : 0);
   // мест при дворе: 2 + 1 за каждого лорда + свойства (Изольда, Леонора, Камергер)
   const seatMax = (S, p) => (on(S, 'seats') ? (R.courtSeats || 2) + (p ? p.lords.length + (mods(S, p).seatSlots || 0) : 0) : 0);
@@ -239,7 +243,7 @@ const Engine = (() => {
       const H = D.HOUSES[po.house];
       const p = {
         i, house: po.house, name: po.name || H.short, isBot: !!po.isBot, persona: po.persona || 'base', skill: po.skill || 'normal', gold: R.startGold + (H.gold || 0),
-        estates: [], vassals: [], lords: [], greats: [], heir: null, faiths: [], deck: [], hand: [], discard: [], inPlay: [], plots: [], seats: [], trashed: [],
+        estates: [], vassals: [], lords: [], greats: [], heir: null, faiths: [], deck: [], hand: [], discard: [], inPlay: [], plots: [], seats: [], trashed: [], sins: [],
         temp: emptySyms(), turn: freshTurn(), useen: {},
         stats: { stolen: 0, sieges: 0, captured: 0, lost: 0, rollInc: 0, raidInc: 0, cardGold: 0, startInc: 0, siegeWins: 0, upkeep: 0, released: 0, retired: 0, destroyed: 0 },
       };
@@ -265,7 +269,7 @@ const Engine = (() => {
     }
     S.courtDeck = [];
     S.faithPool = {}; for (const f of S.faithRow) S.faithPool[f] = (D.FAITHS[f].cards || []).filter(id => D.COURT[id]);
-    for (const id in D.COURT) { const c = D.COURT[id]; if (c.faith) continue; /* карты вер — у веры, не на рынке */ if (!c.start && !c.sig && cardOn(S, 'court', id)) for (let k = 0; k < (c.copies || 2); k++) S.courtDeck.push(id); }
+    for (const id in D.COURT) { const c = D.COURT[id]; if (c.faith) continue; /* карты вер — у веры, не на рынке */ if (!c.start && !c.sig && !c.rule && cardOn(S, 'court', id)) for (let k = 0; k < (c.copies || 2); k++) S.courtDeck.push(id); }
     shuffle(S, S.courtDeck);
     // твердыни: копий каждой — по числу игроков; колода твердынь и открытый ряд из R.holdRow (купили — открывается следующая)
     S.holdDeck = shuffle(S, Object.keys(D.ESTATES).filter(id => D.ESTATES[id].t === 'hold' && cardOn(S, 'estate', id)).flatMap(id => Array(Math.min(D.ESTATES[id].copies || 1, S.players.length)).fill(id)));
@@ -421,6 +425,19 @@ const Engine = (() => {
     { const tf = faithBan(S, p, 'tithe'); if (tf) { const v = Math.min(1, p.gold); if (v) { p.gold -= v; log(S, `${nm(p)}: десятина «${D.FAITHS[tf].name}» — −${v}🪙`, p.i, 'faith'); } } }
     // обет «Щедрость» (Праздник Урожая): 1🪙 самому бедному сопернику
     { const gf = faithBan(S, p, 'gift'); if (gf && p.gold > 0) { let poor = null; for (const o of opps(S, p)) if (!poor || o.gold < poor.gold) poor = o; const v = Math.min(p.gold, D.FAITHS[gf].oathN || 1); if (poor && v) { p.gold -= v; poor.gold += v; log(S, `${nm(p)}: щедрость «${D.FAITHS[gf].name}» — ${v}🪙 ${nmD(poor)}`, p.i, 'faith'); } } }
+    // грехи (v10.15): платежи — по золоту до дохода начала хода; не хватает — сколько есть
+    if (sinned(p, 'pride')) { const v = Math.min(regCount(p), p.gold); if (v) { p.gold -= v; log(S, `${nm(p)}: Гордыня — −${v}🪙 за знамёна`, p.i, 'sin'); } }
+    if (sinned(p, 'greed')) { const v = Math.floor(p.gold / 5); if (v) { p.gold -= v; log(S, `${nm(p)}: Алчность — −${v}🪙 в банк`, p.i, 'sin'); } }
+    if (sinned(p, 'lust') && on(S, 'seats') && (p.seats || []).length) {
+      const r = d6(S);
+      if (r <= 2) {
+        let k = await ask(S, p, { type: 'seatDrop', options: p.seats.slice(), max: p.seats.length - 1, lust: true });
+        if (k == null || k < 0 || k >= p.seats.length) k = 0;
+        const [out] = p.seats.splice(k, 1); p.discard.push(out);
+        log(S, `${nm(p)}: Похоть — на кубике ${r}, «${D.COURT[out].name}» уходит в сброс`, p.i, 'sin');
+        emit(S, 'unseat', { a: null, t: p.i, id: out, lust: true });
+      } else log(S, `${nm(p)}: Похоть — на кубике ${r}, придворные остаются`, p.i, 'quiet');
+    }
     // Клевета: в этот ход карты двора покупать нельзя
     if (p.slanderNext) { p.turn.curse.slander = 1; p.slanderNext = false; log(S, `${nm(p)}: Клевета — в этот ход карты двора покупать нельзя`, p.i, 'envy'); }
     if (Object.keys(p.turn.curse).length) emit(S, 'curse', { p: p.i, ids: Object.keys(p.turn.curse) });
@@ -444,7 +461,7 @@ const Engine = (() => {
     }
     // догоняющий наём: если в начале круга у лидера R.catchupFrom+ знамён, кто отстаёт от него (на R.catchupGap и больше), в этом круге может нанять ещё одного вассала (R.catchupTier)
     const cuT = R.catchupTier || 'v'; // некого нанимать (ряд пуст) или свои вассалы уже набраны — догоняющего найма нет
-    if (S.catchup && S.catchup[p.i] && !(R.catchupOnce && p.catchupSpent >= R.catchupOnce) && tierList(p, cuT).length < needOf(S, cuT) && rowOf(S, cuT).length) {
+    if (S.catchup && S.catchup[p.i] && !sinned(p, 'envy') && !(R.catchupOnce && p.catchupSpent >= R.catchupOnce) && tierList(p, cuT).length < needOf(S, cuT) && rowOf(S, cuT).length) {
       if (R.catchupHireOnly) p.turn.catchupHire = 1; else p.turn.buys += 1;
       p.turn.catchup = true;
       { const ci = S.catchupInfo;
@@ -475,6 +492,8 @@ const Engine = (() => {
       if (S.winner !== null) return;
     }
     await dreamPeek(S, p, m);
+    // покаяние: очередной шаг — последним в начале хода, когда доход уже получен
+    if (p.penance && S.winner === null) await penanceStep(S, p);
     emit(S, 'change');
   }
   // Толкователь снов при дворе — вещий сон: посмотреть верхние карты своей колоды, каждую оставить сверху или положить под низ
@@ -626,9 +645,9 @@ const Engine = (() => {
   const sameFaith = (S, a, t) => faithsOf(S, a).some(f => faithsOf(S, t).includes(f));
   // перемирие: общая вера, которая запрещает единоверцам нападать (у Пламени, Клинка, Тени и Круга перемирия нет)
   const truce = (S, a, t) => faithsOf(S, a).some(f => D.FAITHS[f].truce !== false && faithsOf(S, t).includes(f));
-  const targetsOf = (S, a) => opps(S, a).filter(o => !truce(S, a, o));
+  const targetsOf = (S, a) => opps(S, a).filter(o => !truce(S, a, o) || sinned(o, 'wrath')); // грех Гнев: перемирие на него не действует
   function siegeOdds(S, a, t, bonus) {
-    const A = sym(S, a, 'war') + bonus + (mods(S, a).siege || 0);
+    const A = sym(S, a, 'war') + bonus + (mods(S, a).siege || 0) + wrathOn(t);
     const Dv = sym(S, t, 'war') + walls(S, t) + (mods(S, t).defense || 0) + (mods(S, t).shield || 0);
     return { A, D: Dv, p: attackOdds(A, Dv) };
   }
@@ -698,7 +717,7 @@ const Engine = (() => {
     return t.estates.filter(e => { const d = ES(e); if (d.bad) return false; if (d.fixed && flag !== 'wall') return false; return d.cost <= maxCost; });
   }
   function razeOdds(S, a, t, bonus, flag) {
-    const A = sym(S, a, 'war') + bonus + (mods(S, a).siege || 0);
+    const A = sym(S, a, 'war') + bonus + (mods(S, a).siege || 0) + wrathOn(t);
     const Dv = sym(S, t, 'war') + (flag === 'nowalls' ? 0 : walls(S, t)) + (mods(S, t).defense || 0) + (mods(S, t).shield || 0);
     return { A, D: Dv, p: attackOdds(A, Dv) };
   }
@@ -759,7 +778,7 @@ const Engine = (() => {
   const spyWalls = (S, t) => walls(S, t) - Math.ceil((R.baseWalls || 0) * (1 - (R.spyCastle == null ? 1 : R.spyCastle))); // 🧱 против шпиона: замок — вполовину
   const guardOf = (S, t) => spyWalls(S, t) + (mods(S, t).guard || 0) + (mods(S, t).shield || 0);
   function spyInfo(S, a, t, bonus) {
-    const A = sym(S, a, 'int') + bonus + (mods(S, a).spy || 0);
+    const A = sym(S, a, 'int') + bonus + (mods(S, a).spy || 0) + wrathOn(t);
     const G = sym(S, t, 'int') + guardOf(S, t);
     const p = attackOdds(A, G);
     return { A, G, p, ok: p >= 0.5 };
@@ -1246,7 +1265,7 @@ const Engine = (() => {
   async function roll(S, p, n) {
     if (p.turn.rolled || S.winner !== null || S.players[S.cur] !== p) return false;
     const m = mods(S, p);
-    const oneOnly = cursed(p, 'evileye') || faithBan(S, p, 'oneDie'); // проклятие «Сглаз» или обет «Собора Единого»: только один кубик
+    const oneOnly = cursed(p, 'evileye') || sinned(p, 'sloth') || faithBan(S, p, 'oneDie'); // проклятие «Сглаз», грех Лень или обет «Собора Единого»: только один кубик
     if (n !== 2 || oneOnly) n = 1;
     // предсказание до броска (старые карты)
     let guess = null;
@@ -1477,6 +1496,7 @@ const Engine = (() => {
     const m = mods(S, p);
     // общее правило: скидки складываются, но цена на рынке не бывает ниже 1🪙
     const torg = R.tradeStep ? Math.floor(sym(S, p, 'trade') / R.tradeStep) : 0; // ⚖️ Торг
+    if (base <= 0) return 0; // грех (v10.15) стоит 0🪙 — только действие
     return Math.max(1, base - (m.marketDiscount || 0) - torg - (court ? (m.courtCheap || 0) : 0) - p.turn.discount);
   }
   const buysLeft = (S, p) => 1 + p.turn.buys + (mods(S, p).buys || 0) - p.turn.buysUsed;
@@ -1564,13 +1584,14 @@ const Engine = (() => {
     { const ob = oathBuy(S, p, src, id); if (ob) return { ok: false, why: ob }; }
     const price = marketPrice(S, p, def.cost, !isEstate);
     const fm = fairLimit(S, p);
-    const freeC = src === 'court' && ((p.turn.courtBought || 0) < (R.freeCourt || 0) || (R.courtPair && p.turn.courtPaid && !p.turn.courtBought));
-    const freeX = !freeC && fm > 0 && !p.turn.cheapUsed && def.cost <= fm && (src === 'court' || !mods(S, p).fairCourt); // «Ярмарка» Оленей — по напечатанной цене
+    const sinBuy = !isEstate && !!def.sin; // грех — только действием: без Ярмарки и бесплатных покупок
+    const freeC = !sinBuy && src === 'court' && ((p.turn.courtBought || 0) < (R.freeCourt || 0) || (R.courtPair && p.turn.courtPaid && !p.turn.courtBought));
+    const freeX = !sinBuy && !freeC && fm > 0 && !p.turn.cheapUsed && def.cost <= fm && (src === 'court' || !mods(S, p).fairCourt); // «Ярмарка» Оленей — по напечатанной цене
     const freeB = !freeC && !freeX && src === 'basic' && !def.fixed && (mods(S, p).freeBasic || 0) > 0 && !p.turn.basicUsed;
     // «Ярмарка» с карты двора (Оруженосец, Шептун, Послушник): на этот ход, тратится первой
-    const freeT = !freeC && !freeX && !freeB && src === 'court' && (p.turn.fairCourt || 0) > 0;
+    const freeT = !sinBuy && !freeC && !freeX && !freeB && src === 'court' && (p.turn.fairCourt || 0) > 0;
     // лорды: Мартин Скупой — карта двора без действия, Леопольд Миротворец — владение без действия (раз в ход)
-    const freeL = !freeC && !freeX && !freeB && !freeT && src === 'court' && (mods(S, p).freeCourtBuy || 0) > 0 && !p.turn.freeCourtUsed;
+    const freeL = !sinBuy && !freeC && !freeX && !freeB && !freeT && src === 'court' && (mods(S, p).freeCourtBuy || 0) > 0 && !p.turn.freeCourtUsed;
     const estSlot = isEstate ? estFairSlot(S, p, def) : null;
     const freeE = !freeC && !freeX && !freeB && isEstate && !!estSlot; // Элинор — любое владение, Колос II — Земля, Робер — Набег
     const freeP = !freeC && !freeX && !freeB && !freeT && !freeL && !freeE && buysLeft(S, p) <= 0 && (p.turn.extraBuy || 0) > 0; // оплаченная «ещё покупка»
@@ -1589,7 +1610,7 @@ const Engine = (() => {
     else if (freeE && !p.turn[estSlot]) p.turn[estSlot] = true;
     else { p.turn.buysUsed++; if (src === 'court') p.turn.courtPaid = true; p.turn.lastFair = false; }
     if (freeC || freeX || freeB || freeT || freeL || freeE) p.turn.lastFair = true;
-    if (def.bad) { /* проклятие — к покупателю не идёт, его сразу подбрасывают сопернику */ }
+    if (def.bad || def.sin) { /* проклятие — сразу подбрасывают сопернику; грех — ложится перед покупателем (takeSin ниже) */ }
     else if (isEstate) { p.estates.push({ uid: S.uid++, id }); unionBounty(S, p); const lb = def.t === 'land' ? Math.min(mods(S, p).landBuyGold || 0, Math.max(0, price - 1)) : 0; /* как скидка: Земля не дешевле 1🪙 */ if (lb) { p.gold += lb; log(S, `   ${nm(p)}: Лесничий возвращает ${lb}🪙 за новую Землю`, p.i, 'gold'); } } else if (freeT) p.discard.push(id); /* «Ярмарка» с карты двора: купленное — в сброс */ else if (mods(S, p).courtToHand) p.hand.push(id); else if (R.courtToTop) p.deck.push(id); else p.discard.push(id);
     if (src === 'estate') S.estateRow.splice(key, 1);
     if (src === 'court') S.courtRow.splice(key, 1);
@@ -1599,9 +1620,10 @@ const Engine = (() => {
     for (const o of opps(S, p)) { const t = mods(S, o).buyToll; if (t) { o.gold += t; log(S, `${modSources(S, o, 'buyToll').join(', ') || 'Пошлина'}: ${nm(o)} получили ${t}🪙 из банка за покупку ${nmG(p)}`, o.i, 'gold'); } }
     S.lastBought = id;
     refill(S);
-    log(S, `${nm(p)} купили ${isEstate ? (def.bad ? 'проклятие' : 'владение') : 'карту двора'} «${def.name}» за ${price}🪙${p.turn.lastFair ? ' — Ярмарка, действие не тратится' : ''}`, p.i, 'buy');
+    log(S, `${nm(p)} купили ${isEstate ? (def.bad ? 'проклятие' : 'владение') : def.sin ? 'грех' : 'карту двора'} «${def.name}» за ${price}🪙${p.turn.lastFair ? ' — Ярмарка, действие не тратится' : ''}`, p.i, 'buy');
     emit(S, 'buy', { p: p.i, id, estate: isEstate, price });
     if (isEstate && def.bad) await doPlantEstate(S, p, id);
+    else if (def.sin) await takeSin(S, p, id);
     emit(S, 'change');
     return { ok: true };
   }
@@ -1660,10 +1682,168 @@ const Engine = (() => {
     if (b.take) { await applyFx(S, p, b.take, {}); log(S, `${nm(p)}: награда «${b.name}» при найме`, p.i, 'gold'); }
     { const rg = mods(S, p).regGold || 0; if (rg) { p.gold += rg; log(S, `   ${nm(p)}: ${modSources(S, p, 'regGold').join(', ') || 'новое знамя'} — +${rg}🪙 за новое знамя`, p.i, 'gold'); } }
     for (const o of opps(S, p)) { const v = mods(S, o).oppRegGold || 0; if (v) { o.gold += v; log(S, `   ${nm(o)}: ${modSources(S, o, 'oppRegGold').join(', ') || 'соперник нанял знамя'} — +${v}🪙 за знамя ${nmG(p)}`, o.i, 'gold'); } }
+    envyHire(S, p);
     checkGoal(S, p);
     emit(S, 'change');
     emit(S, 'regalia', { p: p.i, id, tier: b.tier, cost: c.total });
     return { ok: true };
+  }
+  // грех Зависть: соперник нанял знамя — завистник отдаёт 1🪙 в банк
+  function envyHire(S, p) {
+    for (const o of opps(S, p)) if (sinned(o, 'envy') && o.gold > 0) { o.gold -= 1; log(S, `   ${nm(o)}: Зависть — −1🪙, ${nm(p)} наняли знамя`, o.i, 'sin'); }
+  }
+  // найм без цены и без действия (Гордыня, призыв семи грехов): из ряда, как обычный найм — с наградой знамени и свойствами «за новое знамя»
+  async function freeHire(S, p, id, why) {
+    const b = D.BAN[id];
+    tierList(p, b.tier).push(id);
+    { const row = rowOf(S, b.tier); const k = row.indexOf(id); if (k >= 0) row.splice(k, 1); (S.rowHired = S.rowHired || {})[b.tier] = true; refill(S); }
+    const what = b.tier === 'v' ? 'вассала' : b.tier === 'l' ? 'лорда' : 'великого лорда';
+    log(S, `🚩 ${nm(p)}: ${why} — ${what} «${D.regName(b)}» бесплатно и без действия. Знамён: ${regCount(p)} из ${goal(S)}`, p.i, 'regalia');
+    if (b.take) { await applyFx(S, p, b.take, {}); log(S, `${nm(p)}: награда «${b.name}» при найме`, p.i, 'gold'); }
+    { const rg = mods(S, p).regGold || 0; if (rg) { p.gold += rg; log(S, `   ${nm(p)}: ${modSources(S, p, 'regGold').join(', ') || 'новое знамя'} — +${rg}🪙 за новое знамя`, p.i, 'gold'); } }
+    for (const o of opps(S, p)) { const v = mods(S, o).oppRegGold || 0; if (v) { o.gold += v; log(S, `   ${nm(o)}: ${modSources(S, o, 'oppRegGold').join(', ') || 'соперник нанял знамя'} — +${v}🪙 за знамя ${nmG(p)}`, o.i, 'gold'); } }
+    envyHire(S, p);
+    checkGoal(S, p);
+    emit(S, 'regalia', { p: p.i, id, tier: b.tier, cost: 0 });
+    emit(S, 'change');
+  }
+
+  // ---------- грехи и покаяние (v10.15, модуль «Вера») ----------
+  // купили грех — он ложится перед игроком, «Сейчас» срабатывает тут же; новый грех срывает покаяние; все семь — призыв
+  async function takeSin(S, p, id) {
+    const c = D.COURT[id];
+    (p.sins = p.sins || []).push(id);
+    log(S, `😈 ${nm(p)} взяли грех «${c.name}»: ${c.pen}`, p.i, 'sin');
+    emit(S, 'sin', { p: p.i, id });
+    if (p.penance) { p.penance = null; p.penanceFail = S.turnNo; log(S, `🕯 Покаяние ${nmG(p)} сорвано: новый грех`, p.i, 'fail'); emit(S, 'penance', { p: p.i, fail: true }); }
+    await sinNow(S, p, c.sin);
+    if (S.winner === null && sinCount(p) >= 7 && !p.summoned) await summon(S, p);
+    emit(S, 'change');
+  }
+  async function sinNow(S, p, key) {
+    if (key === 'pride') { // Гордыня: любой вассал или лорд из ряда — бесплатно и без действия
+      const opts = [...(rowOf(S, 'v') || []), ...(rowOf(S, 'l') || [])].filter(id => !hireBlock(S, p, id));
+      if (!opts.length) { log(S, `   Гордыня: нанять некого`, p.i, 'quiet'); return; }
+      const ch = await ask(S, p, { type: 'sinHire', options: opts });
+      await freeHire(S, p, opts.includes(ch) ? ch : opts[0], 'Гордыня');
+    } else if (key === 'greed') { // Алчность: удвоить золото
+      const g = p.gold; p.gold += g;
+      log(S, `   Алчность: золото удвоено — +${g}🪙`, p.i, 'gold');
+    } else if (key === 'wrath') { // Гнев: владение соперника до 6🪙 — без нападения, отбить нельзя, оно в руинах
+      const max = R.wrathLoot || 6, os = opps(S, p).filter(o => capturable(S, o, p, max).length);
+      if (!os.length) { log(S, `   Гнев: забрать нечего`, p.i, 'quiet'); return; }
+      let t = os[0];
+      if (os.length > 1) { const ti = await ask(S, p, { type: 'target', kind: 'wrath', options: os.map(o => ({ i: o.i, loot: capturable(S, o, p, max).length })) }); t = os.find(o => o.i === ti) || os[0]; }
+      const el = capturable(S, t, p, max);
+      const uid = await ask(S, p, { type: 'capture', from: t.i, options: el.map(e => e.uid), wrath: true });
+      const e0 = el.find(e => e.uid === uid) || el[0];
+      const e = moveEstate(S, t, p, e0.uid);
+      if (e) { e.ruined = true; p.stats.captured++; t.stats.lost++; log(S, `   Гнев: «${ES(e).name}» ${nmG(t)} — теперь у ${nmG(p)}, в руинах`, p.i, 'steal'); emit(S, 'capture', { a: p.i, t: t.i, id: e.id, wrath: true }); }
+    } else if (key === 'envy') { // Зависть: любое знамя лидера — ваше, даже великий лорд (из тех рядов, где вам ещё нужно)
+      const top = Math.max(...opps(S, p).map(regCount));
+      const opts = []; for (const o of opps(S, p)) if (regCount(o) === top) for (const t of TIERS) if (tierList(p, t).length < needOf(S, t)) for (const id of tierList(o, t)) opts.push({ i: o.i, id });
+      if (!opts.length) { log(S, `   Зависть: забрать нечего — у лидера нет знамён, которые вам нужны`, p.i, 'quiet'); return; }
+      const ch = await ask(S, p, { type: 'sinBanner', options: opts });
+      const o = (ch != null && opts[ch]) || opts[0], t = S.players[o.i], b = D.BAN[o.id];
+      const from = tierList(t, b.tier); from.splice(from.indexOf(o.id), 1); tierList(p, b.tier).push(o.id);
+      if (t.distracted && t.distracted.id === o.id) t.distracted = null;
+      log(S, `   Зависть: ${b.tier === 'v' ? 'вассал' : b.tier === 'l' ? 'лорд' : 'великий лорд'} «${D.regName(b)}» ушёл от ${nmG(t)} к ${nmD(p)}`, p.i, 'steal');
+      emit(S, 'poach', { a: p.i, t: t.i, id: o.id, envy: true });
+      checkGoal(S, p);
+    } else if (key === 'gluttony') { // Чревоугодие: 5 карт
+      const got = drawCards(S, p, 5);
+      log(S, `   Чревоугодие: взяли ${D.cards(got)}`, p.i, 'draw');
+    } else if (key === 'sloth') { // Лень: после этого хода (и хода за дубль, если он будет) — ещё один полный ход
+      p.slothNext = (p.slothNext || 0) + 1;
+      log(S, `   Лень: после этого хода — ещё один`, p.i, 'extra');
+    } else if (key === 'lust') { // Похоть: придворный соперника — к вашему двору
+      const opts = on(S, 'seats') ? unseatOptions(S, p) : [];
+      if (!opts.length) { log(S, `   Похоть: переманить некого`, p.i, 'quiet'); return; }
+      const ch = await ask(S, p, { type: 'sinCourtier', options: opts });
+      const o = (ch != null && opts[ch]) || opts[0], t = S.players[o.i];
+      if (t.seats[o.k] !== o.id) return;
+      t.seats.splice(o.k, 1); p.seats.push(o.id);
+      log(S, `   Похоть: придворный «${D.COURT[o.id].name}» ушёл от ${nmG(t)} к двору ${nmG(p)}`, p.i, 'steal');
+      emit(S, 'unseat', { a: p.i, t: t.i, id: o.id, lust: true });
+      await trimSeats(S, t); await trimSeats(S, p);
+    }
+  }
+  // все семь грехов (один раз за партию): до 7 знамён из рядов — бесплатно и без действия; цель выполнена — победа в конце круга, как обычно
+  async function summon(S, p) {
+    p.summoned = true;
+    const n = R.sinSummon || 7;
+    log(S, `😈 ${nm(p)} собрали все семь грехов — призыв: до ${D.banners(n)} бесплатно и без действия`, p.i, 'sin');
+    emit(S, 'summon', { p: p.i });
+    for (let k = 0; k < n && S.winner === null; k++) {
+      const opts = [];
+      for (const t of TIERS) for (const id of rowOf(S, t) || []) { const why = hireBlock(S, p, id); if (!why || /^(Заговор|Куртизанка)/.test(why)) opts.push(id); } // призыв — не наём: запреты на наём его не держат
+      if (!opts.length) { log(S, `   Призыв: больше нанять некого`, p.i, 'quiet'); break; }
+      const ch = await ask(S, p, { type: 'summon', options: opts, left: n - k });
+      if (ch == null) break;
+      await freeHire(S, p, opts.includes(ch) ? ch : opts[0], 'призыв семи грехов');
+    }
+  }
+  // покаяние: начать — в свой ход до броска (шаг 1 — сразу); шаги 2–4 — в начале трёх следующих своих ходов; сорвалось — заново со следующего хода
+  function penanceBlock(S, p) {
+    if (S.winner !== null || S.players[S.cur] !== p) return 'Сейчас не ваш ход';
+    if (!on(S, 'faith') || !faithsOf(S, p).length) return 'Каяться может только тот, кто принял веру';
+    if (!faithActive(S, p)) return 'Проклятая реликвия: пока она у вас, каяться нельзя';
+    if (!(p.sins || []).length) return 'Грехов нет — каяться не в чем';
+    if (p.penance) return `Покаяние уже идёт: сделан шаг ${p.penance.step} из 4`;
+    if (p.turn.rolled) return 'Начать покаяние можно только до броска';
+    if (p.penanceFail === S.turnNo) return 'Покаяние сорвалось в этот ход — начать заново можно со следующего';
+    return null;
+  }
+  async function startPenance(S, p) {
+    const why = penanceBlock(S, p);
+    if (why) return { ok: false, why };
+    p.penance = { step: 0 };
+    log(S, `🕯 ${nm(p)} начали покаяние: 4 хода подряд, по шагу`, p.i, 'faith');
+    await penanceStep(S, p);
+    emit(S, 'change');
+    return { ok: true };
+  }
+  async function penanceStep(S, p) {
+    const k = p.penance.step + 1;
+    const fail = (why) => { p.penance = null; p.penanceFail = S.turnNo; log(S, `🕯 Покаяние ${nmG(p)} сорвано на шаге ${k}: ${why}. Начать заново можно со следующего хода`, p.i, 'fail'); emit(S, 'penance', { p: p.i, fail: true, step: k }); };
+    if (k === 1) { // 5🪙 самому бедному сопернику
+      const need = R.penanceGold || 5;
+      if (p.gold < need) return fail(`нет ${need}🪙`);
+      const min = Math.min(...opps(S, p).map(o => o.gold)), poor = opps(S, p).filter(o => o.gold === min);
+      let t = poor[0];
+      if (poor.length > 1) { const ti = await ask(S, p, { type: 'target', kind: 'penancePoor', options: poor.map(o => ({ i: o.i, gold: o.gold })) }); t = poor.find(o => o.i === ti) || poor[0]; }
+      p.gold -= need; t.gold += need;
+      log(S, `🕯 Покаяние, шаг 1 из 4: ${nm(p)} отдали ${need}🪙 ${nmD(t)} — самому бедному`, p.i, 'faith');
+    } else if (k === 2) { // 2 карты из руки — из игры
+      const need = R.penanceTrash || 2;
+      if (p.hand.length < need) return fail(`в руке меньше ${D.cards(need)}`);
+      let idx = await ask(S, p, { type: 'trash', max: need, need, each: 0, label: 'Покаяние, шаг 2' });
+      idx = [...new Set((Array.isArray(idx) ? idx : []).filter(i => i >= 0 && i < p.hand.length))].slice(0, need);
+      for (let i = 0; idx.length < need && i < p.hand.length; i++) if (!idx.includes(i)) idx.push(i);
+      const gone = idx.sort((a, b) => b - a).map(i => p.hand.splice(i, 1)[0]);
+      p.trashed.push(...gone);
+      log(S, `🕯 Покаяние, шаг 2 из 4: ${nm(p)} убрали из игры ${gone.map(x => `«${D.COURT[x].name}»`).join(', ')}`, p.i, 'faith');
+    } else if (k === 3) { // в этот ход на одно действие меньше
+      p.turn.buys -= 1;
+      log(S, `🕯 Покаяние, шаг 3 из 4: в этот ход у ${nmG(p)} на одно действие меньше`, p.i, 'faith');
+    } else { // своё владение — из игры; потом снять грех
+      const el = p.estates.filter(e => !ES(e).bad);
+      if (!el.length) return fail('нет своего владения');
+      const uid = await ask(S, p, { type: 'penanceEstate', options: el.map(e => e.uid) });
+      const e = el.find(x => x.uid === uid) || el[0];
+      p.estates.splice(p.estates.indexOf(e), 1); S.destroyed.push(e.id); p.stats.lost++;
+      log(S, `🕯 Покаяние, шаг 4 из 4: «${ES(e).name}» ${nmG(p)} уходит из игры`, p.i, 'faith');
+      const sins = (p.sins || []).slice();
+      const ch = await ask(S, p, { type: 'penanceSin', options: sins });
+      const id = sins.includes(ch) ? ch : sins[0];
+      p.sins.splice(p.sins.indexOf(id), 1); backToDeck(S, 'court', id);
+      p.penance = null;
+      log(S, `🕯 Покаяние окончено: грех «${D.COURT[id].name}» снят и замешан в колоду двора`, p.i, 'faith');
+      emit(S, 'penance', { p: p.i, done: true, id });
+      return;
+    }
+    p.penance.step = k;
+    emit(S, 'penance', { p: p.i, step: k });
   }
   function checkGoal(S, p) {
     if (!meetsGoal(S, p)) return;
@@ -1697,6 +1877,9 @@ const Engine = (() => {
     if (extra) {
       S.extraTaken = true;
       log(S, `${nm(p)} выбросили дубль — ещё один ход`, p.i, 'extra');
+    } else if ((p.slothNext || 0) > 0) { // грех Лень: полный ход сразу; дубль в нём снова даёт ещё ход
+      p.slothNext--; S.extraTaken = false;
+      log(S, `${nm(p)}: Лень — ещё один ход`, p.i, 'extra');
     } else {
       S.extraTaken = false;
       S.cur = (S.cur + 1) % S.players.length;
@@ -1894,6 +2077,35 @@ const Engine = (() => {
       }
       return 0;
     },
+    // грех (v10.15): штраф «До конца игры» за один круг, в золоте
+    sinPen(S, p, key) {
+      switch (key) {
+        case 'pride': return regCount(p) + 0.6;
+        case 'greed': return Math.max(1, Math.floor(p.gold / 5));
+        case 'wrath': return on(S, 'sieges') || on(S, 'spy') ? 1.2 : 0.3;
+        case 'envy': return 0.6 * opps(S, p).length + (S.catchup && S.catchup[p.i] ? 2 : 0.3);
+        case 'gluttony': return this.avgPower(S, p) * 0.8;
+        case 'sloth': return Math.max(0, this.rollEV(S, p, 2) - this.rollEV(S, p, 1)) + 0.2;
+        case 'lust': return on(S, 'seats') && (p.seats || []).length ? Math.max(...p.seats.map(id => this.seatWorth(S, p, id))) / 6 : 0.2;
+      }
+      return 0;
+    },
+    // ценность греха: «Сейчас» минус штраф за остаток партии (с верой — не дороже покаяния); чем ближе к семи, тем ближе призыв
+    sinValue(S, p, id) {
+      const key = D.COURT[id].sin, T = this.horizon(S);
+      let now = 0;
+      if (key === 'pride') { const opts = [...(rowOf(S, 'v') || []), ...(rowOf(S, 'l') || [])].filter(x => !hireBlock(S, p, x)); now = opts.length ? Math.max(...opts.map(x => banCost(S, p, x).total + this.banWorth(S, p, x))) + 3 : 0; }
+      else if (key === 'greed') now = p.gold;
+      else if (key === 'wrath') { for (const o of opps(S, p)) now = Math.max(now, this.lootSwing(S, p, o, R.wrathLoot || 6, false).v); }
+      else if (key === 'envy') { const top = Math.max(...opps(S, p).map(regCount)); for (const o of opps(S, p)) if (regCount(o) === top) for (const t of TIERS) if (tierList(p, t).length < needOf(S, t)) for (const v of tierList(o, t)) now = Math.max(now, D.BAN[v].cost * (1 + this.zs(S) / 2) + this.banWorth(S, p, v)); }
+      else if (key === 'gluttony') now = Math.min(5, p.deck.length + p.discard.length) * this.avgPower(S, p) * 0.8;
+      else if (key === 'sloth') now = this.incomeEst(S, p) + 8;
+      else if (key === 'lust') { if (on(S, 'seats')) for (const o of unseatOptions(S, p)) now = Math.max(now, this.seatWorth(S, p, o.id) * (1 + this.zs(S) / 2)); }
+      let pen = this.sinPen(S, p, key) * T;
+      if (on(S, 'faith') && faithsOf(S, p).length) pen = Math.min(pen, 16); // с верой штраф снимается покаянием
+      const have = sinCount(p); if (!p.summoned && have >= 4) now += (have - 3) * 8; // ближе к семи грехам — ближе призыв
+      return now - pen - 3; // запас: парные партии — без запаса грешный бот выигрывал 46 из 100, с запасом 3 — 49 из 100
+    },
     // вред от проклятия у нас за остаток партии — стоит ли тратить действие и 2🪙, чтобы его снять
     badHarm(S, p, e) { return this.curseRound(S, p, ES(e).bad) * this.horizon(S); },
     purgePick(S, p) {
@@ -1922,7 +2134,7 @@ const Engine = (() => {
       return [b, d0];
     },
     diceCount(S, p) {
-      if (cursed(p, 'evileye') || faithBan(S, p, 'oneDie')) return 1;
+      if (cursed(p, 'evileye') || sinned(p, 'sloth') || faithBan(S, p, 'oneDie')) return 1;
       if (p.skill === 'novice' && rnd(S) < 0.35) return rnd(S) < 0.5 ? 1 : 2;
       return this.rollEV(S, p, 1) > this.rollEV(S, p, 2) + 0.05 ? 1 : 2;
     },
@@ -2413,7 +2625,8 @@ const Engine = (() => {
         const price = marketPrice(S, p, def.cost, !o.estate);
         if (price > p.gold || def.cost > maxPrice) continue;
         if (maxPrice < Infinity && o.estate && mods(S, p).fairCourt) continue;
-        let v = o.estate ? (def.bad ? this.plantEstateValue(S, p, o.id) : this.estateValue(S, p, o.id)) : this.courtValue(S, p, o.id);
+        if (!o.estate && def.sin && p.penance) continue; // новый грех сорвёт покаяние
+        let v = o.estate ? (def.bad ? this.plantEstateValue(S, p, o.id) : this.estateValue(S, p, o.id)) : def.sin ? this.sinValue(S, p, o.id) : this.courtValue(S, p, o.id);
         if (!o.estate && R.courtPair && !p.turn.courtPaid) {
           let b2 = 0;
           S.courtRow.forEach((id2, k2) => { if (k2 === o.key) return; const p2 = marketPrice(S, p, D.COURT[id2].cost, true); if (p2 + price > p.gold) return; b2 = Math.max(b2, this.courtValue(S, p, id2) - p2); });
@@ -2554,6 +2767,12 @@ const Engine = (() => {
     },
     async takeTurn(S, p) {
       await pause(S, 'start');
+      // покаяние: штраф самого тяжёлого греха за остаток партии больше цены покаяния (5🪙, 2 карты, действие, владение)
+      if (!penanceBlock(S, p) && p.gold >= (R.penanceGold || 5) + 2 && p.hand.length >= 2 && p.estates.some(e => !ES(e).bad)) {
+        const T = this.horizon(S), worst = Math.max(...p.sins.map(id => this.sinPen(S, p, D.COURT[id].sin))) * T;
+        const est = Math.min(...p.estates.filter(e => !ES(e).bad).map(e => this.estateValue(S, p, e.id)));
+        if (T >= 5 && worst > ((R.penanceGold || 5) + 2 * this.avgPower(S, p) + 3 + est) * 1.15) { await startPenance(S, p); await pause(S, 'play'); if (S.winner !== null) return; }
+      }
       { const k = this.pickRetire(S, p); if (k >= 0) { await retire(S, p, k); await pause(S, 'play'); } }
       await this.faithPhase(S, p);
       await this.seatPhase(S, p);
@@ -2678,7 +2897,7 @@ const Engine = (() => {
           let bk = null, bs = 0;
           S.courtRow.forEach((id, k) => {
             const price = marketPrice(S, p, D.COURT[id].cost, true);
-            if (price > p.gold || !this.okToSpend(S, p, price)) return;
+            if (D.COURT[id].sin || price > p.gold || !this.okToSpend(S, p, price)) return; // грех бесплатной покупкой не взять
             const sc = this.courtValue(S, p, id) - price + 1.5;
             if (sc > bs) { bs = sc; bk = k; }
           });
@@ -2705,7 +2924,8 @@ const Engine = (() => {
         if (o.estate && !canOwnEstate(p, o.id)) continue;
         const price = marketPrice(S, p, def.cost, !o.estate);
         if (price > p.gold) continue;
-        const v = o.estate ? (def.bad ? this.plantEstateValue(S, p, o.id) : this.estateValue(S, p, o.id)) : this.courtValue(S, p, o.id);
+        if (!o.estate && def.sin && p.penance) continue;
+        const v = o.estate ? (def.bad ? this.plantEstateValue(S, p, o.id) : this.estateValue(S, p, o.id)) : def.sin ? this.sinValue(S, p, o.id) : this.courtValue(S, p, o.id);
         buys.push({ type: 'buy', src: o.src, key: o.key, id: o.id, h: v - price });
       }
       buys.sort((a, b) => b.h - a.h);
@@ -2859,6 +3079,10 @@ const Engine = (() => {
               v = o.p * this.razeSwing(S, p, t, q.maxCost, q.flag);
             } else if (q.kind === 'plantEstate') {
               v = o.p * (0.5 + this.curseRound(S, t, ES(q.estate).bad));
+            } else if (q.kind === 'wrath') {
+              v = this.lootSwing(S, p, t, R.wrathLoot || 6, false).v;
+            } else if (q.kind === 'penancePoor') {
+              v = -t.gold;
             } else {
               const pk = o.p != null ? o.p : (o.ok ? 1 : 0);
               if (pk < 0.12) { v = -10 + rnd(S); }
@@ -2891,6 +3115,11 @@ const Engine = (() => {
         case 'poach': { let b = q.options[0], bv = -Infinity; for (const id of q.options) { const v = this.banWorth(S, p, id) - D.BAN[id].cost * 0.5; if (v > bv) { bv = v; b = id; } } return b; }
         case 'distract': { const t = S.players[q.from]; let b = q.options[0], bv = -Infinity; for (const id of q.options) { const v = this.modValue(S, t, D.BAN[id].mods || {}, {}); if (v > bv) { bv = v; b = id; } } return b; }
         case 'raze': { const t = S.players[q.from]; let b = q.options[0], bv = -Infinity; for (const uid of q.options) { const e = t.estates.find(x => x.uid === uid); if (!e) continue; const v = this.estateValue(S, t, e.id); if (v > bv) { bv = v; b = uid; } } return b; }
+        case 'sinHire': case 'summon': { let b = q.options[0], bv = -Infinity; for (const id of q.options) { const v = banCost(S, p, id).total + this.banWorth(S, p, id); if (v > bv) { bv = v; b = id; } } return b; }
+        case 'sinBanner': { let bk = 0, bv = -Infinity; q.options.forEach((o, k) => { const v = D.BAN[o.id].cost + this.banWorth(S, p, o.id); if (v > bv) { bv = v; bk = k; } }); return bk; }
+        case 'sinCourtier': { let bk = 0, bv = -Infinity; q.options.forEach((o, k) => { const v = this.seatWorth(S, p, o.id) * this.leaderBias(S, p, S.players[o.i]); if (v > bv) { bv = v; bk = k; } }); return bk; }
+        case 'penanceEstate': { let b = q.options[0], bv = Infinity; for (const uid of q.options) { const e = p.estates.find(x => x.uid === uid); if (!e) continue; const v = this.estateValue(S, p, e.id); if (v < bv) { bv = v; b = uid; } } return b; }
+        case 'penanceSin': { let b = q.options[0], bv = -Infinity; for (const id of q.options) { const v = this.sinPen(S, p, D.COURT[id].sin); if (v > bv) { bv = v; b = id; } } return b; }
         case 'capture': {
           const t = S.players[q.from];
           let best = q.options[0], bv = -1;
@@ -2978,7 +3207,7 @@ const Engine = (() => {
     SKILL, SKILL_NAMES, SCORE_W, mods, prod, sym, walls, unionsOf, unionNeed, unionCount, regCount, banCost, hireBlock, faithBan, faithsOf, tierList, rowOf, allBans, upkeepOf, marketPrice, buysLeft, basicLeft,
     _t: { applyFx: (...a) => applyFx(...a), resolveRoll: (...a) => resolveRoll(...a), payUpkeep: (...a) => payUpkeep(...a), doSpy: (...a) => doSpy(...a), refreshRows, startOfTurn: (...a) => startOfTurn(...a) }, // для тестов
     cuFrom, modParts, incomeParts, dawnParts, guardOf, spyWalls, oathFree, discardOf, playedOf, takeFromDiscard, backToDeck, purgeBad, purgeBlock, prodSources, dawnGold, modSources, fetchLeft,
-    nmG, shortG, canOwnEstate, plotSlots, seatMax, fairLimit, fairOf, isCursed, cursed, rite, riteBlock, faithStage, faithCandles, oathBuy, oathPlay, canSeat, seatFromDiscard, unseatOptions, handSize, siegeOdds, razeOdds, spyInfo, capturable, destroyable, targetsOf, sameFaith, truce, buyAction, canBuyAction, extraOn, behindLeader, hireFree, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
+    nmG, shortG, canOwnEstate, plotSlots, seatMax, fairLimit, fairOf, isCursed, cursed, sinned, sinCount, takeSin, startPenance, penanceBlock, rite, riteBlock, faithStage, faithCandles, oathBuy, oathPlay, canSeat, seatFromDiscard, unseatOptions, handSize, siegeOdds, razeOdds, spyInfo, capturable, destroyable, targetsOf, sameFaith, truce, buyAction, canBuyAction, extraOn, behindLeader, hireFree, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
   };
 })();
 if (typeof module !== 'undefined') module.exports = Engine;

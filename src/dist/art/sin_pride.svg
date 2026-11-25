@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 164"><defs>
+<radialGradient id="bg" cx="50%" cy="48%" r="72%"><stop offset="0" stop-color="#7a2c37"/><stop offset="1" stop-color="#2a0d12"/></radialGradient>
+<radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".7" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<pattern id="dia" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 7H14M7 0V14" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/></pattern>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000" flood-opacity=".42"/></filter></defs>
+<rect width="220" height="164" fill="url(#bg)"/><rect width="220" height="164" fill="url(#dia)"/>
+<circle cx="110" cy="86" r="64" fill="url(#gl)"/><circle cx="110" cy="86" r="58" fill="none" stroke="#fbf3df" stroke-opacity=".22" stroke-width="1.6"/>
+<g filter="url(#sh)">
+<ellipse cx="110" cy="74" rx="32" ry="40" fill="#fbf3df"/>
+<ellipse cx="110" cy="74" rx="24" ry="32" fill="#3d141b"/>
+<path fill="#fbf3df" d="M96 86 L94 66 L102 74 L110 58 L118 74 L126 66 L124 86 Z"/>
+<rect x="95" y="88" width="30" height="6" rx="2" fill="#fbf3df"/>
+<g fill="#fbf3df"><circle cx="94" cy="65" r="2.4"/><circle cx="110" cy="57" r="2.6"/><circle cx="126" cy="65" r="2.4"/></g>
+<path fill="#fbf3df" d="M103 112 H117 L115 140 C115 146 105 146 105 140 Z"/>
+<rect x="98" y="110" width="24" height="6" rx="3" fill="#fbf3df"/>
+<g fill="#fbf3df"><path d="M154 40 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 Z"/><path d="M64 52 l1.8 4.5 4.5 1.8 -4.5 1.8 -1.8 4.5 -1.8 -4.5 -4.5 -1.8 4.5 -1.8 Z"/></g>
+</g>
+</svg>

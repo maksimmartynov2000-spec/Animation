@@ -55,6 +55,8 @@ const DATA = (() => {
     shiftCost: 2,         // Гадатель при дворе: сдвиг суммы броска на 1 стоит 2🪙
     purgeCost: 2,         // снять проклятие: действие + 2🪙, проклятие замешивается в колоду владений
     plantSpy: 3,          // подбросить проклятие: шпионаж +3🔗 (удача — у соперника, провал — в колоду владений)
+    penanceGold: 5, penanceTrash: 2, // покаяние: шаг 1 — 5🪙 самому бедному сопернику, шаг 2 — 2 карты из руки из игры
+    wrathBonus: 3, wrathLoot: 6, sinSummon: 7, // Гнев: нападения на грешника +3, сразу — владение до 6🪙; все 7 грехов — призыв до 7 знамён
     spyBuyoff: 3,         // откуп от шпионажа до броска: 3🪙 за каждую 🔗 разницы сил (не меньше 3🪙)
     finishRound: true,    // кто-то собрал цель — круг доигрывается; побеждает тот, у кого цель выполнена в конце круга
   };
@@ -187,6 +189,19 @@ const DATA = (() => {
     denounce: { name: 'Донос', role: null, cost: 2, scheme: true, fx: [['spy', 3, 'denounce', 2]] },
     slander: { name: 'Клевета', role: null, cost: 1, scheme: true, fx: [['spy', 3, 'slander', 1]] },
     poisonfeast: { name: 'Отравленный пир', role: null, cost: 2, scheme: true, fx: [['spy', 3, 'feast', 2]] },
+
+    // ---------- грехи (v10.15, модуль «Вера»): 7 карт двора, по одной. На рынке 0🪙, купить — только действием.
+    // Купили — грех ложится перед игроком (p.sins): «Сейчас» (now) срабатывает тут же, «До конца игры» (pen) действует, пока грех лежит.
+    // Снять — только покаянием. Все семь у одного игрока — призыв: до 7 знамён из рядов бесплатно и без действия, один раз за партию
+    sin_pride: { name: 'Гордыня', role: null, cost: 0, sin: 'pride', copies: 1, fx: [], now: 'наймите любого вассала или лорда из ряда — бесплатно и без траты действия', pen: 'в начале хода платите 1🪙 за каждое своё знамя' },
+    sin_greed: { name: 'Алчность', role: null, cost: 0, sin: 'greed', copies: 1, fx: [], now: 'удвойте своё золото', pen: 'в начале хода отдавайте в банк 1🪙 за каждые 5🪙 в казне' },
+    sin_wrath: { name: 'Гнев', role: null, cost: 0, sin: 'wrath', copies: 1, fx: [], now: 'заберите владение соперника до 6🪙 — без нападения, отбить нельзя; оно в руинах', pen: 'нападения и шпионаж против вас +3; перемирие на вас не действует' },
+    sin_envy: { name: 'Зависть', role: null, cost: 0, sin: 'envy', copies: 1, fx: [], now: 'заберите у лидера одно знамя — любое, даже великого лорда — оно ваше', pen: 'соперник нанял знамя — вы отдаёте 1🪙 в банк; догоняющего найма у вас нет' },
+    sin_gluttony: { name: 'Чревоугодие', role: null, cost: 0, sin: 'gluttony', copies: 1, fx: [], now: 'возьмите 5 карт', pen: 'в руке на 1 карту меньше' },
+    sin_sloth: { name: 'Лень', role: null, cost: 0, sin: 'sloth', copies: 1, fx: [], now: 'после этого хода сделайте ещё один — полный: начало хода, карты, бросок, действия. Дубль в нём даёт ещё ход', pen: 'бросайте только один кубик' },
+    sin_lust: { name: 'Похоть', role: null, cost: 0, sin: 'lust', copies: 1, fx: [], now: 'переманите придворного соперника к своему двору', pen: 'в начале хода бросьте кубик: на 1–2 ваш придворный на выбор уходит в сброс' },
+    // Покаяние — карта правил веры (rule: на рынок не идёт). Начать — в свой ход до броска; 4 хода подряд, по шагу
+    penance: { name: 'Покаяние', role: null, cost: 0, rule: true, fx: [], steps: ['Отдайте 5🪙 самому бедному сопернику.', 'Уберите из игры 2 карты из руки.', 'В этот ход у вас на одно действие меньше.', 'Уберите из игры одно своё владение.'], result: 'Один ваш грех на выбор снят — он уходит в колоду двора.' },
 
     // ---------- Жрецы (направление «Вера»): Реликварий на рынке; карты вер — ниже ----------
     reliquary: { name: 'Реликварий', role: 'priest', cost: 4, fx: [['goldPerSym', 'faith', 1, 99]], plot: 'timed', pfx: [['goldPerSym', 'faith', 2, 99]] },
@@ -580,7 +595,7 @@ const DATA = (() => {
   };
   for (const id in BAN) if (BAN[id].needs) NEEDS.ban[id] = BAN[id].needs;
   for (const id in COURT) if (COURT[id].faith) NEEDS.court[id] = 'faith';
-  Object.assign(NEEDS.court, { arson: 'spy', denounce: 'spy', slander: 'spy', poisonfeast: 'spy', courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats',
+  Object.assign(NEEDS.court, { sin_pride: 'faith', sin_greed: 'faith', sin_wrath: 'faith&sieges', sin_envy: 'faith', sin_gluttony: 'faith', sin_sloth: 'faith', sin_lust: 'faith&seats', penance: 'faith', arson: 'spy', denounce: 'spy', slander: 'spy', poisonfeast: 'spy', courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats',
     chamberlain: 'seats', revels: 'seats', augur: 'seats', gatekeeper: 'seats', huntsman: 'seats', cupbearer: 'seats', confessor: 'seats', gossip: 'seats' });
   // убранные карты — убрать и из списка зависимостей
   { const SRC = { court: COURT, estate: ESTATES, ban: BAN, house: HOUSES }; for (const k in SRC) for (const id in NEEDS[k] || {}) if (!SRC[k][id]) delete NEEDS[k][id]; }

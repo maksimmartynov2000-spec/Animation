@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 164"><defs>
+<radialGradient id="bg" cx="50%" cy="48%" r="72%"><stop offset="0" stop-color="#7a2c37"/><stop offset="1" stop-color="#2a0d12"/></radialGradient>
+<radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".7" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<pattern id="dia" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 7H14M7 0V14" stroke="#fff" stroke-opacity=".07" stroke-width="1.2"/></pattern>
+<filter id="sh" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2.4" stdDeviation="1.8" flood-color="#000" flood-opacity=".42"/></filter></defs>
+<rect width="220" height="164" fill="url(#bg)"/><rect width="220" height="164" fill="url(#dia)"/>
+<circle cx="110" cy="86" r="64" fill="url(#gl)"/><circle cx="110" cy="86" r="58" fill="none" stroke="#fbf3df" stroke-opacity=".22" stroke-width="1.6"/>
+<g filter="url(#sh)">
+<path fill="#fbf3df" d="M56 122 C56 108 62 100 70 100 C78 100 82 108 88 112 L150 112 C160 112 164 122 156 126 L62 126 C58 126 56 124 56 122 Z"/>
+<path stroke="#fbf3df" stroke-width="3.4" stroke-linecap="round" d="M64 102 L58 80 M72 101 L74 79"/>
+<circle cx="58" cy="78" r="4" fill="#fbf3df"/><circle cx="74" cy="77" r="4" fill="#fbf3df"/>
+<circle cx="122" cy="82" r="32" fill="#fbf3df"/>
+<path fill="none" stroke="#3d141b" stroke-width="4" stroke-linecap="round" d="M125.0 82.0 L125.3 82.5 L125.5 83.0 L125.7 83.6 L125.7 84.3 L125.6 85.0 L125.4 85.7 L125.0 86.5 L124.5 87.1 L123.9 87.8 L123.1 88.3 L122.2 88.7 L121.3 89.0 L120.2 89.2 L119.1 89.2 L118.0 89.0 L116.8 88.6 L115.7 88.1 L114.6 87.3 L113.7 86.4 L112.8 85.3 L112.1 84.1 L111.6 82.7 L111.2 81.2 L111.1 79.7 L111.2 78.1 L111.6 76.5 L112.2 74.9 L113.0 73.3 L114.1 71.9 L115.4 70.6 L116.9 69.5 L118.7 68.6 L120.5 67.9 L122.5 67.5 L124.6 67.4 L126.7 67.6 L128.8 68.0 L130.9 68.9 L132.8 70.0 L134.7 71.4 L136.3 73.1 L137.7 75.0 L138.9 77.2 L139.7 79.5 L140.2 82.0 L140.4 84.6 L140.2 87.2 L139.6 89.8 L138.6 92.4 L137.3 94.8 L135.6 97.1 L133.5 99.1 L131.2 100.8 L128.6 102.2 L125.8 103.3 L122.8 103.9 L119.7 104.2 L116.5 104.0 L113.4 103.3 L110.3 102.2 L107.4 100.6 L104.7 98.7 L102.3 96.3 L100.2 93.6"/>
+<g fill="#fbf3df" opacity=".9"><text x="150" y="58" font-family="Georgia, serif" font-size="16" font-weight="700">z</text><text x="160" y="44" font-family="Georgia, serif" font-size="12" font-weight="700">z</text></g>
+</g>
+</svg>

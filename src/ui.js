@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.14'; // беды: 8 постоянных проклятий (подбрасывают шпионажем, снять — действие и 2🪙) и 4 козни вместо бед двора
+  const VERSION = '10.15'; // вера: 7 грехов (Сейчас / До конца игры), покаяние в 4 хода, призыв семи грехов
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -305,8 +305,19 @@
         if (sound) Sfx.card();
         if (seeOthers(d.p)) cardPop({ p: d.p, kind: 'court', id: d.id, title: `Ко двору${d.discard ? ' из сброса' : ''}: «${esc(D.COURT[d.id].name)}»`, sub: `${esc(D.COURT[d.id].stext)}${d.out ? ` «${esc(D.COURT[d.out].name)}» уходит в их сброс.` : ''}` });
         break;
+      case 'sin': {
+        const c = D.COURT[d.id];
+        toast(`😈 ${d.p === ME ? 'Вы взяли' : `${esc(H(S.players[d.p]).short)} взяли`} грех «${esc(c.name)}». До конца игры: ${esc(c.pen)}`, 4200);
+        break;
+      }
+      case 'penance':
+        if (d.p === ME) toast(d.done ? `🕯 Покаяние окончено: грех «${esc(D.COURT[d.id].name)}» снят` : d.fail ? `🕯 Покаяние сорвано${d.step ? ` на шаге ${d.step}` : ''} — начать заново можно со следующего хода` : `🕯 Покаяние: шаг ${d.step} из 4`, 3800);
+        else if (d.done) toast(`🕯 ${esc(H(S.players[d.p]).short)} сняли грех «${esc(D.COURT[d.id].name)}»`, 3200);
+        break;
+      case 'summon': toast(`😈 ${d.p === ME ? 'Вы собрали' : `${esc(H(S.players[d.p]).short)} собрали`} все семь грехов — призыв знамён!`, 4500); break;
       case 'unseat': {
         const nm1 = esc(D.COURT[d.id].name);
+        if (d.lust) { if (d.a == null) { if (d.t === ME) toast(`😈 Похоть: «${nm1}» уходит от вашего двора в сброс`, 3600); } else if (d.t === ME) toast(`😈 Похоть: ${esc(E.shortG(S.players[d.a]))} переманили вашего придворного «${nm1}»`, 3600); else if (d.a === ME) toast(`😈 Похоть: «${nm1}» теперь при вашем дворе`, 3600); break; }
         if (d.a == null) { if (d.t === ME) toast(`🪑 Мест при дворе стало меньше: «${nm1}» уходит в ваш сброс`, 3600); break; }
         const an = esc(E.shortG(S.players[d.a]));
         if (d.t === ME) toast(`🪑 Опала: ${an} прогнали вашего придворного «${nm1}» — он уходит в ваш сброс и со временем снова придёт в руку`, 4400);
@@ -318,7 +329,8 @@
         { const est = d.estate; const def = est ? D.ESTATES[d.id] : D.COURT[d.id];
           const toHand = !est && !def.bad && S.players[d.p].hand[S.players[d.p].hand.length - 1] === d.id && !!E.mods(S, S.players[d.p]).courtToHand;
           if (seeOthers(d.p)) cardPop({ p: d.p, kind: est ? 'estate' : 'court', id: d.id, title: `Купили «${esc(def.name)}» за ${d.price}🪙`, sub: est ? `${D.ETYPE[def.t].mark} ${esc(D.estateText(def))}` : toHand ? 'карта двора — им в руку' : 'карта двора уходит в их сброс', to: def.bad ? null : () => flyTarget(d.p, est ? 'estate' : 'court', d.id) });
-          else if (def.bad) flySrc = null;
+          else if (def.bad) flySrc = null; // проклятие уходит сопернику
+          else if (def.sin) flyMine('sin', d.id); // грех ложится перед игроком — карта летит на кнопку «Двор»
           else if (flyMine(est ? 'estate' : toHand ? 'hand' : 'court', d.id)) { if (!est && !toHand) toast(`«${esc(def.name)}» — в ваш сброс: придёт в руку, когда колода перемешается`, 2600); }
           else if (!est) cardPop({ p: d.p, kind: 'court', id: d.id, title: `«${esc(def.name)}» — ${toHand ? 'вам в руку' : 'в ваш сброс'}`, sub: toHand ? 'можно сыграть в этот же ход' : 'придёт в руку, когда колода перемешается', mine: true });
           if (d.p === ME) drawer = null; } // покупка сделана — лист рынка закрывается: видно, что легло на стол
@@ -988,6 +1000,7 @@
     if (kind === 'ban') return (mine ? b.querySelector('.pbar.own .pips') : foc ? b.querySelector('.pbar.foe .pips') : null) || chip;
     if (kind === 'hand') return [...b.querySelectorAll(`.handz .hcard[data-id="${id}"]`)].pop() || b.querySelector('.pbar.own .myb');
     if (kind === 'faith') return (mine ? b.querySelector('.pbar.own .crestb') : foc ? b.querySelector('.pbar.foe .crest') : null) || chip;
+    if (kind === 'sin') return (mine ? b.querySelector('.pbar.own .myb') : null) || chip; // грехи лежат на странице «Двор»
     return (mine ? b.querySelector('.handz .pile.disc') || b.querySelector('.pbar.own .myb') : foc ? b.querySelector('.pbar.foe .ofan') : null) || chip;
   }
   // моя покупка: карта летит из ряда рынка; цель появляется после перерисовки стола
@@ -1029,6 +1042,17 @@
       case 'poach': return askPickBan(p, q, '🗝 Вербовка: кого переманить?', (id) => (R.poachHalf ? `заплатите в банк ${Math.ceil(D.BAN[id].cost / 2)}🪙` : `заплатите ${esc(H(S.players[q.from]).dat)} ${D.BAN[id].cost}🪙`));
       case 'distract': return askPickBan(p, q, '🗝 Куртизанка: кого отвлечь?', () => 'не действует до конца их следующего хода');
       case 'raze': return askRaze(p, q);
+      case 'sinHire': return askPickBan(p, q, '😈 Гордыня: кого нанять?', () => 'бесплатно и без траты действия');
+      case 'summon': return choiceSheet(`😈 Призыв семи грехов: осталось ${D.banners(q.left)}`, '<p class="note">Знамя из ряда — бесплатно и без действия, ряд пополняется после каждого. Выполните цель — победа в конце круга.</p>',
+        [...q.options.map(id => ({ icon: D.SYM[D.BAN[id].dir], value: id, right: D.BAN[id].tier === 'v' ? 'вассал' : D.BAN[id].tier === 'l' ? 'лорд' : 'великий', html: banLine(id) })), { icon: '✋', value: null, html: '<b>Хватит</b>' }]);
+      case 'sinBanner': return choiceSheet('😈 Зависть: какое знамя забрать?', '<p class="note">Знамя лидера переходит к вам бесплатно — вассал, лорд или даже великий лорд.</p>',
+        q.options.map((o, k) => ({ icon: H(S.players[o.i]).sigil, value: k, right: D.BAN[o.id].tier === 'v' ? 'вассал' : D.BAN[o.id].tier === 'l' ? 'лорд' : 'великий', html: `${banLine(o.id)}<br><span class="muted">сейчас у ${esc(E.shortG(S.players[o.i]))}</span>` })));
+      case 'sinCourtier': return choiceSheet('😈 Похоть: кого переманить к своему двору?', '<p class="note">Придворный соперника садится при вашем дворе. Мест не хватит — один из ваших уйдёт в сброс.</p>',
+        q.options.map((o, k) => { const t = S.players[o.i]; return { icon: H(t).sigil, value: k, right: '', html: `<b>${esc(D.COURT[o.id].name)}</b> · ${esc(H(t).short)}<br><span class="muted">даёт: ${esc(D.COURT[o.id].stext)}</span>` }; }));
+      case 'penanceEstate': return choiceSheet('🕯 Покаяние, шаг 4: какое владение уходит из игры?', '<p class="note">Владение уходит из игры навсегда. Потом вы снимете один грех.</p>',
+        q.options.map(uid => { const e = p.estates.find(x => x.uid === uid); const d = D.ESTATES[e.id]; return { icon: D.ETYPE[d.t].mark, value: uid, right: `${d.cost}🪙`, html: `<b>${esc(d.name)}</b><br><span class="muted">${esc(D.estateText(d))}</span>` }; }));
+      case 'penanceSin': return choiceSheet('🕯 Покаяние окончено: какой грех снять?', '<p class="note">Грех уходит в колоду двора, его штраф больше не действует.</p>',
+        q.options.map(id => ({ icon: '😈', value: id, right: '', html: `<b>${esc(D.COURT[id].name)}</b><br><span class="muted">штраф: ${esc(D.COURT[id].pen)}</span>` })));
       case 'faithKeep': return choiceSheet('🕯 Какую веру оставить?', '<p class="note">Архиепископ Григорий ушёл — две веры сразу больше нельзя. От второй вы отрекаетесь без платы, её карты возвращаются к вере.</p>', q.options.map(f => ({ icon: D.FAITHS[f].icon, value: f, right: '', html: `<b>${esc(D.FAITHS[f].name)}</b><br><span class="muted">${esc(D.FAITHS[f].text)}</span>` })));
     }
     return Promise.resolve(null);
@@ -1127,6 +1151,7 @@
   // мест при дворе стало меньше (ушёл Камергер): кто уходит в сброс; отказаться нельзя
   function askSeatDrop(p, q) {
     const opts = q.options.map((id, k) => ({ icon: '🪑', value: k, right: '', html: `<b>${esc(D.COURT[id].name)}</b><br><span class="muted">сейчас даёт: ${esc(D.COURT[id].stext)}</span>` }));
+    if (q.lust) return choiceSheet('😈 Похоть: кто уйдёт от двора?', '<p class="note">На кубике 1 или 2 — один ваш придворный уходит в сброс. Выберите кто.</p>', opts);
     return choiceSheet('🪑 Мест при дворе стало меньше', `<p class="note">Теперь мест — ${q.max}. Выберите, кто уйдёт в ваш сброс: оттуда он со временем снова придёт в руку.</p>`, opts);
   }
   // опала: чьего придворного прогнать
@@ -1156,6 +1181,8 @@
     ? `Нападение: ваши ⚔️ и +${n != null ? n : 'число с карты'} против ⚔️ и 🧱 соперника, каждый ещё бросает по кубику. У кого больше — тот победил, поровну — он отбился.`
     : `Шпионаж: ваши 🔗 и +${n != null ? n : 'число с карты'} против 🔗 и 🧱 соперника, каждый ещё бросает по кубику. Больше — успех, поровну — провал.`);
   function askTarget(p, q) {
+    if (q.kind === 'wrath') return choiceSheet('😈 Гнев: у кого забрать владение?', '<p class="note">Владение до 6🪙 — без нападения, отбить нельзя.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: '', html: `<b>${esc(H(t).short)}</b><br><span class="muted">можно забрать: ${o.loot}</span>` }; }));
+    if (q.kind === 'penancePoor') return choiceSheet('🕯 Покаяние, шаг 1: кому отдать 5🪙?', '<p class="note">Самых бедных несколько — выберите любого.</p>', q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: `${o.gold}🪙`, html: `<b>${esc(H(t).short)}</b>` }; }));
     if (q.kind === 'plantEstate') {
       const bad = D.ESTATES[q.estate];
       const opts = q.options.map(o => { const t = S.players[o.i]; return { icon: H(t).sigil, value: o.i, right: '', html: `<b>${esc(H(t).short)}</b><br><span class="muted">шпион ${o.A} + 🎲 против стражи ${o.G} + 🎲 · шанс ${pct(o.p)}</span>` }; });
@@ -1234,6 +1261,7 @@
       const e = t.estates.find(x => x.uid === uid); const d = D.ESTATES[e.id];
       return { icon: D.ETYPE[d.t].mark, value: uid, right: `${d.cost}🪙`, html: `<b>${esc(d.name)}</b><br><span class="muted">${forMe(d, p)}</span>` };
     });
+    if (q.wrath) return choiceSheet(`😈 Гнев: что забираем у ${esc(E.shortG(t))}?`, '<p class="note">Без нападения — отбить нельзя. Владение придёт к вам в руинах и отстроится на первом срабатывании.</p>', opts);
     return choiceSheet(q.blackmail ? `Вымогательство: что требуем у ${esc(H(t).gen)}?` : `Что забираем у ${esc(E.shortG(t))}?`, `<p class="note">${q.blackmail ? 'Соперник отдаст это владение — или заплатит вам его цену и оставит себе. ' : 'Владение перейдёт к вам в руинах: доход оно начнёт приносить, когда первый раз сработает и отстроится. '}Под названием — что оно будет приносить именно вам, с вашими бонусами.</p>`, opts);
   }
   // откуп от шпионажа: до броска заплатить шпиону 3🪙 за каждую 🔗 разницы — шпионаж отменён
@@ -1291,8 +1319,9 @@
       };
       const list = () => p.hand.map((id, i) => { const c = D.COURT[id]; return `<button class="opt" data-i="${i}"><span class="big">${sel.includes(i) ? '☑️' : '⬜'}</span><span><b>${esc(c.name)}</b><br><span class="muted">${D.fxText(c.fx)}</span></span><span class="r">${c.start || c.sig ? '' : c.cost + '🪙'}</span></button>`; }).join('');
       const warn = () => { const xs = sel.filter(i => p.hand[i] !== 'tax').map(i => `«${esc(D.COURT[p.hand[i]].name)}»`); return xs.length ? `Внимание: ${xs.join(' и ')} — не «Подать», ${xs.length > 1 ? 'исчезнут' : 'исчезнет'} навсегда.` : ''; };
-      const okTxt = () => (sel.length ? `Убрать ${D.cards(sel.length)}` : 'Ничего не убирать');
-      const body = `<p class="note">Убранные карты исчезают из вашей колоды навсегда. Обычно убирают «Подать»: колода становится меньше, и сильные карты приходят чаще.</p><p class="trash-sum">${sum()}</p><p class="trash-warn" hidden></p><div class="optlist">${list()}</div><div class="acts"><button class="btn primary wide" data-ok>${okTxt()}</button></div>`;
+      const short = () => Math.max(0, (q.need || 0) - sel.length); // покаяние: обязательно ровно q.need карт
+      const okTxt = () => (short() ? `Выберите ещё ${D.cards(short())}` : sel.length ? `Убрать ${D.cards(sel.length)}` : 'Ничего не убирать');
+      const body = `<p class="note">Убранные карты исчезают из вашей колоды навсегда. Обычно убирают «Подать»: колода становится меньше, и сильные карты приходят чаще.</p><p class="trash-sum">${sum()}</p><p class="trash-warn" hidden></p><div class="optlist">${list()}</div><div class="acts"><button class="btn primary wide" data-ok${short() ? ' disabled' : ''}>${okTxt()}</button></div>`;
       const sh = openSheet({ title: `${q.label || (q.each ? 'Покаяние' : 'Очищение')}: уберите ${q.need >= q.max ? `${q.max} ${D.plural(q.max, 'карту', 'карты', 'карт')}` : `до ${q.max} ${D.plural(q.max, 'карты', 'карт', 'карт')}`}${q.each ? ` (+${q.each}🪙 за каждую)` : ''}`, body, dismiss: false });
       sh.el.addEventListener('click', (e) => {
         const b = e.target.closest('[data-i]');
@@ -1302,10 +1331,10 @@
           sh.el.querySelector('.optlist').innerHTML = list();
           sh.el.querySelector('.trash-sum').textContent = sum();
           const wn = sh.el.querySelector('.trash-warn'); wn.textContent = warn(); wn.hidden = !warn();
-          sh.el.querySelector('[data-ok]').textContent = okTxt();
+          { const ok = sh.el.querySelector('[data-ok]'); ok.textContent = okTxt(); ok.disabled = short() > 0; }
           return;
         }
-        if (e.target.closest('[data-ok]')) { sh.close(); res(sel); }
+        if (e.target.closest('[data-ok]') && !short()) { sh.close(); res(sel); }
       });
     });
   }
@@ -2065,8 +2094,8 @@
     }
     return out.slice(0, max).join('');
   }
-  const roleCls = (c) => (c.scheme ? 'r-bad' : c.role ? 'r-' + c.role : ''); // козни — тёмные, как проклятия
-  const roleName = (c) => (c.scheme ? 'Козни' : c.role ? D.ROLES[c.role].name : c.start ? 'Стартовая' : 'Без роли');
+  const roleCls = (c) => (c.sin ? 'r-sin' : c.scheme ? 'r-bad' : c.role ? 'r-' + c.role : ''); // козни — тёмные, как проклятия; грех — тёмно-красный
+  const roleName = (c) => (c.sin ? 'Грех' : c.scheme ? 'Козни' : c.role ? D.ROLES[c.role].name : c.start ? 'Стартовая' : 'Без роли');
 
   // ---------- размеры зон ----------
   // Раскладки: port — телефон стоя; land — телефон боком (столы слева, рука справа);
@@ -2261,7 +2290,7 @@
   }
   function myBarHtml(p) {
     const n = E.regCount(p), g = E.goal(S);
-    const extra = [modOn('seats') && (p.seats || []).length ? `${gico('seat')}${p.seats.length}` : '', modOn('plots') && p.plots.length ? `${gico('plot')}${p.plots.length}` : ''].filter(Boolean).join(' ');
+    const extra = [modOn('seats') && (p.seats || []).length ? `${gico('seat')}${p.seats.length}` : '', modOn('plots') && p.plots.length ? `${gico('plot')}${p.plots.length}` : '', (p.sins || []).length ? `😈${p.sins.length}` : '', p.penance ? `🕯${p.penance.step}/4` : ''].filter(Boolean).join(' '); // грехи и покаяние — на кнопке «Двор»
     return `<button class="crestb${S.first === p.i ? ' first' : ''}" data-act="my" aria-label="${esc(H(p).name)}: мой двор${S.first === p.i ? ', первый игрок круга' : ''}"><img class="crest" src="${crestOf(p)}" alt=""></button><button class="goldbig" data-act="res" data-s="gold" data-i="${p.i}" data-gold="${p.i}" aria-label="Золото: ${shownGold(p)}">${gico('gold')}<b>${shownGold(p)}</b>${popHtml(p.i, 'gold-pop')}</button>${barCoins(p.i)}<button class="pipsb" data-act="drawer" data-d="regalia" aria-label="Знамёна: ${n} из ${g}">${pipsOf(p)}<small>знамёна · ${n} из ${g}</small></button><span class="sp"></span><button class="myb" data-act="my">${extra ? `<i>${extra}</i>` : ''}${WATCH || hotseat() ? esc(H(p).short) : 'Двор'}</button>`;
   }
 
@@ -2348,7 +2377,7 @@
       if (selCard) { const w = attackOf(selCard.id) ? attackWaste(p, selCard.id) : null; if (w) { t = w; warn = true; } else t = 'ещё раз по карте — крупно · смахните вверх — сыграть'; }
       else if (!p.turn.rolled) {
         const od = E.faithBan(S, p, 'oneDie');
-        t = E.cursed(p, 'evileye') ? 'Сглаз: пока он у вас — только один кубик' : od ? `обет «${esc(D.FAITHS[od].name)}»: только один кубик` : (E.mods(S, p).peek || 0) > 0 ? 'добросок: увидите первый кубик — решите, бросать ли второй' : p.hand.length ? 'сыграйте карты, потом бросьте кубики' : 'бросьте кубики: один или два';
+        t = E.cursed(p, 'evileye') ? 'Сглаз: пока он у вас — только один кубик' : E.sinned(p, 'sloth') ? 'Лень: до конца игры — только один кубик' : od ? `обет «${esc(D.FAITHS[od].name)}»: только один кубик` : (E.mods(S, p).peek || 0) > 0 ? 'добросок: увидите первый кубик — решите, бросать ли второй' : p.hand.length ? 'сыграйте карты, потом бросьте кубики' : 'бросьте кубики: один или два';
       } else {
         const left = E.buysLeft(S, p), cu = cuOn(p);
         const fair = (S.courtRow.length && E.fairOf(S, p, 'court', S.courtRow[0])) || (S.estateRow.length && E.fairOf(S, p, 'estate', S.estateRow[0]));
@@ -2669,7 +2698,7 @@
       } else if (!p.turn.rolled) {
         const all = p.hand.length > 1 ? `<button class="second all" data-act="play-all" ${busy ? 'disabled' : ''}>Сыграть<small>все карты</small></button>` : '';
         const tray = (n) => `<button class="tdie-w${all ? ' cmp' : ''}" data-act="roll" data-n="${n}" ${busy ? 'disabled' : ''} aria-label="Бросить ${n === 2 ? 'два кубика' : 'кубик'}">${kbd(n)}<span class="dd">${Array.from({ length: n }, (_, k) => `<span class="tdie">${pipsHtml(k ? 3 : 5)}</span>`).join('')}</span><small>${n === 2 ? '2 кубика' : '1 кубик'}</small></button>`;
-        const one = E.cursed(p, 'evileye') || E.faithBan(S, p, 'oneDie') || (E.mods(S, p).peek || 0) > 0;
+        const one = E.cursed(p, 'evileye') || E.sinned(p, 'sloth') || E.faithBan(S, p, 'oneDie') || (E.mods(S, p).peek || 0) > 0;
         pa = all + (one ? tray(1) : tray(1) + tray(2));
       } else {
         const lf = E.buysLeft(S, p);
@@ -2840,6 +2869,13 @@
     }
     const bads = p.estates.filter(e => D.ESTATES[e.id].bad);
     if (bads.length) h += `<div class="sec-h"><h3>⬛ Проклятия</h3><span>снять — действие и ${R.purgeCost || 2}🪙</span></div><div class="pgrid mini">${bads.map(e => { const why = my ? E.purgeBlock(S, p, e) : null; return pslot(pcard('estate', e.id, { o: p.i }), my ? `<button class="btn small ${why ? '' : 'primary'}" data-act="purge" data-uid="${e.uid}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : `Снять · ${R.purgeCost || 2}🪙`}</button>` : ''); }).join('')}</div>`;
+    // грехи (v10.15): лежат перед игроком; покаяние начинают отсюда
+    if (modOn('faith') && ((p.sins || []).length || p.penance)) {
+      const why = my ? E.penanceBlock(S, p) : null;
+      const pen = p.penance ? `<p class="note">🕯 Покаяние идёт: сделан шаг ${p.penance.step} из 4. Следующий — в начале вашего хода, до броска.</p>` : '';
+      const btn = my && !p.penance ? `<p class="note"><button class="btn small ${why ? '' : 'primary'}" data-act="penance" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : '🕯 Начать покаяние'}</button></p>` : '';
+      h += `<div class="sec-h"><h3>😈 Грехи</h3><span>снять — только покаянием</span></div>${pen}<div class="pgrid mini">${(p.sins || []).map(id => pcard('court', id, { o: p.i })).join('')}${pcard('court', 'penance')}</div>${btn}`;
+    }
     if (modOn('unions')) {
       const u = E.unionsOf(p);
       h += `<div class="sec-h"><h3>Союзы провинций</h3><span>${u.fast ? `первые ${u.fast} — из 2 владений, дальше — из ${u.late}` : `каждые ${u.size} владения провинции`}</span></div><div class="unions">${['N', 'S', 'E', 'W'].map(k => { const pv = D.PROV[k], c = u.counts[k], left = E.unionNeed(p, k); return `<div class="union ${u[k] ? 'done' : ''}"><b>${pv.icon} ${pv.name}: ${u[k] ? `союз${u[k] > 1 ? ` ×${u[k]}` : ''}` : `${c}/${c + left}`}</b><br><span class="muted">ещё ${left} ${D.plural(left, 'владение', 'владения', 'владений')} до ${u[k] ? 'следующего' : 'союза'}</span></div>`; }).join('')}</div>`;
@@ -3687,7 +3723,7 @@
   const estKind = (id) => { const t = D.ESTATES[id].t; return ['land', 'craft', 'raid', 'hold'].includes(t) ? t : 'other'; };
   const SUBS = {
     estates: [['all', 'Все'], ['land', '🟦 Земли'], ['craft', '🟩 Ремёсла'], ['raid', '🟥 Набеги'], ['hold', '🟪 Твердыни'], ['other', 'Стены и проклятия']],
-    court: [['all', 'Все'], ['merchant', '⚖️ Купцы'], ['scholar', '📜 Учёные'], ['knight', '⚔️ Рыцари'], ['spy', '🔗 Шпионы'], ['priest', '🕯 Жрецы'], ['scheme', '☠ Козни']],
+    court: [['all', 'Все'], ['merchant', '⚖️ Купцы'], ['scholar', '📜 Учёные'], ['knight', '⚔️ Рыцари'], ['spy', '🔗 Шпионы'], ['priest', '🕯 Жрецы'], ['scheme', '☠ Козни'], ['sin', '😈 Грехи']],
     bans: [['all', 'Все'], ['v', 'Вассалы'], ['l', 'Лорды'], ['g', 'Великие лорды']],
   };
   const DIRS5 = [['all', 'Любое'], ['trade', '⚖️'], ['sci', '📜'], ['war', '⚔️'], ['int', '🔗'], ['faith', '🕯']];
@@ -3700,7 +3736,7 @@
   };
   const subOk = (kind, id) => {
     if (kind === 'estate') { const d = D.ESTATES[id]; return (catSub.estates === 'all' || estKind(id) === catSub.estates) && (catDir === 'all' || d.sym === catDir); }
-    if (kind === 'court') { const c = D.COURT[id], f = catSub.court; return f === 'all' || (f === 'scheme' ? !!c.scheme : !c.scheme && !c.start && c.role === f); }
+    if (kind === 'court') { const c = D.COURT[id], f = catSub.court; return f === 'all' || (f === 'scheme' ? !!c.scheme : f === 'sin' ? !!(c.sin || c.rule) : !c.scheme && !c.sin && !c.rule && !c.start && c.role === f); }
     if (kind === 'ban') { const b = D.BAN[id]; return (catSub.bans === 'all' || b.tier === catSub.bans) && (catDir === 'all' || b.dir === catDir); }
     return true;
   };
@@ -4201,6 +4237,7 @@
       case 'retire': return { ok: !!(await E.retire(S, p, m.i | 0)) };
       case 'fetch': return { ok: !!(await E.fetchCard(S, p, String(m.id))) };
       case 'purge': return Object.assign({}, await E.purgeBad(S, p, m.uid | 0));
+      case 'penance': return Object.assign({}, await E.startPenance(S, p));
       case 'adopt': return Object.assign({}, await E.adoptFaith(S, p, String(m.id)));
       case 'renounce': return Object.assign({}, await E.renounceFaith(S, p, String(m.id)));
       case 'rite': return Object.assign({}, await E.rite(S, p, String(m.id)));
@@ -4388,7 +4425,7 @@
     // нажатие мимо кнопок на столе снимает выбор с карты руки
     if (!el) { if (selCard && e.target.closest('.board') && !e.target.closest('.handz .hcard')) { selCard = null; schedule(); } return; }
     if (el.disabled) return;
-    if (el.closest('.scrim') && !['new', 'info-estate', 'info-court', 'info-ban', 'zoom', 'fetch', 'discard-seat', 'res', 'pile', 'purge'].includes(el.dataset.act)) return;
+    if (el.closest('.scrim') && !['new', 'info-estate', 'info-court', 'info-ban', 'zoom', 'fetch', 'discard-seat', 'res', 'pile', 'purge', 'penance'].includes(el.dataset.act)) return;
     const a = el.dataset.act;
     const p = S ? S.players[ME !== null ? ME : S.cur] : null;
     switch (a) {
@@ -4482,6 +4519,7 @@
       case 'xaction': if (isMyTurn()) { e.stopPropagation(); if (guest()) netDo('xaction', {}); else { const r = E.buyAction(S, p); if (!r.ok) toast(esc(r.why || 'Нельзя')); else { if (sound) Sfx.coin && Sfx.coin(); toast(`Второе действие: −${R.extraAction}🪙`); } schedule(); } } break;
       case 'retire': if (isMyTurn()) { e.stopPropagation(); const i = +el.dataset.i; if (!armedOn('retire:' + p.hand[i] + ':' + i)) { arm('retire:' + p.hand[i] + ':' + i); break; } armed = null; flyHand(i, 'out'); selCard = null; if (guest()) netDo('retire', { i }); else guarded(async () => { await E.retire(S, p, i); }); } break;
       case 'rollsum': showRoll(); break;
+      case 'penance': if (isMyTurn()) { e.stopPropagation(); closeAllSheets(); if (guest()) netDo('penance', {}); else guarded(async () => { const r = await E.startPenance(S, p); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
       case 'purge': if (isMyTurn()) { e.stopPropagation(); const uid = +el.dataset.uid; closeAllSheets(); if (guest()) netDo('purge', { uid }); else guarded(async () => { const r = await E.purgeBad(S, p, uid); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
       case 'res': { e.stopPropagation(); const q = S.players[+el.dataset.i]; if (q) showRes(q, el.dataset.s); } break;
       case 'fetch': if (isMyTurn()) { e.stopPropagation(); const id = el.dataset.id; { const sc = el.closest('.scrim'); if (sc && sc.close) sc.close(); } if (guest()) netDo('fetch', { id }); else guarded(async () => { await E.fetchCard(S, p, id); }); } break;
@@ -4527,7 +4565,7 @@
       const C = of(D.COURT), Es = of(D.ESTATES), B = of(D.BAN);
       const all = (a, ok) => a == null || (Array.isArray(a) && a.every(ok));
       const rows = { courtDeck: C, courtRow: C, estateDeck: Es, estateRow: Es, holdDeck: Es, holdRow: Es, vDeck: B, vRow: B, lDeck: B, lRow: B, gDeck: B, gRow: B, destroyed: Es };
-      const own = { hand: C, deck: C, discard: C, inPlay: C, plots: C, seats: C, trashed: C, vassals: B, lords: B, greats: B, estates: Es };
+      const own = { hand: C, deck: C, discard: C, inPlay: C, plots: C, seats: C, trashed: C, sins: C, vassals: B, lords: B, greats: B, estates: Es };
       return Object.keys(rows).every(k => all(x[k], rows[k])) && Object.values(x.faithPool || {}).every(a => all(a, C))
         && (x.players || []).every(p => D.HOUSES[p.house] && Object.keys(own).every(k => all(p[k], own[k])));
     } catch (e) { return false; }

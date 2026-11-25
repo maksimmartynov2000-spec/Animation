@@ -62,6 +62,76 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   }
   /* убрано: карта или правило изменены */
   { const S = mk(), [a, b] = S.players; est(S, b, 'wall', 'wall'); const w = E.razeOdds(S, a, b, 3, 'nowalls'), w2 = E.razeOdds(S, a, b, 3, null); eq(w.D, w2.D - E.walls(S, b), 'Осадная башня: стены цели не в счёт'); }
+  // ---------- v10.15: грехи и покаяние ----------
+  { const sins = Object.keys(D.COURT).filter(id => D.COURT[id].sin).sort();
+    eq(sins.length, 7, 'грехов семь');
+    ok(sins.every(id => D.COURT[id].cost === 0 && D.COURT[id].copies === 1 && /faith/.test(D.NEEDS.court[id])), 'грех: 0🪙, одна копия, модуль «Вера»');
+    const S = mk(); ok(![...S.courtDeck, ...S.courtRow].includes('penance'), 'покаяния на рынке нет');
+    eq([...S.courtDeck, ...S.courtRow].filter(id => D.COURT[id].sin).length, 7, 'в колоде и ряду двора 7 грехов');
+    const S2 = mk(['tA', 'tB'], FULL.filter(k => k !== 'faith')); eq([...S2.courtDeck, ...S2.courtRow].filter(id => D.COURT[id].sin).length, 0, 'без «Веры» грехов нет'); }
+  { // покупка — только действием; грех ложится перед игроком, не в колоду
+    const S = mk(), [a] = S.players; a.turn.rolled = true; a.gold = 10; S.courtRow = ['sin_greed', 'sin_gluttony'];
+    const r = await E.buy(S, a, 'court', 0);
+    ok(r.ok && a.sins.includes('sin_greed') && !a.discard.includes('sin_greed') && a.gold === 20 && E.buysLeft(S, a) === 0, 'Алчность: грех перед игроком, золото удвоено, действие потрачено');
+    ok(!(await E.buy(S, a, 'court', 0)).ok, 'второй грех без действия не купить'); }
+  { // штрафы в начале хода: Алчность — 1🪙 за каждые 5🪙; Гордыня — 1🪙 за знамя, не хватает — сколько есть
+    const S = mk(), [a] = S.players; a.sins = ['sin_greed']; a.gold = 23; S.cur = 0; await E.startOfTurn(S, a);
+    ok(S.log.some(x => /Алчность — −4🪙/.test(x.t || x.text || '')), 'Алчность: при 23🪙 — 4🪙 в банк');
+    const S2 = mk(), [b] = S2.players; b.vassals = ['fuller', 'grain', 'baltazar']; b.sins = ['sin_pride']; b.gold = 2; S2.cur = 0; await E.startOfTurn(S2, b);
+    ok(S2.log.some(x => /Гордыня — −2🪙/.test(x.t || x.text || '')), 'Гордыня: 3 знамени, а золота 2 — платите сколько есть'); }
+  { // Гордыня сейчас: вассал из ряда бесплатно и без действия; Заговор не пускает
+    const S = mk(), [a] = S.players; a.turn.rolled = true; a.gold = 5; S.courtRow = ['sin_pride']; S.vRow = ['fuller', 'grain'];
+    await E.buy(S, a, 'court', 0); ok(a.vassals.length === 1 && a.gold === 5, 'Гордыня: вассал бесплатно');
+    const S2 = mk(), [b] = S2.players; b.turn.rolled = true; addEst(S2, b, 'schemer', { by: 1 }); S2.courtRow = ['sin_pride']; S2.vRow = ['fuller'];
+    await E.buy(S2, b, 'court', 0); ok(!b.vassals.length && b.sins.length === 1, 'Гордыня при Заговоре: грех есть, найма нет'); }
+  { // Гнев: владение до 6🪙 без нападения, в руинах; против грешника +3 и без перемирия
+    const S = mk(), [a, b] = S.players; a.turn.rolled = true; addEst(S, b, 'shop'); S.courtRow = ['sin_wrath'];
+    await E.buy(S, a, 'court', 0); ok(a.estates.some(e => e.id === 'shop' && e.ruined) && !b.estates.length, 'Гнев: Лавка соперника — ваша, в руинах');
+    const s0 = E.siegeOdds(S, b, a, 2).A, p0 = E.spyInfo(S, b, a, 2).A; a.sins = []; eq(s0 - E.siegeOdds(S, b, a, 2).A, 3, 'Гнев: нападения против грешника +3'); eq(p0 - E.spyInfo(S, b, a, 2).A, 3, 'Гнев: шпионаж против грешника +3');
+    const S2 = mk(), [c, d] = S2.players; c.faiths = ['grain']; d.faiths = ['grain']; const before = E.targetsOf(S2, c).length; d.sins = ['sin_wrath'];
+    ok(E.targetsOf(S2, c).length === before + 1, 'Гнев: перемирие единоверцев на грешника не действует'); }
+  { // Зависть: любое знамя лидера — ваше (даже лорд, когда вассалов хватает); потом: соперник нанял — 1🪙 в банк
+    const S = mk(), [a, b] = S.players; a.turn.rolled = true; b.vassals = ['fuller', 'grain']; S.courtRow = ['sin_envy'];
+    await E.buy(S, a, 'court', 0); ok(a.vassals.length === 1 && b.vassals.length === 1, 'Зависть: вассал лидера — ваш');
+    { const S2 = mk(), [c, d] = S2.players; c.turn.rolled = true; const vs = Object.keys(D.BAN).filter(id => D.BAN[id].tier === 'v' && !D.BAN[id].heir); c.vassals = vs.slice(0, E.needOf(S2, 'v'));
+      const ls = Object.keys(D.BAN).filter(id => D.BAN[id].tier === 'l' && !D.BAN[id].heir); d.vassals = vs.slice(-2); d.lords = ls.slice(0, 2); S2.courtRow = ['sin_envy'];
+      await E.buy(S2, c, 'court', 0); ok(c.lords.length === 1 && d.lords.length === 1 && d.vassals.length === 2, 'Зависть: вассалов хватает — забирает лорда'); }
+    S.cur = 1; b.turn.rolled = true; b.gold = 50; S.vRow = ['baltazar']; const ga = a.gold; await E.hire(S, b, 'baltazar'); eq(ga - a.gold, 1, 'Зависть: соперник нанял — 1🪙 в банк'); }
+  { // Чревоугодие: 5 карт сейчас, рука на 1 меньше
+    const S = mk(), [a] = S.players; const h0 = E.handSize(S, a); a.turn.rolled = true; S.courtRow = ['sin_gluttony']; const n0 = a.hand.length;
+    await E.buy(S, a, 'court', 0); eq(a.hand.length - n0, 5, 'Чревоугодие: 5 карт'); eq(E.handSize(S, a), h0 - 1, 'Чревоугодие: рука на 1 меньше'); }
+  { // Лень: один кубик; ещё ход — после хода за дубль; дубль в ходе Лени снова даёт ход
+    const S = mk(), [a] = S.players; a.turn.rolled = true; S.courtRow = ['sin_sloth']; S.cur = 0;
+    await E.buy(S, a, 'court', 0); eq(a.slothNext, 1, 'Лень: ещё один ход впереди');
+    a.turn.extraTurn = true; E.endTurn(S, a); ok(S.cur === 0 && S.extraTaken, 'ход за дубль — первым');
+    a.turn = E._t.startOfTurn ? a.turn : a.turn; a.turn.extraTurn = true; E.endTurn(S, a); ok(S.cur === 0 && a.slothNext === 0 && !S.extraTaken, 'потом ход Лени');
+    a.turn.extraTurn = true; E.endTurn(S, a); ok(S.cur === 0 && S.extraTaken, 'дубль в ходе Лени — ещё ход');
+    a.turn.extraTurn = true; E.endTurn(S, a); eq(S.cur, 1, 'больше ходов нет — ход соперника');
+    const S2 = mk(), [b] = S2.players; b.sins = ['sin_sloth']; S2.cur = 0; await E.roll(S2, b, 2); eq(S2.lastRoll.n, 1, 'Лень: только один кубик'); }
+  { // Похоть: придворный соперника — к вам; в начале хода на 1–2 — придворный уходит
+    const S = mk(), [a, b] = S.players; a.turn.rolled = true; b.seats = ['fairwarden']; S.courtRow = ['sin_lust'];
+    await E.buy(S, a, 'court', 0); ok(a.seats.includes('fairwarden') && !b.seats.length, 'Похоть: придворный соперника — при вашем дворе');
+    let gone = 0, stay = 0;
+    for (let k = 0; k < 24; k++) { const S2 = mk(), [c] = S2.players; S2.seed = 500 + k; c.seats = ['fairwarden']; c.sins = ['sin_lust']; S2.cur = 0; await E.startOfTurn(S2, c); if (c.seats.length) stay++; else gone++; }
+    ok(gone > 0 && stay > gone, `Похоть: придворный уходит примерно в трети ходов (ушёл ${gone} из 24)`); }
+  { // покаяние: 4 шага подряд, потом грех снят
+    const S = mk(), [a, b] = S.players; a.faiths = ['grain']; a.sins = ['sin_greed']; S.cur = 0; a.gold = 20; b.gold = 3; addEst(S, a, 'field'); addEst(S, a, 'bakery');
+    a.faiths = []; ok(/веру/.test(E.penanceBlock(S, a) || ''), 'без веры каяться нельзя'); a.faiths = ['grain'];
+    const r = await E.startPenance(S, a); ok(r.ok && a.penance.step === 1 && b.gold === 8 && a.gold === 15, 'шаг 1: 5🪙 самому бедному');
+    ok(!!E.penanceBlock(S, a), 'второе покаяние не начать');
+    a.hand = ['tax', 'tax', 'spicer']; E.endTurn(S, a); S.cur = 0; await E.startOfTurn(S, a); ok(a.penance.step === 2 && a.trashed.length === 2, 'шаг 2: 2 карты из руки — из игры');
+    E.endTurn(S, a); S.cur = 0; await E.startOfTurn(S, a); a.turn.rolled = true; ok(a.penance.step === 3 && E.buysLeft(S, a) === 0, 'шаг 3: на одно действие меньше');
+    const e0 = a.estates.length; E.endTurn(S, a); S.cur = 0; await E.startOfTurn(S, a);
+    ok(!a.penance && !a.sins.length && a.estates.length === e0 - 1 && S.courtDeck.includes('sin_greed'), 'шаг 4: владение из игры, грех снят и в колоде двора'); }
+  { // покаяние сорвано: нечем выполнить шаг; новый грех; начать заново — со следующего хода
+    const S = mk(), [a] = S.players; a.faiths = ['grain']; a.sins = ['sin_greed']; S.cur = 0; a.gold = 3;
+    await E.startPenance(S, a); ok(!a.penance && /следующего/.test(E.penanceBlock(S, a) || ''), 'нет 5🪙 — сорвано, заново со следующего хода');
+    const S2 = mk(), [b] = S2.players; b.faiths = ['grain']; b.sins = ['sin_greed']; S2.cur = 0; b.gold = 20; await E.startPenance(S2, b);
+    b.turn.rolled = true; S2.courtRow = ['sin_gluttony']; await E.buy(S2, b, 'court', 0); ok(!b.penance, 'новый грех срывает покаяние');
+    const S3 = mk(), [c] = S3.players; c.faiths = ['grain']; c.sins = ['sin_greed']; S3.cur = 0; addEst(S3, c, 'cursedrelic', { by: 1 }); ok(/реликвия/i.test(E.penanceBlock(S3, c) || ''), 'Проклятая реликвия: каяться нельзя'); }
+  { // все семь грехов — призыв: до 7 знамён бесплатно; Заговор не мешает; один раз
+    const S = mk(), [a] = S.players; a.turn.rolled = true; a.sins = ['sin_pride', 'sin_wrath', 'sin_envy', 'sin_gluttony', 'sin_sloth', 'sin_lust']; addEst(S, a, 'schemer', { by: 1 }); S.courtRow = ['sin_greed'];
+    const r0 = E.regCount(a); await E.buy(S, a, 'court', 0); ok(a.summoned && E.regCount(a) - r0 >= 5, `призыв: +${E.regCount(a) - r0} знамён бесплатно, Заговор не мешает`); }
   { // правила модулей открываются все (v10.14: «Вражда» падала — раздел о шпионаже ссылался на убранную в v10.11 беду «Долг»)
     const M = require(G + 'modrules.js'), bad = [];
     for (const k of (M.ORDER || D.MODULE_KEYS)) { try { M.page(D, k, () => true); } catch (e) { bad.push(`${k}: ${e.message}`); } }
