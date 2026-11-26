@@ -847,29 +847,32 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     ok((await E.startRitual(S, a, 'grain_a')).ok, 'Целестин: ритуал можно начать с грехом');
     await E.takeSin(S, a, 'sin_gluttony'); ok(!!a.ritual, 'Целестин: новый грех не сжигает ритуал');
     a.miracles = ['grain_b']; ok(E.miraclesOn(a).includes('grain_b'), 'Целестин: чудо при грехе не молчит'); a.greats = []; ok(!E.miraclesOn(a).length, 'без Целестина чудо при грехе молчит'); }
-  { // Регент Северин: печать регента — свойство знамени соперника до конца хода (здесь — +1 действие Гуго)
-    const S = mk(), [a, b] = S.players; a.greats = ['severin']; b.lords = ['hugo']; S.cur = 0;
-    ok(!!E.regentOptions(S, a).find(o => o.id === 'hugo'), 'Северин: знамёна соперника в выборе'); eq(E.buysLeft(S, a), 1, 'до печати — одно действие');
-    ok(E.regentCopy(S, a, 'hugo').ok && E.buysLeft(S, a) === 2, 'печать на Гуго: два действия'); ok(!E.regentCopy(S, a, 'hugo').ok, 'вторая печать за ход нельзя');
-    S.cur = 1; ok(!E.mods(S, a).buys, 'в чужой ход свойства нет'); S.cur = 0; await T.startOfTurn(S, a); eq(E.buysLeft(S, a), 1, 'новый ход — печать снята');
-    const S2 = mk(), [c] = S2.players; ok(!!E.regentBlock(S2, c), 'без Северина печати нет');
-    // печать не берёт «в начале хода» и «в чужой ход»: Якоб, Хельга, Оттон — нет; Эдуард (набеги в ваш бросок) — да
-    const S3 = mk(), [x, y] = S3.players; x.greats = ['severin']; y.vassals = ['helga']; y.greats = ['jacob', 'otto', 'edward']; S3.cur = 0;
-    eq(E.regentOptions(S3, x).map(o => o.id).join(','), 'edward', 'печать: в выборе только то, что сработает до конца хода');
-    y.greats = ['jacob']; eq(E.regentBlock(S3, x), 'У соперников нет подходящих знамён', 'печать: у соперника только «в начале хода» — печати нет');
-    // сверка с картами: у знамени все значки «в начале хода» — печать его не предлагает
-    const FX = require(G + 'cardfx.js'), dawnOnly = [];
-    for (const [id, bd] of Object.entries(D.BAN)) { const ch = [].concat(...(FX.mods(bd.mods || {}) || []).map(z => [].concat(z))).filter(Boolean); if (ch.length && ch.every(z => z.dawn) && E.regentUseful(id)) dawnOnly.push(id); }
-    eq(dawnOnly.join(','), '', 'печать: знамёна «в начале хода» по значкам карт исключены все'); }
-  { // Банкирша Эльвира: вклад — раз в ход до 5🪙, в начале следующего хода вернётся вдвое (до долга и содержания)
-    const S = mk(), [a, b] = S.players; a.greats = ['elvira']; a.gold = 12; S.cur = 0;
+  { // Регент Северин (правки 10.21): снять с торгов — раз в ход до двух карт рынка (владения, твердыни, двор), на их место — новые
+    const S = mk(), [a, b] = S.players; a.greats = ['severin']; S.cur = 0;
+    S.courtRow = ['scribe', 'spicer', 'herald', 'collector']; S.courtDeck = ['miller', 'archivist']; S.estateRow = ['field', 'bakery', 'pasture', 'barracks']; S.estateDeck = ['smithy'];
+    ok(!!E.delistBlock(S, b) && !E.delistBlock(S, a), 'с торгов: без Северина нельзя, с ним — можно');
+    let r = E.delistCard(S, a, 'court', 1, 'spicer');
+    ok(r.ok && !S.courtRow.includes('spicer') && S.courtDeck[0] === 'spicer' && S.courtRow.length === 4 && r.now === 'archivist', 'Торговец пряностями — под низ колоды двора, вместо него — верхняя карта колоды');
+    r = E.delistCard(S, a, 'estate', 0, 'field');
+    ok(r.ok && S.estateRow.includes('smithy') && S.estateDeck[0] === 'field', 'второе — владение: Поле под низ, вышла Кузница');
+    ok(!E.delistCard(S, a, 'court', 0, 'scribe').ok && E.delistLeft(S, a) === 0, 'третью за ход нельзя');
+    await T.startOfTurn(S, a); eq(E.delistLeft(S, a), 2, 'новый ход — снова две');
+    S.courtDeck = []; S.estateDeck = []; S.holdDeck = []; eq(E.delistBlock(S, a), 'Снимать нечего: колоды рынка пусты', 'колоды пусты — снимать нечего');
+    const S2 = mk(), [c] = S2.players; c.greats = ['severin']; S2.cur = 0; S2.courtRow = ['scribe', 'spicer', 'herald', 'collector']; S2.courtDeck = ['miller'];
+    ok(E.delistCard(S2, c, 'court', 0, 'spicer').ok && S2.courtDeck[0] === 'spicer', 'номер устарел — карта находится по имени'); }
+  { // Банкирша Эльвира (правки 10.21): раз в ход 1🪙 во вклад; в начале каждого хода +столько, сколько во вкладе; уйдёт Эльвира — вклад пропадёт
+    const S = mk(), [a, b] = S.players; a.greats = ['elvira']; a.gold = 10; S.cur = 0;
     ok(!!E.depositBlock(S, b), 'вклад: без Эльвиры нельзя');
-    ok(E.depositGold(S, a, 9).ok && a.gold === 7 && a.deposit === 5, 'Эльвира: больше 5🪙 не положить — во вкладе 5🪙');
-    ok(!E.depositGold(S, a, 1).ok, 'вклад: второй раз за ход нельзя');
-    a.greats = []; a.loan = 4; a.gold = 0; await T.startOfTurn(S, a);
-    ok(a.deposit === 0 && S.log.some(x => /вклад у Банкирши Эльвиры — \+10🪙/.test(x.t)) && a.gold === 6, 'вклад вернулся вдвое (+10🪙) до долга Кларе (−4🪙), даже без Эльвиры');
+    ok(E.depositGold(S, a).ok && a.gold === 9 && a.deposit === 1, 'Эльвира: 1🪙 во вклад');
+    ok(!E.depositGold(S, a).ok, 'вклад: второй раз за ход нельзя');
+    a.gold = 20; await T.startOfTurn(S, a); ok(S.log.some(x => /вклад \+1/.test(x.t)), 'начало хода: +1🪙 со вклада (в доходе начала хода)');
+    ok(E.depositGold(S, a).ok && a.deposit === 2, 'вклад растёт: 2🪙');
+    const n0 = S.log.length; await T.startOfTurn(S, a); ok(S.log.slice(n0).some(x => /вклад \+2/.test(x.t)) && a.deposit === 2, 'следующий ход: +2🪙, вклад на месте');
+    a.greats = []; const n1 = S.log.length; await T.startOfTurn(S, a); ok(a.deposit === 0 && S.log.slice(n1).some(x => /вклад 2🪙 пропал/.test(x.t)) && !S.log.slice(n1).some(x => /вклад \+/.test(x.t)), 'Эльвиры нет — вклад пропал, дохода нет');
     const S2 = mk(), [c] = S2.players; c.greats = ['elvira']; c.gold = 0; S2.cur = 0; eq(E.depositBlock(S2, c), 'Нет золота', 'вклад: без золота нельзя');
-    c.gold = 2; ok(E.depositGold(S2, c, 5).ok && c.deposit === 2 && c.gold === 0, 'вклад: сколько есть, если меньше 5🪙'); }
+    // не хватило на содержание: Эльвиру отпустили — вклад пропал
+    const S3 = mk(), [d] = S3.players; d.greats = ['elvira']; d.deposit = 5; d.gold = 1; ans = (q) => (q.type === 'upkeep' ? [] : null); await T.startOfTurn(S3, d); ans = null;
+    ok(!d.greats.includes('elvira') && d.deposit === 0, 'не хватило на содержание — Эльвира ушла, вклад пропал'); }
   { // ошибка с 10.18: бот оценивал игрока с Похотью и «Щитом ордена» в колоде — оценка броска звала саму себя без конца (переполнение стека)
     const S = mk(), [a, b] = S.players; est(S, a, 'barracks', 'outpost'); b.sins = ['sin_lust']; b.deck = ['ordershield', 'tax', 'tax']; b._mode = null;
     let fine = true; try { E.Bot.mode(S, b); E.Bot.avgPower(S, b); } catch (e) { fine = false; } ok(fine, 'Похоть + «Щит ордена»: оценка броска без бесконечной рекурсии'); }

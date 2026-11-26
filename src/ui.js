@@ -2135,8 +2135,8 @@
     if (!E.swapBlock(S, p)) out.push({ k: 'swap', t: 'обмен с рынком', s: 'обмен' });
     if (!E.cycleBlock(S, p)) out.push({ k: 'cycle', t: 'сбросить и взять карту', s: 'сбросить' });
     if (!E.loanBlock(S, p)) out.push({ k: 'loan', t: 'взять в долг', s: 'в долг' });
-    if (!E.regentBlock(S, p)) out.push({ k: 'regent', t: 'печать регента', s: 'печать' });
-    if (!E.depositBlock(S, p)) out.push({ k: 'deposit', t: 'вклад', s: 'вклад' });
+    if (!E.depositBlock(S, p)) out.push({ k: 'deposit', t: '1🪙 во вклад', s: 'вклад', hard: true }); // Эльвира: напомнить перед «Завершить ход»
+    if (!E.delistBlock(S, p)) out.push({ k: 'delist', t: 'снять с торгов', s: 'с торгов' });
     return out;
   }
   // v10.21: кнопка действия под знаменем в «Дворе» — Клара, Евстафий, Ортензия
@@ -2147,8 +2147,8 @@
     if (m.loan) return b('loan', E.loanBlock(S, p), `Взять ${R.loanGold || 3}🪙 в долг`);
     if (m.cycle) return b('cycle', E.cycleBlock(S, p), 'Сбросить карту, взять новую');
     if (m.marketSwap) return b('swap', E.swapBlock(S, p), 'Обмен с рынком');
-    if (m.regentSeal) return b('regent', E.regentBlock(S, p), 'Печать регента');
-    if (m.deposit) return b('deposit', E.depositBlock(S, p), 'Положить во вклад');
+    if (m.deposit) return b('deposit', E.depositBlock(S, p), 'Положить 1🪙 во вклад');
+    if (m.delist) { const left = E.delistLeft(S, p); return b('delist', E.delistBlock(S, p), left === 1 && m.delist > 1 ? 'Снять с торгов ещё одну' : 'Снять с торгов'); }
     return '';
   }
   // v10.21: действия знамён — из «Двора» и строки «Ещё можно»
@@ -2181,20 +2181,19 @@
     if (p.hand[hi] !== ids[hi] || S.courtRow[ri] !== row[ri]) { toast('Рука или рынок изменились — выберите снова'); return; }
     if (guest()) netDoWait('swap', { hi, ri, hid: p.hand[hi], rid: S.courtRow[ri] }); else guarded(async () => { const r = await E.swapMarket(S, p, hi, ri); if (!r.ok) toast(esc(r.why || 'Нельзя')); });
   }
-  // Регент Северин: печать регента — какое знамя соперника взять до конца хода
-  async function doRegent(p) {
-    const opts = E.regentOptions(S, p).map(o => { const b = D.BAN[o.id]; return { icon: D.SYM[b.dir], value: o.id, html: `<b>${esc(D.regName(b))}</b> · ${esc(H(S.players[o.i]).short)}<br><span class="muted">${esc(b.text)}</span>` }; });
-    const id = await choiceSheet('📜 Печать регента: чьё свойство взять?', '<p class="note">До конца этого хода свойство выбранного знамени есть и у вас. В списке — только то, что ещё сработает в этот ход. Доход и переброс на броске — если поставить печать до броска.</p>', opts.concat([{ icon: '✖️', value: '', html: '<b>Не сейчас</b>' }]));
-    if (!id || !isMyTurn()) return;
-    if (guest()) netDoWait('regent', { id }); else guarded(async () => { const r = E.regentCopy(S, p, id); if (!r.ok) toast(esc(r.why || 'Нельзя')); });
+  // Регент Северин (правки 10.21): снять с торгов — какую карту рынка убрать (до двух за ход, по одной)
+  async function doDelist(p) {
+    const left = E.delistLeft(S, p), KIND = { estate: 'владение', hold: 'твердыня', court: 'двор' };
+    const opts = E.delistOptions(S).map(o => { const est = o.src !== 'court', d = est ? D.ESTATES[o.id] : D.COURT[o.id]; return { icon: est ? D.ETYPE[d.t].mark : '🂠', value: `${o.src}|${o.k}|${o.id}`, right: `${d.cost}🪙`, html: `<b>${esc(d.name)}</b> · ${KIND[o.src]}<br><span class="muted">${esc(est ? D.estateText(d) : d.bad ? d.badText || '' : D.fxText(d.fx))}</span>` }; });
+    const v = await choiceSheet('📜 Северин: что снять с торгов?', `<p class="note">Карта уйдёт под низ своей колоды, на её место выйдет новая. ${left > 1 ? 'В этот ход можно снять ещё одну.' : 'Это последняя в этот ход.'}</p>`, opts.concat([{ icon: '✖️', value: '', html: '<b>Не сейчас</b>' }]));
+    if (!v || !isMyTurn()) return;
+    const [src, k, id] = v.split('|');
+    if (guest()) netDoWait('delist', { src, k: +k, id }); else guarded(async () => { const r = E.delistCard(S, p, src, +k, id); if (!r.ok) toast(esc(r.why || 'Нельзя')); else if (r.now) { const d = src === 'court' ? D.COURT[r.now] : D.ESTATES[r.now]; toast(`На рынке вместо неё — «${esc(d.name)}»`); } });
   }
-  // Банкирша Эльвира: вклад — сколько положить (до 5🪙), в начале следующего хода вернётся вдвое
-  async function doDeposit(p) {
-    const max = Math.min((E.mods(S, p).deposit || 5), p.gold), opts = [];
-    for (let k = max; k >= 1; k--) opts.push({ icon: '🏦', value: k, html: `<b>Положить ${k}🪙</b><br><span class="muted">в начале следующего хода вернётся ${k * 2}🪙</span>` });
-    const n = await choiceSheet('🏦 Эльвира: сколько положить во вклад?', '<p class="note">Раз в ход, до 5🪙. В начале вашего следующего хода вклад вернётся вдвое — раньше содержания. Пока золото в банке, его не заберут.</p>', opts.concat([{ icon: '✖️', value: 0, html: '<b>Не сейчас</b>' }]));
-    if (!n || !isMyTurn()) return;
-    if (guest()) netDoWait('deposit', { n }); else guarded(async () => { const r = E.depositGold(S, p, n); if (!r.ok) toast(esc(r.why || 'Нельзя')); });
+  // Банкирша Эльвира (правки 10.21): +1🪙 во вклад — одной кнопкой; в начале каждого хода доход — весь вклад
+  function doDeposit(p) {
+    if (guest()) { netDoWait('deposit', {}); return; }
+    guarded(async () => { const r = E.depositGold(S, p); if (!r.ok) toast(esc(r.why || 'Нельзя')); else toast(`🏦 Во вкладе ${r.total}🪙 — в начале каждого хода +${r.total}🪙`); });
   }
   // Баронесса Вольфрада: бесплатное нападение в начале хода — на кого или не нападать
   function askFreeSiege(p, q) {
@@ -3104,8 +3103,7 @@
     if (dg.g || up) h += `<p class="note">🌅 В начале вашего хода: ${dg.g ? `+${dg.g}🪙 (${esc(dg.src.join(', '))})` : 'дохода нет'}${up ? `; содержание −${up}🪙` : ''}.</p>`;
     h += `<div class="sec-h"><h3>Дом и знамёна</h3><span>${E.regCount(p)}/${E.goal(S)} · действуют всегда</span></div><div class="pgrid mini">${wrap(pcard('house', p.house, { badge: dawnB(dawnOf(D.HOUSES[p.house].mods)) }), dwhy('house:' + p.house))}${bans.map(id => (dist === id ? pcard('ban', id, { o: p.i, st: 'built', cls: 'built', badge: '<span class="pcb tag">отвлечён</span>' }) : wrap(pcard('ban', id, { o: p.i, st: 'built', cls: 'built', badge: dawnB(dawnOf(D.BAN[id].mods)) }), dwhy('ban:' + id) + banAct(p, id, mine && my)))).join('')}</div>`;
     if (p.loan) h += `<p class="note">⚖️ Долг Кларе Меняле: ${p.loan}🪙 — спишут в начале следующего хода, до содержания.</p>`;
-    if (p.deposit) h += `<p class="note">🏦 Вклад у Банкирши Эльвиры: ${p.deposit}🪙 — в начале следующего хода вернётся ${p.deposit * 2}🪙.</p>`;
-    { const rg = E.regentOf(S, p); if (rg) h += `<p class="note">📜 Печать регента: до конца хода у вас свойство «${esc(D.regName(D.BAN[rg]))}» — ${esc(D.BAN[rg].text)}</p>`; }
+    if (p.deposit) h += `<p class="note">🏦 Вклад у Банкирши Эльвиры: ${p.deposit}🪙 — в начале каждого хода +${p.deposit}🪙. Его не украсть; уйдёт Эльвира — вклад пропадёт.</p>`;
     if (!bans.length) h += `<p class="muted" style="margin:0;font-size:13px">Знамён пока нет — нанять можно ${L.big ? `в колонке «Знамёна» ${shopSide()}` : 'кнопкой «Знамёна» внизу стола'}.</p>`;
     if (modOn('faith') && (p.faiths || []).length) { const st = E.faithStage(S, p); h += `<div class="sec-h"><h3>Вера</h3><span>ступень ${['I', 'II', 'III'][st - 1]} · 🕯${E.faithCandles(S, p)}</span></div><div class="pgrid mini">${p.faiths.map(f => wrap(pcard('faith', f, { cls: 'built', badge: `<span class="pcb own">🕯 ${['I', 'II', 'III'][st - 1]}</span>` }), dwhy('faith:' + f))).join('')}</div>`; }
     if (modOn('faith') && (p.faiths || []).length) h += ritualHtml(p, mine, my);
@@ -4535,8 +4533,8 @@
       case 'ritstart': return Object.assign({}, await E.startRitual(S, p, String(m.id)));
       case 'ritact': return Object.assign({}, await E.ritualAct(S, p, m.i | 0, m.s === 'ritual2' ? 'ritual2' : 'ritual'));
       case 'loan': return Object.assign({}, E.takeLoan(S, p));
-      case 'deposit': return Object.assign({}, E.depositGold(S, p, m.n | 0));
-      case 'regent': return Object.assign({}, E.regentCopy(S, p, String(m.id)));
+      case 'deposit': { const r = Object.assign({}, E.depositGold(S, p)); if (r.ok) r.note = `🏦 Во вкладе ${r.total}🪙 — в начале каждого хода +${r.total}🪙`; return r; }
+      case 'delist': { const r = Object.assign({}, E.delistCard(S, p, String(m.src), m.k | 0, m.id != null ? String(m.id) : null)); if (r.ok && r.now) r.note = `На рынке вместо неё — «${(m.src === 'court' ? D.COURT[r.now] : D.ESTATES[r.now]).name}»`; return r; }
       // карта по номеру и по имени: стол у гостя мог не успеть обновиться — тогда номер ищем заново
       case 'cycle': { let k = m.k | 0; if (m.id && p.hand[k] !== m.id) k = p.hand.indexOf(String(m.id)); return Object.assign({}, await E.cycleCard(S, p, k)); }
       case 'swap': { let hi = m.hi | 0, ri = m.ri | 0; if (m.hid && p.hand[hi] !== m.hid) hi = E.swapHand(p).find(k => p.hand[k] === m.hid); if (m.rid && S.courtRow[ri] !== m.rid) ri = S.courtRow.indexOf(String(m.rid)); return Object.assign({}, await E.swapMarket(S, p, hi == null ? -1 : hi, ri)); }
@@ -4735,7 +4733,7 @@
     // нажатие мимо кнопок на столе снимает выбор с карты руки
     if (!el) { if (selCard && e.target.closest('.board') && !e.target.closest('.handz .hcard')) { selCard = null; schedule(); } return; }
     if (el.disabled) return;
-    if (el.closest('.scrim') && !['new', 'info-estate', 'info-court', 'info-ban', 'zoom', 'fetch', 'discard-seat', 'res', 'pile', 'purge', 'penance', 'ritstart', 'ritact', 'rite-go', 'loan', 'deposit', 'cycle', 'swap', 'regent'].includes(el.dataset.act)) return;
+    if (el.closest('.scrim') && !['new', 'info-estate', 'info-court', 'info-ban', 'zoom', 'fetch', 'discard-seat', 'res', 'pile', 'purge', 'penance', 'ritstart', 'ritact', 'rite-go', 'loan', 'deposit', 'delist', 'cycle', 'swap'].includes(el.dataset.act)) return;
     const a = el.dataset.act;
     const p = S ? S.players[ME !== null ? ME : S.cur] : null;
     switch (a) {
@@ -4846,7 +4844,7 @@
         if (k === 'rite') { const f = el.dataset.f; if (guest()) netDo('rite', { id: f }); else guarded(async () => { const r = await E.rite(S, p, f); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); }
         else if (k === 'ritual' || k === 'ritstart') { showMy(); setTimeout(() => { const h = [...document.querySelectorAll('.scrim:not(.out) .sec-h h3')].find(x => /Ритуал/.test(x.innerText)); if (h) h.closest('.sec-h').scrollIntoView({ block: 'start' }); }, 60); }
         else if (k === 'fetch') { const b = document.querySelector('.handz .pile.disc'); if (b) b.click(); }
-        else if (k === 'loan') doLoan(p); else if (k === 'cycle') doCycle(p); else if (k === 'swap') doSwap(p); else if (k === 'regent') doRegent(p); else if (k === 'deposit') doDeposit(p); // v10.21
+        else if (k === 'loan') doLoan(p); else if (k === 'cycle') doCycle(p); else if (k === 'swap') doSwap(p); else if (k === 'deposit') doDeposit(p); else if (k === 'delist') doDelist(p); // v10.21
         else if (k === 'purge') { showMy(); setTimeout(() => { const h = [...document.querySelectorAll('.scrim:not(.out) .sec-h h3')].find(x => /Проклятия/.test(x.innerText)); if (h) h.closest('.sec-h').scrollIntoView({ block: 'start' }); }, 120); }
         else if (k === 'adopt' || k === 'fair') { if (!L.big) { drawer = k === 'adopt' ? 'regalia' : 'market'; selCard = null; schedule(); } else { const c = document.querySelector(k === 'adopt' ? '.shopcol > .shop.rg' : '.shopcol > .shop.mk'); if (c) c.scrollIntoView({ block: 'nearest' }); } }
       } break;
@@ -4856,7 +4854,7 @@
       case 'deposit': if (isMyTurn()) { e.stopPropagation(); closeLooseSheets(); doDeposit(p); } break;
       case 'cycle': if (isMyTurn()) { e.stopPropagation(); closeLooseSheets(); doCycle(p); } break;
       case 'swap': if (isMyTurn()) { e.stopPropagation(); closeLooseSheets(); doSwap(p); } break;
-      case 'regent': if (isMyTurn()) { e.stopPropagation(); closeLooseSheets(); doRegent(p); } break;
+      case 'delist': if (isMyTurn()) { e.stopPropagation(); closeLooseSheets(); doDelist(p); } break;
       case 'purge': if (isMyTurn()) { e.stopPropagation(); const uid = +el.dataset.uid; closeLooseSheets(); if (guest()) netDo('purge', { uid }); else guarded(async () => { const r = await E.purgeBad(S, p, uid); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
       case 'res': { e.stopPropagation(); const q = S.players[+el.dataset.i]; if (q) showRes(q, el.dataset.s); } break;
       case 'fetch': if (isMyTurn()) { e.stopPropagation(); const id = el.dataset.id; { const sc = el.closest('.scrim'); if (sc && sc.close) sc.close(); } if (guest()) netDo('fetch', { id }); else guarded(async () => { await E.fetchCard(S, p, id); }); } break;

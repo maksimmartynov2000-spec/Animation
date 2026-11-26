@@ -1,5 +1,5 @@
 // v10.21: новые знамёна в интерфейсе — Клара (долг), Евстафий (сбросить и взять), Ортензия (обмен с рынком), Гертруда (два ритуала),
-// Климент (проклятие снять бесплатно), окна Вольфрады (бесплатное нападение) и Мирона (верхняя карта колоды), Северин (печать регента),
+// Климент (проклятие снять бесплатно), окна Вольфрады (бесплатное нападение) и Мирона (верхняя карта колоды), Северин (снять с торгов),
 // Эльвира (вклад), окна вопросов сворачиваются («Свернуть ▾» / «▴ Вернуться»). iPhone 15.
 // node bans.js [file]
 const { chromium } = require('playwright');
@@ -91,36 +91,42 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   const t8 = await sheet();
   ok('Мирон: окно «Верхняя карта колоды»', /Верхняя карта колоды/.test(t8) && /Мирон Звездочёт/.test(t8) && /колоды двора/.test(t8), t8.slice(0, 160));
   await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && s.querySelector('[data-ok]'); if (b) b.click(); }); await p.waitForTimeout(300);
-  // 8. Северин: печать регента — в выборе Гуго (+1 действие), а Якоба («в начале хода») нет
-  await me(() => { const V = window.__VD, S = V.S, a = S.players[V.ME], o = S.players[1 - V.ME]; a.greats = ['severin']; a.vassals = []; a.lords = []; o.lords = ['hugo']; o.greats = ['jacob']; o.vassals = []; a.turn.regent = null; V.redraw(); });
+  // 8. Северин: снять с торгов — до двух карт рынка за ход, по одной; на их место выходят новые
+  await me(() => { const V = window.__VD, S = V.S, a = S.players[V.ME]; a.greats = ['severin']; a.vassals = []; a.lords = []; a.turn.delisted = 0; V.redraw(); });
   await p.waitForTimeout(400);
   await p.click('.myb'); await p.waitForTimeout(700);
-  const r0 = await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && s.querySelector('[data-act="regent"]'); return b ? `${b.innerText}:${b.disabled}` : null; });
-  ok('«Двор»: кнопка «Печать регента»', /Печать регента:false/.test(r0 || ''), r0);
-  await p.click('.scrim:not(.out) [data-act="regent"]'); await p.waitForTimeout(500);
-  const r1 = await sheet();
-  ok('Северин: окно печати — Гуго есть, Якоба нет', /чьё свойство взять/.test(r1) && /Гуго Неутомимый/.test(r1) && !/Заимодавец Якоб/.test(r1) && /только то, что ещё сработает в этот ход/.test(r1), r1.slice(0, 220));
-  const b8 = await me(() => Engine.buysLeft(window.__VD.S, window.__VD.S.players[window.__VD.ME]));
-  await pick(/Гуго/); await p.waitForTimeout(600); await myTurn();
-  const r2 = await me(() => { const V = window.__VD, a = V.S.players[V.ME]; return { regent: a.turn.regent, left: Engine.buysLeft(V.S, a) }; });
-  ok('Северин: печать на Гуго — +1 действие до конца хода', r2.regent === 'hugo' && r2.left === b8 + 1, JSON.stringify(r2) + ' было ' + b8);
+  const r0 = await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && s.querySelector('[data-act="delist"]'); return b ? `${b.innerText}:${b.disabled}` : null; });
+  ok('«Двор»: кнопка «Снять с торгов»', /Снять с торгов:false/.test(r0 || ''), r0);
+  await p.click('.scrim:not(.out) [data-act="delist"]'); await p.waitForTimeout(500);
+  const r1 = await sheet(), c0 = await me(() => { const S = window.__VD.S; return { id: S.courtRow[0], name: DATA.COURT[S.courtRow[0]].name, est: DATA.ESTATES[S.estateRow[0]].name }; });
+  ok('Северин: окно «что снять с торгов?» — и двор, и владения', /что снять с торгов/.test(r1) && r1.includes(c0.name) && r1.includes(c0.est) && /можно снять ещё одну/.test(r1), r1.slice(0, 200));
+  await pick(new RegExp(c0.name)); await p.waitForTimeout(600); await myTurn();
+  const r2 = await me((id) => { const V = window.__VD, S = V.S, a = S.players[V.ME]; return { gone: !S.courtRow.includes(id) || S.courtRow.filter(x => x === id).length < 1, bottom: S.courtDeck[0] === id, n: a.turn.delisted, row: S.courtRow.length }; }, c0.id);
+  ok('Северин: карта двора — под низ колоды, ряд полон', r2.bottom && r2.n === 1 && r2.row >= 4, JSON.stringify(r2));
   await p.click('.myb'); await p.waitForTimeout(700);
-  const r3 = await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && s.querySelector('[data-act="regent"]'); return { note: !!s && /Печать регента: до конца хода у вас свойство «Гуго Неутомимый/.test(s.innerText.replace(/\s+/g, ' ')), btn: b ? `${b.innerText}:${b.disabled}` : null }; });
-  ok('«Двор»: видно, чья печать стоит; второй раз нельзя', r3.note && /уже поставлена.*:true$/.test(r3.btn || ''), JSON.stringify(r3));
+  const r3 = await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && s.querySelector('[data-act="delist"]'); return b ? `${b.innerText}:${b.disabled}` : null; });
+  ok('«Двор»: «Снять с торгов ещё одну»', /ещё одну:false/.test(r3 || ''), r3);
+  await p.click('.scrim:not(.out) [data-act="delist"]'); await p.waitForTimeout(500);
+  const e0 = await me(() => { const S = window.__VD.S; return { id: S.estateRow[0], name: DATA.ESTATES[S.estateRow[0]].name }; });
+  ok('второе окно: «последняя в этот ход»', /последняя в этот ход/.test(await sheet()));
+  await pick(new RegExp(e0.name)); await p.waitForTimeout(600); await myTurn();
+  const r4 = await me((id) => { const V = window.__VD, S = V.S, a = S.players[V.ME]; return { bottom: S.estateDeck[0] === id, n: a.turn.delisted }; }, e0.id);
+  await p.click('.myb'); await p.waitForTimeout(700);
+  const r5 = await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && s.querySelector('[data-act="delist"]'); return b ? `${b.innerText.replace(/\s+/g, ' ')}:${b.disabled}` : null; });
+  ok('Северин: владение — под низ колоды; третью нельзя', r4.bottom && r4.n === 2 && /Уже сняли две карты.*:true$/.test(r5 || ''), JSON.stringify(r4) + ' ' + r5);
   await closeAll();
-  // 8б. Эльвира: вклад — кнопка на «Дворе», окно «сколько положить», 5🪙 ушли во вклад, на «Дворе» видно, сколько вернётся
-  await me(() => { const V = window.__VD, a = V.S.players[V.ME]; a.greats = ['elvira']; a.gold = 9; a.deposit = 0; a.turn.deposited = false; V.redraw(); });
+  // 8б. Эльвира: +1🪙 во вклад одной кнопкой; на «Дворе» видно вклад и доход с него
+  await me(() => { const V = window.__VD, a = V.S.players[V.ME]; a.greats = ['elvira']; a.gold = 9; a.deposit = 2; a.turn.deposited = false; V.redraw(); });
   await p.waitForTimeout(400);
   await p.click('.myb'); await p.waitForTimeout(700);
-  await p.click('.scrim:not(.out) [data-act="deposit"]'); await p.waitForTimeout(500);
-  const e1 = await sheet();
-  ok('Эльвира: окно «сколько положить во вклад?» — от 5🪙, вернётся вдвое', /сколько положить во вклад/.test(e1) && /Положить 5/.test(e1) && /вернётся 10/.test(e1) && !/Положить 6/.test(e1), e1.slice(0, 200));
-  await pick(/Положить 5/); await p.waitForTimeout(600); await myTurn();
+  const e1 = await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && s.querySelector('[data-act="deposit"]'); return b ? `${b.innerText.replace(/\s+/g, ' ')}:${b.disabled}` : null; });
+  ok('«Двор»: кнопка «Положить 1🪙 во вклад»', /Положить 1 во вклад:false/.test(e1 || ''), e1);
+  await p.click('.scrim:not(.out) [data-act="deposit"]'); await p.waitForTimeout(600); await myTurn();
   const e2 = await me(() => { const V = window.__VD, a = V.S.players[V.ME]; return { gold: a.gold, dep: a.deposit }; });
-  ok('Эльвира: 5🪙 ушли во вклад', e2.gold === 4 && e2.dep === 5, JSON.stringify(e2));
+  ok('Эльвира: 1🪙 во вклад — во вкладе 3🪙', e2.gold === 8 && e2.dep === 3, JSON.stringify(e2));
   await p.click('.myb'); await p.waitForTimeout(700);
-  const e3 = await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && s.querySelector('[data-act="deposit"]'); return { note: !!s && /Вклад у Банкирши Эльвиры: 5 — в начале следующего хода вернётся 10/.test(s.innerText.replace(/\s+/g, ' ')), btn: b ? `${b.innerText.replace(/\s+/g, ' ')}:${b.disabled}` : null }; });
-  ok('«Двор»: видно вклад и сколько вернётся; второй раз нельзя', e3.note && /уже сделан.*:true$/.test(e3.btn || ''), JSON.stringify(e3));
+  const e3 = await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const t = s ? s.innerText.replace(/\s+/g, ' ') : ''; const b = s && s.querySelector('[data-act="deposit"]'); return { note: /Вклад у Банкирши Эльвиры: 3 — в начале каждого хода \+3/.test(t) && /уйдёт Эльвира — вклад пропадёт/.test(t), dawn: /В начале вашего хода: \+3.*вклад \+3/.test(t), btn: b ? `${b.innerText.replace(/\s+/g, ' ')}:${b.disabled}` : null }; });
+  ok('«Двор»: видно вклад и +3🪙 в начале хода; второй раз нельзя', e3.note && e3.dawn && /уже пополнен.*:true$/.test(e3.btn || ''), JSON.stringify(e3));
   await closeAll();
   // 9. окно вопроса можно свернуть: виден стол, «▴ Вернуться» — снова окно; действие из «Двора» его не закрывает
   await me(() => { const V = window.__VD, a = V.S.players[V.ME]; a.vassals = ['klara']; a.turn.loaned = false; window.__q9 = 'ждём'; V.ask({ type: 'freeSiege', bonus: 4, fee: 3, options: [{ i: 1 - V.ME, p: 0.42, A: 9, D: 10, loot: 2, gold: 5 }] }).then(v => { window.__q9 = v; }); });
