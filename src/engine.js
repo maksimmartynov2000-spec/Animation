@@ -1347,7 +1347,7 @@ const Engine = (() => {
     if (S.winner !== null || S.players[S.cur] !== p) return 'Сейчас не ваш ход';
     if (!mods(S, p).marketSwap) return 'Нужна Ортензия';
     if (p.turn.swapped) return 'Обмен уже был в этот ход';
-    if (!swapHand(p).length) return 'В руке нечего отдать: Подать и фамильные карты не меняются';
+    if (!swapHand(p).length) return 'Нечего отдать: Подать и фамильные не меняются';
     if (!swapRow(S).length) return 'В ряду рынка нечего взять';
     return null;
   }
