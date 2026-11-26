@@ -253,6 +253,9 @@ body.staging .cmid, body.staging .cfoot { opacity: .12; transition: opacity .2s 
 .pa { flex: 1; min-width: 0; display: flex; gap: 8px; align-items: stretch; }
 .board .primary { flex: 1; min-width: 0; height: 50px; border-radius: 13px; background: linear-gradient(180deg, var(--gold1), var(--gold2)); color: var(--gold-ink); box-shadow: 0 3px 0 rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .5); display: grid; justify-items: center; align-content: center; gap: 0; padding: 0 10px; font-size: 16.5px; font-weight: 800; text-align: center; transition: transform .1s ease, filter .15s ease; }
 .primary > span { display: flex; align-items: center; gap: 5px; white-space: nowrap; max-width: 100%; overflow: hidden; }
+/* v10.21: правило выше — для кнопки хода; в кнопках .btn.primary «число+значок» (.icw) не сжимать: «Взять 3🪙 в долг» резало до «Взять ⁝» */
+.btn.primary > .icw { overflow: visible; max-width: none; }
+.icw > img.ic { max-width: none; } /* значок рядом с числом не сжимается: img { max-width: 100% } в узкой кнопке давал монету шириной в цифру */
 .primary .ic { width: 20px; height: 20px; vertical-align: 0; flex: none; }
 .primary small { font-size: 11px; font-weight: 600; opacity: .74; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .primary:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .5); }

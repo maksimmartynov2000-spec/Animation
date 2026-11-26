@@ -259,22 +259,51 @@
     estateGold: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале хода — за каждые 2 ваших владения' }),
     dreamPeek: (n) => ({ dawn: 1, i: 'card', c: `вещий сон: посмотрите ${n} верхние карты колоды — каждую оставьте сверху или под низ` }),
     warmGold: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'весной и летом' }),
+    // v10.21 — новые знамёна
+    riteGold: (n) => ({ pre: 'faith', v: `+${n}`, i: 'gold', c: 'за каждый обряд вашей веры' }),
+    riteExtra: () => ({ i: 'faith', c: 'обряд вашей веры — ещё раз за ход (с Титом — три раза)' }),
+    peekTop: () => ({ dawn: 1, i: 'card', c: 'посмотрите верхнюю карту своей колоды двора — оставьте её сверху или положите под низ' }),
+    darkGuard: (n) => ({ v: `−${n}`, i: 'int', c: 'проклятиям и козням против вас' }),
+    darkSpy: (n) => ({ v: `+${n}`, i: 'int', c: 'вашим проклятиям и козням' }),
+    darkWinGold: (n) => ({ v: `+${n}`, i: 'gold', c: 'проклятие легло или козни удались' }),
+    loan: () => [{ v: '+3', i: 'gold', c: 'по желанию, раз в ход — в долг' }, { dawn: 1, v: '−4', i: 'gold', c: 'если брали: в начале следующего хода, до содержания' }],
+    defendGold: (n) => ({ v: `+${n}`, i: 'gold', c: 'отбили нападение или шпионаж' }),
+    sinFee: (n) => ({ v: `+${n}`, i: 'gold', c: 'соперник взял грех — возьмите у него' }),
+    markGold: (n) => ({ v: `+${n}`, i: 'gold', c: 'за каждую отметку вашего ритуала' }),
+    schemeKeep: () => ({ i: 'card', c: 'ваши козни после розыгрыша — в ваш сброс, а не в колоду двора' }),
+    cycle: () => ({ i: 'card', c: 'раз в ход: сбросьте карту из руки и возьмите новую' }),
+    freePurge: () => ({ i: 'action', c: 'раз в ход снимите с себя проклятие — без действия и без золота' }),
+    siegeLossFee: (n) => ({ v: `−${n}`, i: 'gold', c: 'проиграли нападение — отдайте тому, на кого нападали' }),
+    sinGold: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале хода — за каждый ваш грех' }),
+    twoRituals: () => ({ i: ['faith', 'faith'], c: 'можно вести два ритуала своей веры сразу' }),
+    cleanCapture: () => ({ i: 'siege', c: 'захваченное вами владение приходит без руин' }),
+    freeSin: () => ({ i: 'action', c: 'грех можно взять, не тратя действие' }),
+    curseSure: () => ({ i: 'int', c: 'ваши проклятия ложатся без броска, откупиться нельзя' }),
+    curseIncome: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале хода — за каждое ваше проклятие у соперников' }),
+    marketSwap: () => ({ i: 'card', c: 'раз в ход: карту двора из руки (не Подать и не фамильную) — в ряд рынка, взамен любую карту этого ряда — в руку' }),
+    freeSiege: (n) => ({ dawn: 1, pre: 'siege', v: `+${n}`, i: 'war', c: 'в начале хода — бесплатное нападение на любого соперника; проиграли — отдайте ему 3🪙' }),
+    sinTax: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале вашего хода — с каждого соперника за каждый его грех' }),
+    deposit: () => [{ v: '−1', i: 'gold', c: 'раз в ход — во вклад' }, { dawn: 1, v: '+N', i: 'gold', c: 'N — сколько во вкладе; уйдёт Эльвира — вклад пропадёт' }],
+    delist: (n) => ({ v: `−${n}`, i: 'tag', c: 'раз в ход — снять с торгов до двух карт рынка: владения или двор; выйдут новые' }),
+    sinSafe: () => ({ i: 'faith', c: 'грехи не мешают вашим ритуалам: начинать можно, отметки не сгорают, чудеса не молчат' }),
     fairCourt: () => null,
     seasonDouble: () => ({ i: 'spring', c: 'хорошее от сезона ×2, плохое — нет' }),
   };
   const ORDER = ['provBonus_N', 'provBonus_S', 'provBonus_E', 'provBonus_W', 'dice2', 'buys', 'advantage', 'peek', 'rerollOne', 'doubleDraw', 'extraTurn', 'raidSym', 'riteTwice', 'candleGold', 'estateGold', 'dreamPeek', 'freeCourtBuy', 'freeEstateBuy', 'freeLandBuy', 'freeRaidBuy', 'craftAny', 'banIncome', 'allyAll', 'doubleGold', 'stageUp', 'oathFree', 'lootPlus', 'fetch', 'hand', 'reroll', 'predict', 'shift', 'vasCheap', 'lordCheap', 'savings', 'retireDraw', 'retireGold', 'faithGold', 'faithEase', 'faithAdoptGold', 'freeRenounce', 'twoFaiths', 'infidelTithe', 'faithTithe', 'shield', 'spyWinGold', 'freeSpy', 'plotThird', 'symIncome_trade', 'symIncome_faith', 'symFee_trade', 'symFee_faith', 'regCheap', 'symBuy', 'tradeCheap', 'blueBonus', 'greenBonus', 'winter', 'redBonus', 'raidShield', 'redOwn', 'siege', 'defense', 'walls', 'spy', 'guard', 'stealBonus',
     'warCry', 'startGold', 'tithe', 'buyToll', 'interest', 'symIncome_sci', 'symIncome_war', 'symIncome_int', 'landIncome', 'craftIncome', 'plotIncome', 'redIncome', 'unionGold', 'tribute', 'symFee_sci', 'symFee_int', 'symFee_war', 'siegeWinGold',
     'fairPlus', 'freeBasic', 'allyScholar', 'lowRollGold', 'regGold', 'oppRegGold', 'seatSlots', 'seatIncome', 'seatGold', 'seatFromDiscard', 'seatGuard', 'provIncome', 'warmGold', 'holdBonus', 'raidDraw', 'lordIncome', 'landBuyGold',
-    'plotSlots', 'plotSpread', 'plotGold', 'timedPlotBonus', 'plotProtect', 'harbor', 'extraTurn', 'captureImmune', 'envyImmune', 'marketDiscount', 'landOthers', 'landOwn', 'courtCheap', 'ownCheap', 'greatCheap', 'courtToHand', 'unionSize', 'unionFast', 'unionNoSym', 'unionBounty', 'seasonDouble', 'seasonBonus', 'freeCheap', 'seatGuard'];
+    'plotSlots', 'plotSpread', 'plotGold', 'timedPlotBonus', 'plotProtect', 'harbor', 'extraTurn', 'captureImmune', 'envyImmune', 'marketDiscount', 'landOthers', 'landOwn', 'courtCheap', 'ownCheap', 'greatCheap', 'courtToHand', 'unionSize', 'unionFast', 'unionNoSym', 'unionBounty', 'seasonDouble', 'seasonBonus', 'freeCheap', 'seatGuard', 'riteExtra', 'riteGold', 'peekTop', 'darkSpy', 'darkWinGold', 'darkGuard', 'curseSure', 'curseIncome', 'loan', 'defendGold', 'sinFee', 'markGold', 'schemeKeep', 'cycle', 'freePurge', 'siegeLossFee', 'sinGold', 'twoRituals', 'cleanCapture', 'freeSin', 'marketSwap', 'freeSiege', 'sinTax', 'sinSafe', 'deposit', 'delist'];
   // какой модуль нужен способности, чтобы она работала (остальные работают всегда)
   const MOD_NEEDS = { lootPlus: 'sieges', oathFree: 'faith', stageUp: 'faith', riteTwice: 'faith', dreamPeek: 'seats', siege: 'sieges', defense: 'sieges', walls: 'sieges', siegeWinGold: 'sieges', captureImmune: 'sieges', spyWinGold: 'spy', freeSpy: 'spy',
     faithGold: 'faith', faithEase: 'faith', faithAdoptGold: 'faith', freeRenounce: 'faith', infidelTithe: 'faith', faithTithe: 'faith', twoFaiths: 'faith', plotThird: 'plots', lordCheap: 'lords',
     spy: 'spy', guard: 'spy', stealBonus: 'spy', plotSlots: 'plots', plotGold: 'plots', plotIncome: 'plots', timedPlotBonus: 'plots', plotProtect: 'plots', plotSpread: 'plots',
-    unionGold: 'unions', envyImmune: 'balance', unionSize: 'unions', unionFast: 'unions', greatCheap: 'great', unionNoSym: 'unions', unionBounty: 'unions', seatSlots: 'seats', lordIncome: 'lords', seatGuard: 'seats', seatIncome: 'seats', seatGold: 'seats', seatFromDiscard: 'seats' };
+    unionGold: 'unions', envyImmune: 'balance', unionSize: 'unions', unionFast: 'unions', greatCheap: 'great', unionNoSym: 'unions', unionBounty: 'unions', seatSlots: 'seats', lordIncome: 'lords', seatGuard: 'seats', seatIncome: 'seats', seatGold: 'seats', seatFromDiscard: 'seats',
+    riteGold: 'faith', riteExtra: 'faith', darkGuard: 'spy', darkSpy: 'spy', darkWinGold: 'spy', defendGold: 'sieges|spy', sinFee: 'faith', markGold: 'faith', schemeKeep: 'spy', freePurge: 'spy',
+    siegeLossFee: 'sieges', sinGold: 'faith', twoRituals: 'faith', cleanCapture: 'sieges', freeSin: 'faith', curseSure: 'spy', curseIncome: 'spy', freeSiege: 'sieges', sinTax: 'faith', sinSafe: 'faith' };
   // разделить способности на действующие и выключенные модулями: on(k) — включён ли модуль k
   function splitMods(m, on) {
     const act = {}, off = {}, offK = [];
-    for (const k in m || {}) { const need = MOD_NEEDS[k]; if (need && on && !on(need)) { off[k] = m[k]; if (!offK.includes(need)) offK.push(need); } else act[k] = m[k]; }
+    for (const k in m || {}) { const need = MOD_NEEDS[k]; if (need && on && !need.split('|').some(x => on(x))) { off[k] = m[k]; const n0 = need.split('|')[0]; if (!offK.includes(n0)) offK.push(n0); } else act[k] = m[k]; } // «sieges|spy» — хватит любого из модулей
     return { act, off, offK };
   }
   function mods(m, prod) {
@@ -283,7 +312,7 @@
     if (ps.length === 1) out.push({ v: `+${prod[ps[0]]}`, i: ps[0], c: 'постоянно' });
     else if (ps.length > 1) out.push({ v: '+', i: ps.flatMap(s => Array(prod[s]).fill(s)), c: 'постоянно' });
     const keys = Object.keys(m || {}).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
-    for (const k of keys) { if (!m[k]) continue; const x = MOD[k] ? MOD[k](m[k], m) : k in MOD ? null : { c: k }; if (x) out.push(x); }
+    for (const k of keys) { if (!m[k]) continue; const x = MOD[k] ? MOD[k](m[k], m) : k in MOD ? null : { c: k }; if (Array.isArray(x)) out.push(...x); else if (x) out.push(x); } // свойство может дать несколько значков (Клара: долг и возврат)
     return out;
   }
   // титулы и союзы провинций — те же числа, что в движке (Engine.mods / prod / walls / startOfTurn)

@@ -1,5 +1,6 @@
 // v10.19: новые окна по сети — хозяин и гость в двух страницах, брокер MQTT здесь же. Гость проходит окна ритуалов и грехов,
 // «Перст судьбы» и покаяние: окно приходит на устройство гостя, ответ доходит до хозяина, стол у обоих сходится.
+// v10.21: долг Клары, «сбросить и взять» Евстафия и обмен Ортензии — с устройства гостя.
 // node netwin.js
 const { chromium } = require('playwright');
 const { wsServer: WSS } = require(require.resolve('playwright-core/lib/utilsBundle', { paths: [require.resolve('playwright')] }));
@@ -170,6 +171,26 @@ function broker() {
   await gClick('.myb[data-act="my"]'); await guest.waitForTimeout(700);
   await gClick('.scrim:not(.out) [data-act="penance"]');
   ok('покаяние по сети: шаг 1 у хозяина, 5🪙 ушли ему', await until((S, g, h, hg) => g.penance && g.penance.step === 1 && h.gold === hg + 5, hg), JSON.stringify(await hostQ((S, g, h) => ({ pen: g.penance, hg: h.gold }))) + ' было ' + hg);
+  await gCloseAll();
+  // 6. v10.21: новые знамёна у гостя — Клара (долг), Евстафий (сбросить и взять), Ортензия (обмен с рынком), Северин (снять с торгов), Эльвира (вклад)
+  ok('ход гостя для знамён (тот же ход, до броска)', await guestTurn());
+  await hostSet((S, g) => { g.vassals = ['klara']; g.lords = ['eustace']; g.greats = ['ortensia']; g.sins = []; g.penance = null; g.gold = 20; g.hand = ['tax', 'scribe', 'tax']; g.deck = ['collector', 'tax']; S.courtRow[0] = 'spicer'; });
+  const pickG = (re) => guest.evaluate((src) => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && [...s.querySelectorAll('.optlist [data-v]')].find(x => new RegExp(src).test(x.innerText)); if (b) b.click(); return !!b; }, re.source);
+  await gClick('[data-act="ex"][data-k="loan"]'); await gSheet(/взять в долг/); await pickG(/Взять 3/);
+  ok('Клара по сети: +3🪙 и долг у хозяина', await until((S, g) => g.gold === 23 && g.loan === 4), JSON.stringify(await hostQ((S, g) => ({ gold: g.gold, loan: g.loan }))));
+  await gClick('[data-act="ex"][data-k="cycle"]'); await gSheet(/какую карту сбросить/); await pickG(/Подать/);
+  ok('Евстафий по сети: карта сброшена, новая взята', await until((S, g) => g.turn.cycled && g.hand.length === 3), JSON.stringify(await hostQ((S, g) => ({ hand: g.hand, c: g.turn.cycled }))));
+  await gClick('[data-act="ex"][data-k="swap"]'); await gSheet(/какую карту отдать/); await pickG(/Писарь/); await gSheet(/какую карту взять/); await pickG(/Торговец пряностями/);
+  ok('Ортензия по сети: обмен с рынком у хозяина', await until((S, g) => g.hand.includes('spicer') && S.courtRow[0] === 'scribe'), JSON.stringify(await hostQ((S, g) => ({ hand: g.hand, row: S.courtRow }))));
+  // Северин: снять с торгов с устройства гостя — карта двора уходит под низ колоды у хозяина
+  await hostSet((S, g) => { g.greats = ['ortensia', 'severin']; g.turn.delisted = 0; });
+  const dl = await hostQ((S) => ({ id: S.courtRow[0], name: DATA.COURT[S.courtRow[0]].name }));
+  await gClick('[data-act="ex"][data-k="delist"]'); await gSheet(/что снять с торгов/); await pickG(new RegExp(dl.name));
+  ok('Северин по сети: карта снята с торгов у хозяина', await until((S, g, h, id) => g.turn.delisted === 1 && S.courtDeck[0] === id, dl.id), JSON.stringify(await hostQ((S, g) => ({ n: g.turn.delisted, bottom: S.courtDeck[0] }))) + ' ждали ' + dl.id);
+  // Эльвира: +1🪙 во вклад с устройства гостя
+  await hostSet((S, g) => { g.greats = ['ortensia', 'elvira']; g.turn.deposited = false; g.deposit = 0; g.gold = 20; });
+  await gClick('[data-act="ex"][data-k="deposit"]');
+  ok('Эльвира по сети: 1🪙 во вкладе у хозяина', await until((S, g) => g.deposit === 1 && g.gold === 19), JSON.stringify(await hostQ((S, g) => ({ d: g.deposit, gold: g.gold }))));
   await gCloseAll();
   // стол у обоих сходится
   await guest.waitForTimeout(1200);
