@@ -758,6 +758,96 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     eq(same, all, `итог броска заранее = настоящий бросок${bad.length ? ' — ' + bad.join('; ') : ''}`);
     const S = mk(), [a, b] = S.players; est(S, b, 'barracks'); a.gold = 1; // Набег соперника берёт сколько есть
     const pv = E.rollPreview(S, a, 4); ok(pv[0].loss === 1 && pv[1].gain === 1, `бросок 4: Казармы соперника берут 1🪙 из 1 (вышло −${pv[0].loss} / +${pv[1].gain})`); }
+  // ================= v10.21: блок «Знамёна» — 25 новых знамён =================
+  { const n = (t) => Object.values(D.BAN).filter(b => b.tier === t && !b.heir).length; ok(n('v') === 36 && n('l') === 29 && n('g') === 19, `знамён в рядах: 36 / 29 / 19 (вышло ${n('v')} / ${n('l')} / ${n('g')})`); }
+  { // Брат Лукас и Патриарх Иероним: золото за обряд; Иероним — обряд ещё раз за ход, с Титом — три
+    const S = mk(), [a] = S.players; a.faiths = ['cathedral']; a.vassals = ['lukas']; a.greats = ['hieronymus']; const g0 = a.gold;
+    ok((await E.rite(S, a, 'cathedral')).ok && a.gold - g0 === 4, `Месса +1🪙, Лукас +1🪙, Иероним +2🪙 (вышло +${a.gold - g0})`);
+    ok((await E.rite(S, a, 'cathedral')).ok, 'Иероним: второй обряд за ход'); ok(!(await E.rite(S, a, 'cathedral')).ok, 'третьего без Тита нет');
+    a.vassals.push('tit'); ok((await E.rite(S, a, 'cathedral')).ok, 'с Титом — третий обряд'); }
+  { // Мирон Звездочёт: в начале хода — верхняя карта своей колоды, можно под низ
+    const S = mk(), [a] = S.players; a.vassals = ['miron']; a.deck = ['tax', 'tax', 'collector']; let seen = null;
+    ans = (q) => (q.type === 'dream' ? (seen = q.cards.slice(), [0]) : null); await T.startOfTurn(S, a); ans = null;
+    ok(seen && seen.length === 1 && seen[0] === 'collector' && a.deck[0] === 'collector', 'Мирон: видна одна верхняя карта, ушла под низ'); }
+  { // Морена и Ведана: проклятия и козни сильнее / слабее
+    const S = mk(), [a, b] = S.players; a.lords = ['morena']; b.vassals = ['vedana'];
+    const i0 = E.spyInfo(S, a, b, 3, false), i1 = E.spyInfo(S, a, b, 3, true);
+    eq(i1.A - i0.A, 3, 'Морена: проклятия и козни +3🔗'); eq(i1.G - i0.G, 2, 'Ведана: против проклятий и козней защита +2'); }
+  { // Лукреция: проклятие ложится без броска и без откупа; в начале хода +1🪙 за своё проклятие у соперника
+    const S = mk(), [a, b] = S.players; a.greats = ['lucrezia']; a.turn.rolled = true; a.gold = 30; S.estateRow = ['evileye']; let bo = false;
+    ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? (bo = true) : null); const r = await E.buy(S, a, 'estate', 0); ans = null;
+    ok(r.ok && b.estates.some(e => e.id === 'evileye' && e.by === 0) && !bo, 'Лукреция: проклятие у соперника — без броска и без откупа');
+    ok(E.dawnGold(S, a, E.mods(S, a)).src.some(x => /проклятия у соперников \+1/.test(x)), 'Лукреция: +1🪙 за своё проклятие'); }
+  { // Готье: нападение +3⚔️; проиграли — 3🪙 защитнику; Хельга у защитника: отбились — +3🪙
+    const S = mk(), [a, b] = S.players; b.vassals = ['helga']; b.temp.war = 60; est(S, b, 'shop');
+    const A0 = E.siegeOdds(S, a, b, 2).A; a.lords = ['gautier']; eq(E.siegeOdds(S, a, b, 2).A - A0, 4, 'Готье: +3⚔️ к нападению и свой ⚔️');
+    const ga = a.gold, gb = b.gold; ans = (q) => (q.type === 'target' ? 1 : null); await fx(S, a, [['siege', 2]]); ans = null;
+    eq(ga - a.gold, 3, 'Готье: проиграли нападение — отдали 3🪙'); eq(b.gold - gb, 6, 'защитник: 3🪙 от Готье и 3🪙 от Хельги'); }
+  { // Капитан Дитрих: захваченное владение без руин
+    const S = mk(), [a, b] = S.players; a.lords = ['dietrich']; big(a); est(S, b, 'shop');
+    ans = (q) => (q.type === 'target' ? 1 : q.type === 'capture' ? q.options[0] : q.type === 'bribe' ? false : null); await fx(S, a, [['siege', 2]]); ans = null;
+    const e = a.estates.find(x => x.id === 'shop'); ok(!!e && !e.ruined, 'Дитрих: захваченное владение без руин'); }
+  { // Баронесса Вольфрада: в начале хода — бесплатное нападение по желанию; проиграли — 3🪙 защитнику
+    const S = mk(), [a, b] = S.players; a.greats = ['wolfrada']; b.temp.war = 60; est(S, b, 'shop'); let q0 = null;
+    ans = (q) => (q.type === 'freeSiege' ? (q0 = q, 1) : null); await T.startOfTurn(S, a); ans = null;
+    ok(!!q0 && q0.bonus === 4 && q0.options.length === 1, 'Вольфрада: в начале хода — предложение напасть, +4⚔️');
+    ok(S.log.some(x => /Осада/.test(x.t)) && S.log.some(x => /отдают 3🪙/.test(x.t)), 'Вольфрада: напали, проиграли — 3🪙 защитнику');
+    const S2 = mk(), [c, d] = S2.players; c.greats = ['wolfrada']; est(S2, d, 'shop'); ans = (q) => (q.type === 'freeSiege' ? -1 : null); await T.startOfTurn(S2, c); ans = null;
+    ok(!S2.log.some(x => /Осада/.test(x.t)), 'Вольфрада: можно не нападать'); }
+  { // Клара Меняла: 3🪙 в долг, в начале следующего хода −4🪙; нечем — сколько есть
+    const S = mk(), [a] = S.players; a.vassals = ['klara']; a.gold = 5;
+    ok(E.takeLoan(S, a).ok && a.gold === 8 && a.loan === 4, 'Клара: +3🪙 в долг, отдать 4🪙'); ok(!E.takeLoan(S, a).ok, 'второй долг за ход нельзя');
+    a.gold = 10; await T.startOfTurn(S, a); ok(a.loan === 0 && S.log.some(x => /долг Кларе Меняле — −4🪙/.test(x.t)), 'в начале хода долг −4🪙');
+    a.loan = 4; a.gold = 2; await T.startOfTurn(S, a); ok(a.loan === 0 && S.log.some(x => /−2🪙 \(из 4🪙: больше нечем\)/.test(x.t)), 'нечем — сколько есть, остальное прощено'); }
+  { // Сводня Мелания: соперник взял грех — 4🪙 у него
+    const S = mk(), [a, b] = S.players; b.vassals = ['melania']; a.turn.rolled = true; a.gold = 10; S.courtRow = ['sin_gluttony']; const gb = b.gold;
+    await E.buy(S, a, 'court', 0); eq(b.gold - gb, 4, 'Мелания: соперник взял грех — 4🪙 у него'); }
+  { // Хронист Беренгар: +2🪙 за каждую отметку ритуала
+    const S = mk(), [a] = S.players; a.faiths = ['grain']; a.vassals = ['berengar']; await E.startRitual(S, a, 'grain_a');
+    const g0 = a.gold; est(S, a, 'field', 'vineyard', 'shrine'); T.ritualTick(S, a); ok(a.ritual.marks[1] && a.gold - g0 === 2, `Беренгар: сбор отмечен — +2🪙 (вышло +${a.gold - g0})`); }
+  { // Сестра-тень Ветта: козни остаются у вас
+    const S = mk(), [a, b] = S.players; a.vassals = ['vetta']; a.hand = ['slander']; b.temp.int = 60; const c0 = S.courtDeck.filter(x => x === 'slander').length;
+    ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? false : null); await E.play(S, a, 0); ans = null;
+    ok(a.inPlay.includes('slander') && S.courtDeck.filter(x => x === 'slander').length === c0, 'Ветта: козни остались в вашем сбросе'); }
+  { // Евстафий: раз в ход сбросить карту и взять новую
+    const S = mk(), [a] = S.players; a.lords = ['eustace']; a.hand = ['tax', 'collector']; a.deck = ['scribe'];
+    ok((await E.cycleCard(S, a, 0)).ok && a.hand.includes('scribe') && a.discard.includes('tax') && a.hand.length === 2, 'Евстафий: Подать в сброс, новая карта в руке');
+    ok(!(await E.cycleCard(S, a, 0)).ok, 'Евстафий: второй раз за ход нельзя'); }
+  { // Отец Климент: раз в ход снять проклятие без действия и без золота
+    const S = mk(), [a] = S.players; a.lords = ['clement']; a.turn.rolled = true; a.gold = 0; const e1 = addEst(S, a, 'evileye'), e2 = addEst(S, a, 'blight');
+    const r = await E.purgeBad(S, a, e1.uid); ok(r.ok && E.buysLeft(S, a) === 1 && a.gold === 0 && !a.estates.includes(e1), 'Климент: проклятие снято без действия и без золота');
+    ok(!(await E.purgeBad(S, a, e2.uid)).ok, 'Климент: второе — уже действием и 2🪙'); }
+  { // Князь Вальдемар: +1🪙 за каждый грех в начале хода
+    const S = mk(), [a] = S.players; a.lords = ['valdemar']; a.sins = ['sin_sloth', 'sin_gluttony'];
+    ok(E.dawnGold(S, a, E.mods(S, a)).src.some(x => /за грехи \+2/.test(x)), 'Вальдемар: +1🪙 за каждый грех'); }
+  { // Аббатиса Гертруда: два ритуала сразу; сбор отмечается в обоих; грех сжигает оба
+    const S = mk(), [a] = S.players; a.faiths = ['grain']; a.lords = ['gertrude'];
+    ok((await E.startRitual(S, a, 'grain_a')).ok && (await E.startRitual(S, a, 'grain_b')).ok && !!a.ritual && !!a.ritual2, 'Гертруда: два ритуала сразу');
+    est(S, a, 'field', 'vineyard', 'shrine'); a.gold = 20; T.ritualTick(S, a);
+    ok(a.ritual.marks.some(Boolean) && a.ritual2.marks.some(Boolean), 'сбор отмечен в обоих ритуалах (Земли и казна)');
+    ok(E.ritualProgress(S, a, 'ritual2').length === 5, 'ход второго ритуала виден');
+    await E.takeSin(S, a, 'sin_sloth'); ok(!a.ritual && !a.ritual2, 'грех сжигает оба ритуала');
+    const S2 = mk(), [b] = S2.players; b.faiths = ['grain']; await E.startRitual(S2, b, 'grain_a'); await E.startRitual(S2, b, 'grain_b');
+    ok(b.ritual && b.ritual.id === 'grain_b' && !b.ritual2, 'без Гертруды ритуал один: новый вместо старого'); }
+  { // Владычица Морвена: грех без действия
+    const S = mk(), [a] = S.players; a.lords = ['morvena']; a.turn.rolled = true; S.courtRow = ['sin_gluttony'];
+    const r = await E.buy(S, a, 'court', 0); ok(r.ok && E.buysLeft(S, a) === 1 && a.sins.length === 1, 'Морвена: грех взят, действие не потрачено'); }
+  { // Ортензия: карта из руки — в ряд рынка, карта ряда — в руку; Подать не меняется
+    const S = mk(), [a] = S.players; a.greats = ['ortensia']; a.hand = ['tax', 'scribe']; S.courtRow = ['collector', 'sin_lust'];
+    ok(!(await E.swapMarket(S, a, 0, 0)).ok, 'Ортензия: Подать не меняется'); ok(!(await E.swapMarket(S, a, 1, 1)).ok, 'Ортензия: грех из ряда не взять');
+    ok((await E.swapMarket(S, a, 1, 0)).ok && a.hand.includes('collector') && S.courtRow[0] === 'scribe', 'Ортензия: Писарь в ряд, Сборщик в руку');
+    ok(!(await E.swapMarket(S, a, 0, 1)).ok, 'Ортензия: второй раз за ход нельзя'); }
+  { // Инквизитор Кассиан: грешник в начале своего хода платит 2🪙
+    const S = mk(), [a, b] = S.players; b.greats = ['cassian']; a.sins = ['sin_sloth']; a.gold = 10; const gb = b.gold;
+    await T.startOfTurn(S, a); eq(b.gold - gb, 2, 'Кассиан: грешник платит 2🪙 в начале своего хода'); }
+  { // Магистр Целестин: грехи не мешают ритуалам и чудесам
+    const S = mk(), [a] = S.players; a.faiths = ['grain']; a.greats = ['celestin']; a.sins = ['sin_sloth'];
+    ok((await E.startRitual(S, a, 'grain_a')).ok, 'Целестин: ритуал можно начать с грехом');
+    await E.takeSin(S, a, 'sin_gluttony'); ok(!!a.ritual, 'Целестин: новый грех не сжигает ритуал');
+    a.miracles = ['grain_b']; ok(E.miraclesOn(a).includes('grain_b'), 'Целестин: чудо при грехе не молчит'); a.greats = []; ok(!E.miraclesOn(a).length, 'без Целестина чудо при грехе молчит'); }
+  { // Регент Северин: +1 действие; Банкирша Эльвира: +1🪙 за каждые 5🪙
+    const S = mk(), [a] = S.players; a.greats = ['severin', 'elvira']; a.gold = 23;
+    eq(E.buysLeft(S, a), 2, 'Северин: два действия за ход'); ok(E.dawnGold(S, a, E.mods(S, a)).g >= 4, 'Эльвира: при 23🪙 — +4🪙'); }
   console.log(`\nИТОГ: ${passes} проверок прошли, ${fails} не прошли`);
 })().catch(e => { console.log('CRASH', e.stack); });
 // ===== Ярмарка на ход (карты двора): таких карт в основе больше нет — проверка убрана =====
