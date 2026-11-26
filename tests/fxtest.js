@@ -794,11 +794,12 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     ok(S.log.some(x => /Осада/.test(x.t)) && S.log.some(x => /отдают 3🪙/.test(x.t)), 'Вольфрада: напали, проиграли — 3🪙 защитнику');
     const S2 = mk(), [c, d] = S2.players; c.greats = ['wolfrada']; est(S2, d, 'shop'); ans = (q) => (q.type === 'freeSiege' ? -1 : null); await T.startOfTurn(S2, c); ans = null;
     ok(!S2.log.some(x => /Осада/.test(x.t)), 'Вольфрада: можно не нападать'); }
-  { // Клара Меняла: по желанию 3🪙 в долг; в начале следующего хода −4🪙; нет 4🪙 — долг прощён (решение владельца, проверка 10.21)
+  { // Клара Меняла: по желанию 3🪙 в долг; в начале следующего хода −4🪙; нет 4🪙 — сколько есть (правки 10.21: «берёт сколько есть, но не больше 4»)
     const S = mk(), [a] = S.players; a.vassals = ['klara']; a.gold = 5;
     ok(E.takeLoan(S, a).ok && a.gold === 8 && a.loan === 4, 'Клара: +3🪙 в долг, отдать 4🪙'); ok(!E.takeLoan(S, a).ok, 'второй долг за ход нельзя');
     a.gold = 10; await T.startOfTurn(S, a); ok(a.loan === 0 && S.log.some(x => /долг Кларе Меняле — −4🪙/.test(x.t)), 'в начале хода долг −4🪙');
-    a.loan = 4; a.gold = 3; const n0 = S.log.length; await T.startOfTurn(S, a); ok(a.loan === 0 && S.log.slice(n0).some(x => /долг Кларе Меняле \(4🪙\) прощён/.test(x.t)) && !S.log.slice(n0).some(x => /Меняле — −/.test(x.t)), 'нет 4🪙 — ничего не списано, долг прощён'); }
+    a.loan = 4; a.gold = 3; const n0 = S.log.length; await T.startOfTurn(S, a); ok(a.loan === 0 && S.log.slice(n0).some(x => /долг Кларе Меняле — −3🪙 \(из 4🪙/.test(x.t)), 'нет 4🪙 — списали сколько есть (3🪙), остаток прощён');
+    a.loan = 4; a.gold = 9; const n1 = S.log.length; await T.startOfTurn(S, a); ok(a.loan === 0 && S.log.slice(n1).some(x => /долг Кларе Меняле — −4🪙$/.test(x.t)), 'больше 4🪙 не берут', S.log.slice(n1).map(x => x.t).join(' | ')); }
   { // Сводня Мелания: соперник взял грех — 4🪙 у него
     const S = mk(), [a, b] = S.players; b.vassals = ['melania']; a.turn.rolled = true; a.gold = 10; S.courtRow = ['sin_gluttony']; const gb = b.gold;
     await E.buy(S, a, 'court', 0); eq(b.gold - gb, 4, 'Мелания: соперник взял грех — 4🪙 у него'); }
@@ -837,9 +838,9 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     ok(!(await E.swapMarket(S, a, 0, 0)).ok, 'Ортензия: Подать не меняется'); ok(!(await E.swapMarket(S, a, 1, 1)).ok, 'Ортензия: грех из ряда не взять');
     ok((await E.swapMarket(S, a, 1, 0)).ok && a.hand.includes('collector') && S.courtRow[0] === 'scribe', 'Ортензия: Писарь в ряд, Сборщик в руку');
     ok(!(await E.swapMarket(S, a, 0, 1)).ok, 'Ортензия: второй раз за ход нельзя'); }
-  { // Инквизитор Карл: в начале хода владельца каждый соперник платит 1🪙 за каждый свой грех
+  { // Инквизитор Карл: в начале хода владельца каждый соперник платит 2🪙 за каждый свой грех (правки 10.21: «по 2 монеты»)
     const S = mk(), [a, b] = S.players; a.greats = ['karl']; b.sins = ['sin_sloth', 'sin_greed']; b.gold = 10;
-    await T.startOfTurn(S, a); eq(b.gold, 8, 'Карл: соперник с двумя грехами отдал 2🪙 в начале хода владельца');
+    await T.startOfTurn(S, a); eq(b.gold, 6, 'Карл: соперник с двумя грехами отдал 4🪙 в начале хода владельца');
     const S2 = mk(), [c, d] = S2.players; d.greats = ['karl']; c.sins = ['sin_sloth']; c.gold = 10; await T.startOfTurn(S2, c); eq(c.gold >= 10, true, 'Карл: в начале хода грешника ничего не берёт'); }
   { // Магистр Целестин: грехи не мешают ритуалам и чудесам
     const S = mk(), [a] = S.players; a.faiths = ['grain']; a.greats = ['celestin']; a.sins = ['sin_sloth'];
@@ -860,10 +861,15 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     const FX = require(G + 'cardfx.js'), dawnOnly = [];
     for (const [id, bd] of Object.entries(D.BAN)) { const ch = [].concat(...(FX.mods(bd.mods || {}) || []).map(z => [].concat(z))).filter(Boolean); if (ch.length && ch.every(z => z.dawn) && E.regentUseful(id)) dawnOnly.push(id); }
     eq(dawnOnly.join(','), '', 'печать: знамёна «в начале хода» по значкам карт исключены все'); }
-  { // Банкирша Эльвира: платежи в начале хода вдвое меньше — содержание, Гордыня, долг Кларе
-    const S = mk(), [a] = S.players; a.greats = ['elvira', 'jacob']; a.gold = 30; await T.payUpkeep(S, a); eq(a.gold, 26, 'Эльвира: содержание 8🪙 → 4🪙');
-    const S2 = mk(), [b] = S2.players; b.greats = ['elvira']; b.vassals = ['fuller', 'grain', 'baltazar']; b.sins = ['sin_pride']; b.loan = 4; b.gold = 20; await T.startOfTurn(S2, b);
-    ok(S2.log.some(x => /Гордыня — −2🪙/.test(x.t)) && S2.log.some(x => /Меняле — −2🪙/.test(x.t)), 'Эльвира: Гордыня 4🪙 → 2🪙, долг Кларе 4🪙 → 2🪙'); }
+  { // Банкирша Эльвира: вклад — раз в ход до 5🪙, в начале следующего хода вернётся вдвое (до долга и содержания)
+    const S = mk(), [a, b] = S.players; a.greats = ['elvira']; a.gold = 12; S.cur = 0;
+    ok(!!E.depositBlock(S, b), 'вклад: без Эльвиры нельзя');
+    ok(E.depositGold(S, a, 9).ok && a.gold === 7 && a.deposit === 5, 'Эльвира: больше 5🪙 не положить — во вкладе 5🪙');
+    ok(!E.depositGold(S, a, 1).ok, 'вклад: второй раз за ход нельзя');
+    a.greats = []; a.loan = 4; a.gold = 0; await T.startOfTurn(S, a);
+    ok(a.deposit === 0 && S.log.some(x => /вклад у Банкирши Эльвиры — \+10🪙/.test(x.t)) && a.gold === 6, 'вклад вернулся вдвое (+10🪙) до долга Кларе (−4🪙), даже без Эльвиры');
+    const S2 = mk(), [c] = S2.players; c.greats = ['elvira']; c.gold = 0; S2.cur = 0; eq(E.depositBlock(S2, c), 'Нет золота', 'вклад: без золота нельзя');
+    c.gold = 2; ok(E.depositGold(S2, c, 5).ok && c.deposit === 2 && c.gold === 0, 'вклад: сколько есть, если меньше 5🪙'); }
   { // ошибка с 10.18: бот оценивал игрока с Похотью и «Щитом ордена» в колоде — оценка броска звала саму себя без конца (переполнение стека)
     const S = mk(), [a, b] = S.players; est(S, a, 'barracks', 'outpost'); b.sins = ['sin_lust']; b.deck = ['ordershield', 'tax', 'tax']; b._mode = null;
     let fine = true; try { E.Bot.mode(S, b); E.Bot.avgPower(S, b); } catch (e) { fine = false; } ok(fine, 'Похоть + «Щит ордена»: оценка броска без бесконечной рекурсии'); }

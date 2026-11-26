@@ -172,7 +172,7 @@ function broker() {
   await gClick('.scrim:not(.out) [data-act="penance"]');
   ok('покаяние по сети: шаг 1 у хозяина, 5🪙 ушли ему', await until((S, g, h, hg) => g.penance && g.penance.step === 1 && h.gold === hg + 5, hg), JSON.stringify(await hostQ((S, g, h) => ({ pen: g.penance, hg: h.gold }))) + ' было ' + hg);
   await gCloseAll();
-  // 6. v10.21: новые знамёна у гостя — Клара (долг), Евстафий (сбросить и взять), Ортензия (обмен с рынком), Северин (печать регента)
+  // 6. v10.21: новые знамёна у гостя — Клара (долг), Евстафий (сбросить и взять), Ортензия (обмен с рынком), Северин (печать регента), Эльвира (вклад)
   ok('ход гостя для знамён (тот же ход, до броска)', await guestTurn());
   await hostSet((S, g) => { g.vassals = ['klara']; g.lords = ['eustace']; g.greats = ['ortensia']; g.sins = []; g.penance = null; g.gold = 20; g.hand = ['tax', 'scribe', 'tax']; g.deck = ['collector', 'tax']; S.courtRow[0] = 'spicer'; });
   const pickG = (re) => guest.evaluate((src) => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && [...s.querySelectorAll('.optlist [data-v]')].find(x => new RegExp(src).test(x.innerText)); if (b) b.click(); return !!b; }, re.source);
@@ -186,6 +186,10 @@ function broker() {
   await hostSet((S, g, h) => { g.greats = ['ortensia', 'severin']; g.turn.regent = null; h.lords = ['hugo']; });
   await gClick('[data-act="ex"][data-k="regent"]'); await gSheet(/чьё свойство взять/); await pickG(/Гуго/);
   ok('Северин по сети: печать на Гуго у хозяина', await until((S, g) => g.turn.regent === 'hugo'), JSON.stringify(await hostQ((S, g) => ({ r: g.turn.regent }))));
+  // Эльвира: вклад у гостя — 5🪙 во вклад у хозяина
+  await hostSet((S, g) => { g.greats = ['ortensia', 'elvira']; g.turn.deposited = false; g.deposit = 0; g.gold = 20; });
+  await gClick('[data-act="ex"][data-k="deposit"]'); await gSheet(/сколько положить во вклад/); await pickG(/Положить 5/);
+  ok('Эльвира по сети: 5🪙 во вкладе у хозяина', await until((S, g) => g.deposit === 5 && g.gold === 15), JSON.stringify(await hostQ((S, g) => ({ d: g.deposit, gold: g.gold }))));
   await gCloseAll();
   // стол у обоих сходится
   await guest.waitForTimeout(1200);

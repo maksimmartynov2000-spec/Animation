@@ -1,6 +1,6 @@
 // v10.21: новые знамёна в интерфейсе — Клара (долг), Евстафий (сбросить и взять), Ортензия (обмен с рынком), Гертруда (два ритуала),
 // Климент (проклятие снять бесплатно), окна Вольфрады (бесплатное нападение) и Мирона (верхняя карта колоды), Северин (печать регента),
-// окна вопросов сворачиваются («Свернуть ▾» / «▴ Вернуться»). iPhone 15.
+// Эльвира (вклад), окна вопросов сворачиваются («Свернуть ▾» / «▴ Вернуться»). iPhone 15.
 // node bans.js [file]
 const { chromium } = require('playwright');
 const SP = require('path').join(__dirname, '..', '.work') + '/';
@@ -29,7 +29,7 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   ok('«Ещё можно»: обмен, сбросить, в долг', /swap/.test(ex) && /cycle/.test(ex) && /loan/.test(ex), ex);
   // 1. Клара: долг из строки «Ещё можно»
   await p.click('[data-act="ex"][data-k="loan"]'); await p.waitForTimeout(400);
-  ok('Клара: окно «взять в долг?» — по желанию, −4🪙 в начале следующего хода, нет 4🪙 — прощён', /Клара Меняла: взять в долг/.test(await sheet()) && /По желанию/.test(await sheet()) && /спишут 4/.test(await sheet()) && /Не будет 4 — долг прощён/.test(await sheet()), (await sheet()).slice(0, 200));
+  ok('Клара: окно «взять в долг?» — по желанию, −4🪙 в начале следующего хода', /Клара Меняла: взять в долг/.test(await sheet()) && /По желанию/.test(await sheet()) && /спишут 4/.test(await sheet()) && !/прощён/.test(await sheet()), (await sheet()).slice(0, 200));
   await pick(/Взять 3/); await p.waitForTimeout(600); await myTurn();
   const s1 = await me(() => { const V = window.__VD, a = V.S.players[V.ME]; return { gold: a.gold, loan: a.loan }; });
   ok('Клара: +3🪙, долг 4🪙', s1.gold === 33 && s1.loan === 4, JSON.stringify(s1));
@@ -99,7 +99,7 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   ok('«Двор»: кнопка «Печать регента»', /Печать регента:false/.test(r0 || ''), r0);
   await p.click('.scrim:not(.out) [data-act="regent"]'); await p.waitForTimeout(500);
   const r1 = await sheet();
-  ok('Северин: окно печати — Гуго есть, Якоба нет', /чьё свойство взять/.test(r1) && /Гуго Неутомимый/.test(r1) && !/Заимодавец Якоб/.test(r1) && /в чужой ход/.test(r1), r1.slice(0, 220));
+  ok('Северин: окно печати — Гуго есть, Якоба нет', /чьё свойство взять/.test(r1) && /Гуго Неутомимый/.test(r1) && !/Заимодавец Якоб/.test(r1) && /только то, что ещё сработает в этот ход/.test(r1), r1.slice(0, 220));
   const b8 = await me(() => Engine.buysLeft(window.__VD.S, window.__VD.S.players[window.__VD.ME]));
   await pick(/Гуго/); await p.waitForTimeout(600); await myTurn();
   const r2 = await me(() => { const V = window.__VD, a = V.S.players[V.ME]; return { regent: a.turn.regent, left: Engine.buysLeft(V.S, a) }; });
@@ -107,6 +107,20 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   await p.click('.myb'); await p.waitForTimeout(700);
   const r3 = await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && s.querySelector('[data-act="regent"]'); return { note: !!s && /Печать регента: до конца хода у вас свойство «Гуго Неутомимый/.test(s.innerText.replace(/\s+/g, ' ')), btn: b ? `${b.innerText}:${b.disabled}` : null }; });
   ok('«Двор»: видно, чья печать стоит; второй раз нельзя', r3.note && /уже поставлена.*:true$/.test(r3.btn || ''), JSON.stringify(r3));
+  await closeAll();
+  // 8б. Эльвира: вклад — кнопка на «Дворе», окно «сколько положить», 5🪙 ушли во вклад, на «Дворе» видно, сколько вернётся
+  await me(() => { const V = window.__VD, a = V.S.players[V.ME]; a.greats = ['elvira']; a.gold = 9; a.deposit = 0; a.turn.deposited = false; V.redraw(); });
+  await p.waitForTimeout(400);
+  await p.click('.myb'); await p.waitForTimeout(700);
+  await p.click('.scrim:not(.out) [data-act="deposit"]'); await p.waitForTimeout(500);
+  const e1 = await sheet();
+  ok('Эльвира: окно «сколько положить во вклад?» — от 5🪙, вернётся вдвое', /сколько положить во вклад/.test(e1) && /Положить 5/.test(e1) && /вернётся 10/.test(e1) && !/Положить 6/.test(e1), e1.slice(0, 200));
+  await pick(/Положить 5/); await p.waitForTimeout(600); await myTurn();
+  const e2 = await me(() => { const V = window.__VD, a = V.S.players[V.ME]; return { gold: a.gold, dep: a.deposit }; });
+  ok('Эльвира: 5🪙 ушли во вклад', e2.gold === 4 && e2.dep === 5, JSON.stringify(e2));
+  await p.click('.myb'); await p.waitForTimeout(700);
+  const e3 = await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && s.querySelector('[data-act="deposit"]'); return { note: !!s && /Вклад у Банкирши Эльвиры: 5 — в начале следующего хода вернётся 10/.test(s.innerText.replace(/\s+/g, ' ')), btn: b ? `${b.innerText.replace(/\s+/g, ' ')}:${b.disabled}` : null }; });
+  ok('«Двор»: видно вклад и сколько вернётся; второй раз нельзя', e3.note && /уже сделан.*:true$/.test(e3.btn || ''), JSON.stringify(e3));
   await closeAll();
   // 9. окно вопроса можно свернуть: виден стол, «▴ Вернуться» — снова окно; действие из «Двора» его не закрывает
   await me(() => { const V = window.__VD, a = V.S.players[V.ME]; a.vassals = ['klara']; a.turn.loaned = false; window.__q9 = 'ждём'; V.ask({ type: 'freeSiege', bonus: 4, fee: 3, options: [{ i: 1 - V.ME, p: 0.42, A: 9, D: 10, loot: 2, gold: 5 }] }).then(v => { window.__q9 = v; }); });
