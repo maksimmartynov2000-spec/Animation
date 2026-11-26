@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.19'; // Похоть — до 3 карт на выбор; чистка после 10.18: правила «Веры», iPad mini лёжа, «+ замысел» в окне броска
+  const VERSION = '10.20'; // место в файле: рисунки сжаты (DEFLATE) и распаковываются при запуске, координаты — 1 знак, иконка — палитра: index.html 1,7 → 1,3 МБ
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
