@@ -259,6 +259,31 @@
     estateGold: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале хода — за каждые 2 ваших владения' }),
     dreamPeek: (n) => ({ dawn: 1, i: 'card', c: `вещий сон: посмотрите ${n} верхние карты колоды — каждую оставьте сверху или под низ` }),
     warmGold: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'весной и летом' }),
+    // v10.21 — новые знамёна
+    riteGold: (n) => ({ pre: 'faith', v: `+${n}`, i: 'gold', c: 'за каждый обряд вашей веры' }),
+    riteExtra: () => ({ i: 'faith', c: 'обряд вашей веры — ещё раз за ход (с Титом — три раза)' }),
+    peekTop: () => ({ dawn: 1, i: 'card', c: 'посмотрите верхнюю карту своей колоды двора — оставьте её сверху или положите под низ' }),
+    darkGuard: (n) => ({ v: `−${n}`, i: 'int', c: 'проклятиям и козням против вас' }),
+    darkSpy: (n) => ({ v: `+${n}`, i: 'int', c: 'вашим проклятиям и козням' }),
+    darkWinGold: (n) => ({ v: `+${n}`, i: 'gold', c: 'проклятие легло или козни удались' }),
+    loan: () => ({ v: '+3', i: 'gold', c: 'раз в ход — в долг; в начале следующего хода, до содержания, отдайте 4🪙 — сколько есть' }),
+    defendGold: (n) => ({ v: `+${n}`, i: 'gold', c: 'отбили нападение или шпионаж' }),
+    sinFee: (n) => ({ v: `+${n}`, i: 'gold', c: 'соперник взял грех — возьмите у него' }),
+    markGold: (n) => ({ v: `+${n}`, i: 'gold', c: 'за каждую отметку вашего ритуала' }),
+    schemeKeep: () => ({ i: 'card', c: 'ваши козни после розыгрыша — в ваш сброс, а не в колоду двора' }),
+    cycle: () => ({ i: 'card', c: 'раз в ход: сбросьте карту из руки и возьмите новую' }),
+    freePurge: () => ({ i: 'action', c: 'раз в ход снимите с себя проклятие — без действия и без золота' }),
+    siegeLossFee: (n) => ({ v: `−${n}`, i: 'gold', c: 'проиграли нападение — отдайте тому, на кого нападали' }),
+    sinGold: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале хода — за каждый ваш грех' }),
+    twoRituals: () => ({ i: ['faith', 'faith'], c: 'можно вести два ритуала своей веры сразу' }),
+    cleanCapture: () => ({ i: 'siege', c: 'захваченное вами владение приходит без руин' }),
+    freeSin: () => ({ i: 'action', c: 'грех можно взять, не тратя действие' }),
+    curseSure: () => ({ i: 'int', c: 'ваши проклятия ложатся без броска, откупиться нельзя' }),
+    curseIncome: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале хода — за каждое ваше проклятие у соперников' }),
+    marketSwap: () => ({ i: 'card', c: 'раз в ход: карту двора из руки — в ряд рынка, взамен любую карту этого ряда — в руку' }),
+    freeSiege: (n) => ({ dawn: 1, pre: 'siege', v: `+${n}`, i: 'war', c: 'в начале хода — бесплатное нападение на любого соперника; проиграли — отдайте ему 3🪙' }),
+    sinTax: (n) => ({ v: `+${n}`, i: 'gold', c: 'соперник с грехом в начале своего хода платит вам' }),
+    sinSafe: () => ({ i: 'faith', c: 'грехи не мешают вашим ритуалам: начинать можно, отметки не сгорают, чудеса не молчат' }),
     fairCourt: () => null,
     seasonDouble: () => ({ i: 'spring', c: 'хорошее от сезона ×2, плохое — нет' }),
   };
@@ -270,11 +295,13 @@
   const MOD_NEEDS = { lootPlus: 'sieges', oathFree: 'faith', stageUp: 'faith', riteTwice: 'faith', dreamPeek: 'seats', siege: 'sieges', defense: 'sieges', walls: 'sieges', siegeWinGold: 'sieges', captureImmune: 'sieges', spyWinGold: 'spy', freeSpy: 'spy',
     faithGold: 'faith', faithEase: 'faith', faithAdoptGold: 'faith', freeRenounce: 'faith', infidelTithe: 'faith', faithTithe: 'faith', twoFaiths: 'faith', plotThird: 'plots', lordCheap: 'lords',
     spy: 'spy', guard: 'spy', stealBonus: 'spy', plotSlots: 'plots', plotGold: 'plots', plotIncome: 'plots', timedPlotBonus: 'plots', plotProtect: 'plots', plotSpread: 'plots',
-    unionGold: 'unions', envyImmune: 'balance', unionSize: 'unions', unionFast: 'unions', greatCheap: 'great', unionNoSym: 'unions', unionBounty: 'unions', seatSlots: 'seats', lordIncome: 'lords', seatGuard: 'seats', seatIncome: 'seats', seatGold: 'seats', seatFromDiscard: 'seats' };
+    unionGold: 'unions', envyImmune: 'balance', unionSize: 'unions', unionFast: 'unions', greatCheap: 'great', unionNoSym: 'unions', unionBounty: 'unions', seatSlots: 'seats', lordIncome: 'lords', seatGuard: 'seats', seatIncome: 'seats', seatGold: 'seats', seatFromDiscard: 'seats',
+    riteGold: 'faith', riteExtra: 'faith', darkGuard: 'spy', darkSpy: 'spy', darkWinGold: 'spy', defendGold: 'sieges|spy', sinFee: 'faith', markGold: 'faith', schemeKeep: 'spy', freePurge: 'spy',
+    siegeLossFee: 'sieges', sinGold: 'faith', twoRituals: 'faith', cleanCapture: 'sieges', freeSin: 'faith', curseSure: 'spy', curseIncome: 'spy', freeSiege: 'sieges', sinTax: 'faith', sinSafe: 'faith' };
   // разделить способности на действующие и выключенные модулями: on(k) — включён ли модуль k
   function splitMods(m, on) {
     const act = {}, off = {}, offK = [];
-    for (const k in m || {}) { const need = MOD_NEEDS[k]; if (need && on && !on(need)) { off[k] = m[k]; if (!offK.includes(need)) offK.push(need); } else act[k] = m[k]; }
+    for (const k in m || {}) { const need = MOD_NEEDS[k]; if (need && on && !need.split('|').some(x => on(x))) { off[k] = m[k]; const n0 = need.split('|')[0]; if (!offK.includes(n0)) offK.push(n0); } else act[k] = m[k]; } // «sieges|spy» — хватит любого из модулей
     return { act, off, offK };
   }
   function mods(m, prod) {

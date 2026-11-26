@@ -80,7 +80,7 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     const S2 = mk(), [b] = S2.players; b.vassals = ['fuller', 'grain', 'baltazar']; b.sins = ['sin_pride']; b.gold = 2; S2.cur = 0; await E.startOfTurn(S2, b);
     ok(S2.log.some(x => /Гордыня — −2🪙/.test(x.t || x.text || '')), 'Гордыня: 3 знамени, а золота 2 — платите сколько есть'); }
   { // Гордыня сейчас: вассал из ряда бесплатно и без действия; Заговор не пускает
-    const S = mk(), [a] = S.players; a.turn.rolled = true; a.gold = 5; S.courtRow = ['sin_pride']; S.vRow = ['fuller', 'grain'];
+    const S = mk(), [a] = S.players; a.turn.rolled = true; a.gold = 5; S.courtRow = ['sin_pride']; S.vRow = ['fuller', 'grain']; S.lRow = []; S.lDeck = []; // лордов нет: при раздаче с новыми знамёнами (10.21) бот выбирал лорда из пополненного ряда
     await E.buy(S, a, 'court', 0); ok(a.vassals.length === 1 && a.gold === 5, 'Гордыня: вассал бесплатно');
     const S2 = mk(), [b] = S2.players; b.turn.rolled = true; addEst(S2, b, 'schemer', { by: 1 }); S2.courtRow = ['sin_pride']; S2.vRow = ['fuller'];
     await E.buy(S2, b, 'court', 0); ok(!b.vassals.length && b.sins.length === 1, 'Гордыня при Заговоре: грех есть, найма нет'); }

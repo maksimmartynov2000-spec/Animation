@@ -180,7 +180,7 @@
       const seat = b.tier === 'l' && on(o, 'seats') ? chips([{ v: '+1', i: 'seat', c: 'место при дворе' }]) : '';
       const need = D.NEEDS.ban[id];
       const left = b.heir ? startTag(b.heir, 'Наследник') : mtag(b.tier === 'l' ? 'lords' : b.tier === 'g' ? 'great' : null, need && !need.includes('|') && !need.includes('&') ? need : null) || BASE_TAG;
-      return { key: `b_${id}`, c: DIRC[b.dir], icon: D.SYM[b.dir], tier: b.tier, tag: T.icon, name: b.name, type: `${T.name} · ${b.title}`.length > 30 ? b.title : `${T.name} · ${b.title}`, fx: modChips(b.mods, pr, o) + seat + take + upk + tax, left, cost: b.cost };
+      return { key: `b_${id}`, c: b.black ? [TYPE.bad.c, TYPE.bad.dark] : DIRC[b.dir], icon: D.SYM[b.dir], tier: b.tier, /* black — чёрная рамка у знамён про проклятия и козни (v10.21) */ tag: T.icon, name: b.name, type: `${T.name} · ${b.title}`.length > 30 ? b.title : `${T.name} · ${b.title}`, fx: modChips(b.mods, pr, o) + seat + take + upk + tax, left, cost: b.cost };
     }
     if (kind === 'ritual') {
       // ритуал (v10.16): 5 условий в любом порядке → постоянное чудо; карта лежит у веры, отметки у каждого свои
