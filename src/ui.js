@@ -1459,7 +1459,7 @@
       return;
     }
     if (e.key !== 'Escape') return;
-    const sh = [...sheetRoot.children].filter(x => !x.classList.contains('out')).pop();
+    const sh = [...sheetRoot.children].filter(x => !x.classList.contains('out') && !x.classList.contains('mini')).pop(); // свёрнутое окно ждёт ответа — Esc идёт дальше
     if (sh) { if (sh.dismissible) sh.close(); return; }
     const pg = [...pageRoot.children].filter(x => !x.classList.contains('out')).pop();
     if (pg) { pg.close(); return; }

@@ -116,6 +116,8 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   await p.click('.scrim:not(.out) [data-min]'); await p.waitForTimeout(300);
   const m1 = await me(() => { const s = document.querySelector('.scrim.mini'), pill = s && s.querySelector('[data-ret]'), bar = document.querySelector('.board .abar'); if (!s || !pill || !bar) return null; const rp = pill.getBoundingClientRect(), rb = bar.getBoundingClientRect(), dr = [...bar.querySelectorAll('[data-act="drawer"]')].map(x => x.getBoundingClientRect()); const at = document.elementFromPoint(innerWidth / 2, innerHeight * 0.4); return { sheet: getComputedStyle(s.querySelector('.sheet')).display, pill: pill.innerText.replace(/\s+/g, ' '), onBar: rp.top >= rb.top && rp.bottom <= rb.top + 66, drawers: dr.length === 2 && dr.every(x => x.right <= rp.left), fits: rp.left >= 0 && rp.right <= innerWidth && rp.width >= 150, table: !!at && !at.closest('.scrim') }; });
   ok('свёрнуто: окна нет, стол открыт, «▴ Вернуться к выбору» — на нижней панели, «Рынок» и «Знамёна» видны', !!m1 && m1.sheet === 'none' && /Вернуться к выбору.*Вольфрада/.test(m1.pill) && m1.onBar && m1.drawers && m1.fits && m1.table, JSON.stringify(m1));
+  await p.keyboard.press('Escape'); await p.waitForTimeout(250);
+  ok('свёрнуто: Esc окно не трогает, ответ всё ещё ждут', await me(() => document.querySelectorAll('.scrim.mini').length === 1 && window.__q9 === 'ждём'));
   await p.click('.myb'); await p.waitForTimeout(700);
   const m15 = await me(() => { const s = [...document.querySelectorAll('.scrim:not(.out):not(.mini)')].pop(); return s ? s.innerText.replace(/\s+/g, ' ') : ''; });
   ok('свёрнуто: «Двор» открывается поверх', /Клара Меняла/.test(m15) && /Взять 3/.test(m15), m15.slice(0, 120));
