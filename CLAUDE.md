@@ -7,7 +7,7 @@
 - `npm install` (esbuild для сжатия; Playwright для тестов).
 - `npm run build` → `src/dist/*.html` и **`index.html` в корне** (корень сайта отмечен файлом `.pretendenty-site`).
 - После любой правки исходников пересобрать и закоммитить `index.html` вместе с исходниками — иначе на сайте ничего не изменится.
-- `index.html` должен оставаться меньше 2 МБ (сейчас ~1,3 МБ). Рисунки в нём сжаты (DEFLATE + base64) и распаковываются при запуске — `src/inflate.js`.
+- `index.html` должен оставаться меньше 2 МБ (сейчас ~1,35 МБ). Рисунки в нём сжаты (DEFLATE + base64) и распаковываются при запуске — `src/inflate.js`.
 
 ## Выпуск версии
 1. Поднять `VERSION` в `src/ui.js` (например 10.7 → 10.8), в комментарии — что нового.
@@ -25,7 +25,7 @@
   или список упавших, полные логи — в `.work/check/`. Идёт около 15 минут. По ходу работы — `npm run check -- quick` (несколько минут)
   или только нужные тесты: `npm run check -- info cards`. Новый основной тест — добавить в список `FULL` в `tests/check.js`.
 - `npm run test:engine` — движок: каждое свойство карт (должно быть «0 не прошли»).
-- Браузерные тесты (Playwright): при необходимости `npx playwright install chromium`, затем `python3 tests/make-page.py` и `node tests/<имя>.js`. Основные: `info.js`, `kb.js`, `buy.js i15|mini|mac`, `buy2.js`, `handplay.js`, `faith.js i15|mini|mac`, `tab.js i15|mini`, `tut.js i15|mini`, `fly.js`, `head.js`, `headbig.js`, `cards.js`, `upd.js`, `prefs.js`, `save.js`, `catalog.js`, `curses.js`, `sins.js`, `rituals.js`, `hints.js`, `pair.js`, `net2.js`, `netwin.js`, `table3.js`, `standalone.js`. Прогон целой партии: `node tests/monkey.js games=1 turns=100` (размер окна — `w= h=`). Скриншоты и рабочие файлы — в `.work/`.
+- Браузерные тесты (Playwright): при необходимости `npx playwright install chromium`, затем `python3 tests/make-page.py` и `node tests/<имя>.js`. Основные: `info.js`, `kb.js`, `buy.js i15|mini|mac`, `buy2.js`, `handplay.js`, `faith.js i15|mini|mac`, `tab.js i15|mini`, `tut.js i15|mini`, `fly.js`, `head.js`, `headbig.js`, `cards.js`, `upd.js`, `prefs.js`, `save.js`, `catalog.js`, `curses.js`, `sins.js`, `rituals.js`, `hints.js`, `bans.js`, `pair.js`, `net2.js`, `netwin.js`, `table3.js`, `standalone.js`. Прогон целой партии: `node tests/monkey.js games=1 turns=100` (размер окна — `w= h=`). Скриншоты и рабочие файлы — в `.work/`.
 - Главные устройства: iPhone 15 (393×852) и iPad mini (744×1133); ещё iPhone 12 Pro Max, iPad 11", MacBook (1512×900), любая ориентация. Настоящий Safari в песочнице не проверить — для этого в игре есть «Меню → Проверка устройства» (отчёт одной кнопкой).
 
 ## Как работать с владельцем

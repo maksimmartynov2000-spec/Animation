@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.20'; // место в файле: рисунки сжаты (DEFLATE) и распаковываются при запуске, координаты — 1 знак, иконка — палитра: index.html 1,7 → 1,3 МБ
+  const VERSION = '10.21'; // блок «Знамёна»: 25 новых — 8 вассалов, 9 лордов, 8 великих; долг, обмен с рынком, два ритуала, бесплатное нападение
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -1050,6 +1050,7 @@
       case 'predict': return askPredict(p, q);
       case 'peek': return throwDone().then(() => askPeek(p, q));
       case 'dream': return askDream(p, q);
+      case 'freeSiege': return askFreeSiege(p, q);
       case 'grab': return askPickCard(p, q, '🗝 Перехват: какую карту забрать?', 'Карта из сброса соперника уйдёт в ваш сброс.');
       case 'snatch': return askPickCard(p, q, '🌑 Перехват: какую карту взять?', 'Карта из сброса соперника — вам в руку, её можно сыграть уже в этот ход.');
       case 'fetchOne': return askPickCard(p, q, '⛪ Святые мощи: что вернуть в руку?', 'Карта из вашего сброса — в руку. Сыгранные в этот ход не берутся.');
@@ -1127,7 +1128,8 @@
     return new Promise(res => {
       const down = new Set();
       const list = () => q.cards.map((id, i) => { const c = D.COURT[id]; return `<button class="opt" data-k="${i}"><span class="big">${down.has(i) ? '⬇️' : '⬆️'}</span><span><b>${esc(c.name)}</b><br><span class="muted">${esc(c.bad ? c.badText : D.fxText(c.fx))}</span></span><span class="r">${down.has(i) ? 'под низ' : 'сверху'}</span></button>`; }).join('');
-      const sh = openSheet({ title: '🌙 Вещий сон', body: `<p class="note">Толкователь снов: это ${q.cards.length > 1 ? `${q.cards.length} верхние карты` : 'верхняя карта'} вашей колоды — первая сверху. Нажмите на карту, чтобы положить её под низ колоды; остальные останутся сверху в том же порядке.</p><div class="optlist">${list()}</div><button class="btn primary" data-ok="1">Готово</button>`, dismiss: false });
+      const who = [...E.modSources(S, p, 'dreamPeek'), ...E.modSources(S, p, 'peekTop')].join(', ') || 'Толкователь снов';
+      const sh = openSheet({ title: q.cards.length > 1 ? '🌙 Вещий сон' : '🔭 Верхняя карта колоды', body: `<p class="note">${esc(who)}: это ${q.cards.length > 1 ? `${q.cards.length} верхние карты` : 'верхняя карта'} вашей колоды двора — первая сверху. Нажмите на карту, чтобы положить её под низ колоды; остальные останутся сверху в том же порядке.</p><div class="optlist">${list()}</div><button class="btn primary" data-ok="1">Готово</button>`, dismiss: false });
       sh.el.addEventListener('click', (e) => {
         const b = e.target.closest('[data-k]');
         if (b) { const k = +b.dataset.k; if (down.has(k)) down.delete(k); else down.add(k); sh.el.querySelector('.optlist').innerHTML = list(); return; }
@@ -2036,30 +2038,32 @@
   // места при дворе (модуль «Придворные»): кто сидит и что даёт; пустое место — подсказка
   // ритуалы (v10.16): текущий — с отметками и кнопками жертвы и милостыни; доступные — «Начать»; готовые чудеса
   function ritualHtml(p, mine, my) {
-    const ids = E.ritualsOf(S, p), cur = p.ritual, miracles = p.miracles || [];
+    const ids = E.ritualsOf(S, p), slots = E.ritualSlots(p), miracles = p.miracles || [];
     if (!ids.length && !miracles.length) return '';
-    const on = E.miraclesOn(p);
-    let h = `<div class="sec-h"><h3>✨ Ритуалы</h3><span>5 условий → чудо</span></div>`;
-    if (cur) {
-      const pr = E.ritualProgress(S, p) || [], W = D.RITUALS[cur.id], n = cur.marks.filter(Boolean).length;
+    const on = E.miraclesOn(p), two = E.twoRit(p), safe = E.sinSafe(p);
+    let h = `<div class="sec-h"><h3>✨ Ритуалы</h3><span>${two ? 'два сразу — Аббатиса Гертруда' : '5 условий → чудо'}</span></div>`;
+    for (const k of slots) { // v10.21: у Гертруды идут два ритуала — у каждого свои отметки и кнопки
+      const cur = p[k], pr = E.ritualProgress(S, p, k) || [], W = D.RITUALS[cur.id], n = cur.marks.filter(Boolean).length;
       const row = (x) => {
         let st;
         if (x.done) st = '<span class="rst ok">✓</span>';
-        else if (x.act) st = mine ? `<button class="btn small ${x.why || !my ? '' : 'primary'}" data-act="ritact" data-i="${x.i}" ${!my || x.why || busy || adjustReq ? 'disabled' : ''}>${!my ? 'в свой ход' : x.why ? esc(x.why) : x.k === 'trash' ? 'Принести' : 'Подать'}</button>` : '<span class="rst">ещё нет</span>';
+        else if (x.act) st = mine ? `<button class="btn small ${x.why || !my ? '' : 'primary'}" data-act="ritact" data-i="${x.i}" data-s="${k}" ${!my || x.why || busy || adjustReq ? 'disabled' : ''}>${!my ? 'в свой ход' : x.why ? esc(x.why) : x.k === 'trash' ? 'Принести' : 'Подать'}</button>` : '<span class="rst">ещё нет</span>';
         else if (x.k === 'abst') st = `<span class="rst${x.viol ? ' bad' : ''}">${x.cur} из ${x.need}${x.viol ? ' · сейчас нарушено' : ''}</span>`;
         else if (x.cur != null) st = `<span class="rst">${x.cur} из ${x.need}</span>`;
         else st = '<span class="rst">ещё нет</span>';
         return `<li class="${x.done ? 'done' : ''}"><span class="rk">${esc(x.name)}</span><span class="rt">${esc(x.t)}</span>${st}</li>`;
       };
       h += `<div class="ritw">${pcard('ritual', cur.id)}<div class="ritp"><p class="rh"><b>${esc(W.name)}</b> · отметок ${n} из ${W.steps.length}</p><ol class="ritl">${pr.map(row).join('')}</ol>`
-        + `${E.cursed(p, 'relic') ? '<p class="note">⬛ Проклятая реликвия: ритуал стоит — отметки не ставятся.</p>' : '<p class="muted rnote">Возьмёте грех — отметки сгорят.</p>'}</div></div>`;
+        + `${E.cursed(p, 'relic') ? '<p class="note">⬛ Проклятая реликвия: ритуал стоит — отметки не ставятся.</p>' : safe ? '<p class="muted rnote">Магистр Целестин: грех не сожжёт отметки.</p>' : '<p class="muted rnote">Возьмёте грех — отметки сгорят.</p>'}</div></div>`;
     }
     if (mine) {
-      const free = ids.filter(id => !miracles.includes(id) && (!cur || cur.id !== id));
-      if (free.length) h += `<div class="pgrid mini">${free.map(id => { const why = my ? E.ritualBlock(S, p, id) : 'Начать — в свой ход'; return pslot(pcard('ritual', id), `<button class="btn small ${why ? '' : 'primary'}" data-act="ritstart" data-id="${id}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : cur ? 'Начать вместо текущего' : '✨ Начать ритуал'}</button>`); }).join('')}</div>${cur ? '<p class="note">Начнёте другой ритуал — отметки текущего сгорят.</p>' : ''}`;
+      const run = slots.map(k => p[k].id), room = !slots.length || (two && slots.length < 2);
+      const free = ids.filter(id => !miracles.includes(id) && !run.includes(id));
+      const label = !slots.length ? '✨ Начать ритуал' : room ? '✨ Начать второй ритуал' : 'Начать вместо текущего';
+      if (free.length) h += `<div class="pgrid mini">${free.map(id => { const why = my ? E.ritualBlock(S, p, id) : 'Начать — в свой ход'; return pslot(pcard('ritual', id), `<button class="btn small ${why ? '' : 'primary'}" data-act="ritstart" data-id="${id}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : label}</button>`); }).join('')}</div>${room ? '' : `<p class="note">Начнёте другой ритуал — отметки ${two ? 'более раннего' : 'текущего'} сгорят.</p>`}`;
     }
     if (miracles.length) {
-      const quiet = (p.sins || []).length ? 'молчат, пока на вас грех' : E.cursed(p, 'relic') ? 'молчат: Проклятая реликвия' : 'действуют до конца игры';
+      const quiet = (p.sins || []).length && !safe ? 'молчат, пока на вас грех' : E.cursed(p, 'relic') ? 'молчат: Проклятая реликвия' : 'действуют до конца игры';
       h += `<div class="sec-h"><h3>🌟 Чудеса</h3><span>${quiet}</span></div><div class="pgrid mini">${miracles.map(id => pcard('ritual', id, { cls: on.includes(id) ? 'built' : 'dim', badge: `<span class="pcb tag">${on.includes(id) ? '🌟 чудо' : 'молчит'}</span>` })).join('')}</div>`;
     }
     return h;
@@ -2091,17 +2095,62 @@
   // hard — о чём переспросить при завершении хода; мягкие (принять веру, начать ритуал) — только подсветка и строка
   function extrasOf(p) {
     if (!S || !p || !p.turn || WATCH || !isMyTurn() || S.players[S.cur] !== p) return [];
-    const out = [], R0 = p.ritual;
+    const out = [], rs = E.ritualSlots(p);
     if (modOn('faith')) {
       const many = (p.faiths || []).length > 1; // s — короткая подпись для строки хода (лёжа)
       for (const f of p.faiths || []) if (!E.riteBlock(S, p, f)) out.push({ k: 'rite', f, t: many ? `обряд «${D.FAITHS[f].rite.name}»` : 'обряд', s: many ? `обряд ${D.FAITHS[f].icon}` : 'обряд', hard: true });
-      if (R0 && (E.ritualProgress(S, p) || []).some(x => x.act && !x.done && !x.why)) out.push({ k: 'ritual', t: 'жертва/милостыня', s: 'ритуал', hard: true });
-      if (!R0 && E.ritualsOf(S, p).some(id => !E.ritualBlock(S, p, id))) out.push({ k: 'ritstart', t: 'начать ритуал', s: 'ритуал' });
+      if (rs.some(k => (E.ritualProgress(S, p, k) || []).some(x => x.act && !x.done && !x.why))) out.push({ k: 'ritual', t: 'жертва/милостыня', s: 'ритуал', hard: true });
+      if ((!rs.length || (E.twoRit(p) && rs.length < 2)) && E.ritualsOf(S, p).some(id => !E.ritualBlock(S, p, id))) out.push({ k: 'ritstart', t: rs.length ? 'второй ритуал' : 'начать ритуал', s: 'ритуал' });
       if (!(p.faiths || []).length || (E.faithMax && (p.faiths || []).length < E.faithMax(S, p))) if ((S.faithRow || []).some(f => !(p.faiths || []).includes(f) && !E.canAdopt(S, p, f))) out.push({ k: 'adopt', t: 'принять веру', s: 'вера' });
     }
     if (E.fetchLeft(S, p) > 0 && E.discardOf(p).length) out.push({ k: 'fetch', t: 'взять из сброса', s: 'из сброса', hard: true });
     if (p.turn.rolled && E.buysLeft(S, p) <= 0 && freeBuyOk(p)) out.push({ k: 'fair', t: 'покупка без действия', s: 'покупка', hard: true });
+    // v10.21: раз в ход со знамён — Климент (проклятие бесплатно), Ортензия, Евстафий, Клара
+    if (E.freePurgeOn(S, p) && p.turn.rolled && p.estates.some(e => D.ESTATES[e.id].bad)) out.push({ k: 'purge', t: 'снять проклятие бесплатно', s: 'проклятие', hard: true });
+    if (!E.swapBlock(S, p)) out.push({ k: 'swap', t: 'обмен с рынком', s: 'обмен' });
+    if (!E.cycleBlock(S, p)) out.push({ k: 'cycle', t: 'сбросить и взять карту', s: 'сбросить' });
+    if (!E.loanBlock(S, p)) out.push({ k: 'loan', t: 'взять в долг', s: 'в долг' });
     return out;
+  }
+  // v10.21: кнопка действия под знаменем в «Дворе» — Клара, Евстафий, Ортензия
+  function banAct(p, id, my) {
+    if (!my) return '';
+    const m = (D.BAN[id] || {}).mods || {};
+    const b = (act, why, label) => `<button class="btn small ${why ? '' : 'primary'}" data-act="${act}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : label}</button>`;
+    if (m.loan) return b('loan', E.loanBlock(S, p), `Взять ${R.loanGold || 3}🪙 в долг`);
+    if (m.cycle) return b('cycle', E.cycleBlock(S, p), 'Сбросить карту, взять новую');
+    if (m.marketSwap) return b('swap', E.swapBlock(S, p), 'Обмен с рынком');
+    return '';
+  }
+  // v10.21: действия знамён — из «Двора» и строки «Ещё можно»
+  async function doLoan(p) {
+    const g = R.loanGold || 3, due = R.loanDue || 4;
+    const yes = await choiceSheet('⚖️ Клара Меняла: взять в долг?', `<p class="note">Сейчас +${g}🪙. В начале следующего хода, до содержания, отдадите ${due}🪙 — сколько будет.</p>`,
+      [{ icon: '💰', value: 1, html: `<b>Взять ${g}🪙 в долг</b><br><span class="muted">отдать ${due}🪙 в начале следующего хода</span>` }, { icon: '✖️', value: 0, html: '<b>Не брать</b>' }]);
+    if (!yes || !isMyTurn()) return;
+    if (guest()) netDo('loan', {}); else guarded(async () => { const r = E.takeLoan(S, p); if (!r.ok) toast(esc(r.why || 'Нельзя')); });
+  }
+  const cardOpt = (id, value) => { const c = D.COURT[id]; return { icon: '🂠', value, html: `<b>${esc(c.name)}</b><br><span class="muted">${esc(c.bad ? c.badText || '' : D.fxText(c.fx))}</span>` }; };
+  async function doCycle(p) {
+    const k = await choiceSheet('📜 Евстафий: какую карту сбросить?', '<p class="note">Карта уйдёт в ваш сброс, взамен возьмёте новую из колоды.</p>',
+      E.handFree(p).map(k2 => cardOpt(p.hand[k2], k2)).concat([{ icon: '✖️', value: -1, html: '<b>Не сейчас</b>' }]));
+    if (k < 0 || !isMyTurn()) return;
+    if (guest()) netDo('cycle', { k, id: p.hand[k] }); else guarded(async () => { const r = await E.cycleCard(S, p, k); if (!r.ok) toast(esc(r.why || 'Нельзя')); });
+  }
+  async function doSwap(p) {
+    const hi = await choiceSheet('⚖️ Ортензия: какую карту отдать в ряд рынка?', '<p class="note">Карта из руки встанет в ряд рынка, взамен возьмёте любую карту этого ряда. Подать и фамильные карты не меняются.</p>',
+      E.swapHand(p).map(k => cardOpt(p.hand[k], k)).concat([{ icon: '✖️', value: -1, html: '<b>Не сейчас</b>' }]));
+    if (hi < 0 || !isMyTurn()) return;
+    const ri = await choiceSheet('⚖️ Ортензия: какую карту взять из ряда?', `<p class="note">«${esc(D.COURT[p.hand[hi]].name)}» встанет на её место в ряду рынка.</p>`,
+      E.swapRow(S).map(k => cardOpt(S.courtRow[k], k)).concat([{ icon: '✖️', value: -1, html: '<b>Отмена</b>' }]));
+    if (ri < 0 || !isMyTurn()) return;
+    if (guest()) netDo('swap', { hi, ri, hid: p.hand[hi], rid: S.courtRow[ri] }); else guarded(async () => { const r = await E.swapMarket(S, p, hi, ri); if (!r.ok) toast(esc(r.why || 'Нельзя')); });
+  }
+  // Баронесса Вольфрада: бесплатное нападение в начале хода — на кого или не нападать
+  function askFreeSiege(p, q) {
+    const opts = q.options.map(o => { const t = S.players[o.i]; return { icon: '⚔️', value: o.i, html: `<b>Напасть на ${esc(H(t).gen)}</b><br><span class="muted">шансы ${Math.round(o.p * 100)}% · атака ${o.A} против ${o.D}${o.loot ? '' : ' · забрать нечего'}</span>` }; });
+    opts.push({ icon: '🕊', value: -1, html: '<b>Не нападать</b><br><span class="muted">в этот ход без нападения</span>' });
+    return choiceSheet(`⚔️ Вольфрада: бесплатное нападение +${q.bonus}⚔️`, `<p class="note">Можно напасть на любого соперника. Проиграете — отдадите ему ${q.fee}🪙.</p>`, opts);
   }
   // есть ли покупка без действия («Ярмарка»), которая по карману прямо сейчас
   function freeBuyOk(p) {
@@ -2393,7 +2442,7 @@
   }
   function myBarHtml(p) {
     const n = E.regCount(p), g = E.goal(S);
-    const extra = [modOn('seats') && (p.seats || []).length ? `${gico('seat')}${p.seats.length}` : '', modOn('plots') && p.plots.length ? `${gico('plot')}${p.plots.length}` : '', (p.sins || []).length ? `😈${p.sins.length}` : '', p.penance ? `🕯${p.penance.step}/4` : '', p.ritual ? `✨${p.ritual.marks.filter(Boolean).length}/5` : '', (p.miracles || []).length ? `🌟${p.miracles.length}` : ''].filter(Boolean).join(' '); // грехи, покаяние, ритуал и чудеса — на кнопке «Двор»
+    const extra = [modOn('seats') && (p.seats || []).length ? `${gico('seat')}${p.seats.length}` : '', modOn('plots') && p.plots.length ? `${gico('plot')}${p.plots.length}` : '', (p.sins || []).length ? `😈${p.sins.length}` : '', p.penance ? `🕯${p.penance.step}/4` : '', E.ritualSlots(p).map(k => `✨${p[k].marks.filter(Boolean).length}/5`).join(' '), (p.miracles || []).length ? `🌟${p.miracles.length}` : ''].filter(Boolean).join(' '); // грехи, покаяние, ритуал и чудеса — на кнопке «Двор»
     return `<button class="crestb${S.first === p.i ? ' first' : ''}" data-act="my" aria-label="${esc(H(p).name)}: мой двор${S.first === p.i ? ', первый игрок круга' : ''}"><img class="crest" src="${crestOf(p)}" alt=""></button><button class="goldbig" data-act="res" data-s="gold" data-i="${p.i}" data-gold="${p.i}" aria-label="Золото: ${shownGold(p)}">${gico('gold')}<b>${shownGold(p)}</b>${popHtml(p.i, 'gold-pop')}</button>${barCoins(p.i)}<button class="pipsb" data-act="drawer" data-d="regalia" aria-label="Знамёна: ${n} из ${g}">${pipsOf(p)}<small>знамёна · ${n} из ${g}</small></button><span class="sp"></span><button class="myb${extrasOf(p).some(x => x.k === 'ritual' || x.k === 'ritstart') ? ' glow' : ''}" data-act="my">${extra ? `<i>${extra}</i>` : ''}${WATCH || hotseat() ? esc(H(p).short) : 'Двор'}</button>`;
   }
 
@@ -3003,7 +3052,8 @@
     const dg = E.dawnGold(S, p, E.mods(S, p)), up = E.upkeepOf(p), bans = E.allBans(p), dist = p.distracted && p.distracted.id;
     let h = `<div class="res">${SYMS5.map(s => `<button class="rsb" data-act="res" data-s="${s}" data-i="${p.i}" aria-label="${esc(D.SYM_NAME[s])}: откуда">${D.SYM[s]} ${pr[s]}${tmp(s)}</button>`).join('')}${modOn('sieges') ? `<button class="rsb" data-act="res" data-s="walls" data-i="${p.i}" aria-label="Стены: откуда">🧱 ${E.walls(S, p)}</button>` : ''}</div>`;
     if (dg.g || up) h += `<p class="note">🌅 В начале вашего хода: ${dg.g ? `+${dg.g}🪙 (${esc(dg.src.join(', '))})` : 'дохода нет'}${up ? `; содержание −${up}🪙` : ''}.</p>`;
-    h += `<div class="sec-h"><h3>Дом и знамёна</h3><span>${E.regCount(p)}/${E.goal(S)} · действуют всегда</span></div><div class="pgrid mini">${wrap(pcard('house', p.house, { badge: dawnB(dawnOf(D.HOUSES[p.house].mods)) }), dwhy('house:' + p.house))}${bans.map(id => (dist === id ? pcard('ban', id, { o: p.i, st: 'built', cls: 'built', badge: '<span class="pcb tag">отвлечён</span>' }) : wrap(pcard('ban', id, { o: p.i, st: 'built', cls: 'built', badge: dawnB(dawnOf(D.BAN[id].mods)) }), dwhy('ban:' + id)))).join('')}</div>`;
+    h += `<div class="sec-h"><h3>Дом и знамёна</h3><span>${E.regCount(p)}/${E.goal(S)} · действуют всегда</span></div><div class="pgrid mini">${wrap(pcard('house', p.house, { badge: dawnB(dawnOf(D.HOUSES[p.house].mods)) }), dwhy('house:' + p.house))}${bans.map(id => (dist === id ? pcard('ban', id, { o: p.i, st: 'built', cls: 'built', badge: '<span class="pcb tag">отвлечён</span>' }) : wrap(pcard('ban', id, { o: p.i, st: 'built', cls: 'built', badge: dawnB(dawnOf(D.BAN[id].mods)) }), dwhy('ban:' + id) + banAct(p, id, mine && my)))).join('')}</div>`;
+    if (p.loan) h += `<p class="note">⚖️ Долг Кларе Меняле: ${p.loan}🪙 — отдадите в начале следующего хода, до содержания.</p>`;
     if (!bans.length) h += `<p class="muted" style="margin:0;font-size:13px">Знамён пока нет — нанять можно ${L.big ? `в колонке «Знамёна» ${shopSide()}` : 'кнопкой «Знамёна» внизу стола'}.</p>`;
     if (modOn('faith') && (p.faiths || []).length) { const st = E.faithStage(S, p); h += `<div class="sec-h"><h3>Вера</h3><span>ступень ${['I', 'II', 'III'][st - 1]} · 🕯${E.faithCandles(S, p)}</span></div><div class="pgrid mini">${p.faiths.map(f => wrap(pcard('faith', f, { cls: 'built', badge: `<span class="pcb own">🕯 ${['I', 'II', 'III'][st - 1]}</span>` }), dwhy('faith:' + f))).join('')}</div>`; }
     if (modOn('faith') && (p.faiths || []).length) h += ritualHtml(p, mine, my);
@@ -3019,7 +3069,7 @@
       h += `<div class="sec-h"><h3>Колода двора</h3><span>всего карт ${p.deck.length + p.discard.length + p.hand.length + p.inPlay.length + p.plots.length}</span></div><div class="piles"><button class="pile-b" data-act="pile" data-w="deck">${deckHtml('court', p.deck.length, 'Колода')}<span class="pl"><b>Колода</b> ${p.deck.length}</span></button><button class="pile-b" data-act="pile" data-w="discard">${deckHtml('court', dn, 'Сброс')}<span class="pl"><b>Сброс</b> ${dn}</span></button>${tr ? `<button class="pile-b" data-act="pile" data-w="trashed">${deckHtml('court', tr, 'Убраны')}<span class="pl"><b>Убраны</b> ${tr}</span></button>` : ''}</div>`;
     }
     const bads = p.estates.filter(e => D.ESTATES[e.id].bad);
-    if (bads.length) h += `<div class="sec-h"><h3>⬛ Проклятия</h3><span>снять — действие и ${R.purgeCost || 2}🪙</span></div><div class="pgrid mini">${bads.map(e => { const why = my ? E.purgeBlock(S, p, e) : null; return pslot(pcard('estate', e.id, { o: p.i }), my ? `<button class="btn small ${why ? '' : 'primary'}" data-act="purge" data-uid="${e.uid}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : `Снять · ${R.purgeCost || 2}🪙`}</button>` : ''); }).join('')}</div>`;
+    if (bads.length) h += `<div class="sec-h"><h3>⬛ Проклятия</h3><span>снять — действие и ${R.purgeCost || 2}🪙${E.freePurgeOn(S, p) ? ' · раз в ход бесплатно: Климент' : ''}</span></div><div class="pgrid mini">${bads.map(e => { const why = my ? E.purgeBlock(S, p, e) : null; return pslot(pcard('estate', e.id, { o: p.i }), my ? `<button class="btn small ${why ? '' : 'primary'}" data-act="purge" data-uid="${e.uid}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : E.freePurgeOn(S, p) ? 'Снять · бесплатно' : `Снять · ${R.purgeCost || 2}🪙`}</button>` : ''); }).join('')}</div>`;
     // грехи (v10.15): лежат перед игроком; покаяние начинают отсюда
     if (modOn('faith') && ((p.sins || []).length || p.penance)) {
       const why = my ? E.penanceBlock(S, p) : null;
@@ -3387,12 +3437,13 @@
     if (!S || WATCH || !modOn('faith')) return '';
     const p = S.players[ME], W = D.RITUALS[id];
     if (!p || !W || !(p.faiths || []).includes(W.faith) || !E.ritualOn(S, id)) return '';
-    const n = p.ritual && p.ritual.id === id ? p.ritual.marks.filter(Boolean).length : 0;
+    const run = E.ritualSlots(p).map(k => p[k]).find(r => r.id === id), n = run ? run.marks.filter(Boolean).length : 0;
     if ((p.miracles || []).includes(id)) return compact ? '<span class="pmeta"><span class="own">🌟 чудо ваше</span></span>' : '<p class="note">🌟 Ритуал пройден — чудо ваше.</p>';
-    if (p.ritual && p.ritual.id === id) return compact ? `<span class="pmeta"><span class="own">✨ идёт · ${n} из ${W.steps.length}</span></span>` : `<p class="note">✨ Ритуал идёт: отметок ${n} из ${W.steps.length}. Жертва и милостыня — на странице «Двор».</p>`;
+    if (run) return compact ? `<span class="pmeta"><span class="own">✨ идёт · ${n} из ${W.steps.length}</span></span>` : `<p class="note">✨ Ритуал идёт: отметок ${n} из ${W.steps.length}. Жертва и милостыня — на странице «Двор».</p>`;
     const why = isMyTurn() ? E.ritualBlock(S, p, id) : 'Начать — в свой ход';
-    const b = `<button class="btn small ${why ? '' : 'primary'}" data-act="ritstart" data-id="${id}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : p.ritual ? 'Начать вместо текущего' : '✨ Начать ритуал'}</button>`;
-    return compact ? b : `<p class="note">${b}${p.ritual && !why ? ' Отметки текущего ритуала сгорят.' : ''}</p>`;
+    const room = !p.ritual || (E.twoRit(p) && !p.ritual2); // Гертруда: второй ритуал рядом с первым
+    const b = `<button class="btn small ${why ? '' : 'primary'}" data-act="ritstart" data-id="${id}" ${why || busy || adjustReq ? 'disabled' : ''}>${why ? esc(why) : !p.ritual ? '✨ Начать ритуал' : room ? '✨ Начать второй ритуал' : 'Начать вместо текущего'}</button>`;
+    return compact ? b : `<p class="note">${b}${!room && !why ? ' Отметки текущего ритуала сгорят.' : ''}</p>`;
   }
   function ritualRows(id) {
     const W = D.RITUALS[id];
@@ -4430,7 +4481,11 @@
       case 'purge': return Object.assign({}, await E.purgeBad(S, p, m.uid | 0));
       case 'penance': return Object.assign({}, await E.startPenance(S, p));
       case 'ritstart': return Object.assign({}, await E.startRitual(S, p, String(m.id)));
-      case 'ritact': return Object.assign({}, await E.ritualAct(S, p, m.i | 0));
+      case 'ritact': return Object.assign({}, await E.ritualAct(S, p, m.i | 0, m.s === 'ritual2' ? 'ritual2' : 'ritual'));
+      case 'loan': return Object.assign({}, E.takeLoan(S, p));
+      // карта по номеру и по имени: стол у гостя мог не успеть обновиться — тогда номер ищем заново
+      case 'cycle': { let k = m.k | 0; if (m.id && p.hand[k] !== m.id) k = p.hand.indexOf(String(m.id)); return Object.assign({}, await E.cycleCard(S, p, k)); }
+      case 'swap': { let hi = m.hi | 0, ri = m.ri | 0; if (m.hid && p.hand[hi] !== m.hid) hi = E.swapHand(p).find(k => p.hand[k] === m.hid); if (m.rid && S.courtRow[ri] !== m.rid) ri = S.courtRow.indexOf(String(m.rid)); return Object.assign({}, await E.swapMarket(S, p, hi == null ? -1 : hi, ri)); }
       case 'adopt': return Object.assign({}, await E.adoptFaith(S, p, String(m.id)));
       case 'renounce': return Object.assign({}, await E.renounceFaith(S, p, String(m.id)));
       case 'rite': return Object.assign({}, await E.rite(S, p, String(m.id)));
@@ -4618,7 +4673,7 @@
     // нажатие мимо кнопок на столе снимает выбор с карты руки
     if (!el) { if (selCard && e.target.closest('.board') && !e.target.closest('.handz .hcard')) { selCard = null; schedule(); } return; }
     if (el.disabled) return;
-    if (el.closest('.scrim') && !['new', 'info-estate', 'info-court', 'info-ban', 'zoom', 'fetch', 'discard-seat', 'res', 'pile', 'purge', 'penance', 'ritstart', 'ritact', 'rite-go'].includes(el.dataset.act)) return;
+    if (el.closest('.scrim') && !['new', 'info-estate', 'info-court', 'info-ban', 'zoom', 'fetch', 'discard-seat', 'res', 'pile', 'purge', 'penance', 'ritstart', 'ritact', 'rite-go', 'loan', 'cycle', 'swap'].includes(el.dataset.act)) return;
     const a = el.dataset.act;
     const p = S ? S.players[ME !== null ? ME : S.cur] : null;
     switch (a) {
@@ -4729,10 +4784,15 @@
         if (k === 'rite') { const f = el.dataset.f; if (guest()) netDo('rite', { id: f }); else guarded(async () => { const r = await E.rite(S, p, f); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); }
         else if (k === 'ritual' || k === 'ritstart') { showMy(); setTimeout(() => { const h = [...document.querySelectorAll('.scrim:not(.out) .sec-h h3')].find(x => /Ритуал/.test(x.innerText)); if (h) h.closest('.sec-h').scrollIntoView({ block: 'start' }); }, 60); }
         else if (k === 'fetch') { const b = document.querySelector('.handz .pile.disc'); if (b) b.click(); }
+        else if (k === 'loan') doLoan(p); else if (k === 'cycle') doCycle(p); else if (k === 'swap') doSwap(p); // v10.21
+        else if (k === 'purge') { showMy(); setTimeout(() => { const h = [...document.querySelectorAll('.scrim:not(.out) .sec-h h3')].find(x => /Проклятия/.test(x.innerText)); if (h) h.closest('.sec-h').scrollIntoView({ block: 'start' }); }, 120); }
         else if (k === 'adopt' || k === 'fair') { if (!L.big) { drawer = k === 'adopt' ? 'regalia' : 'market'; selCard = null; schedule(); } else { const c = document.querySelector(k === 'adopt' ? '.shopcol > .shop.rg' : '.shopcol > .shop.mk'); if (c) c.scrollIntoView({ block: 'nearest' }); } }
       } break;
       case 'ritstart': if (isMyTurn()) { e.stopPropagation(); const id = el.dataset.id; closeAllSheets(); if (guest()) netDo('ritstart', { id }); else guarded(async () => { const r = await E.startRitual(S, p, id); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
-      case 'ritact': if (isMyTurn()) { e.stopPropagation(); const i = +el.dataset.i; closeAllSheets(); if (guest()) netDo('ritact', { i }); else guarded(async () => { const r = await E.ritualAct(S, p, i); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
+      case 'ritact': if (isMyTurn()) { e.stopPropagation(); const i = +el.dataset.i, rs = el.dataset.s === 'ritual2' ? 'ritual2' : 'ritual'; closeAllSheets(); if (guest()) netDo('ritact', { i, s: rs }); else guarded(async () => { const r = await E.ritualAct(S, p, i, rs); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
+      case 'loan': if (isMyTurn()) { e.stopPropagation(); closeAllSheets(); doLoan(p); } break; // v10.21: Клара, Евстафий, Ортензия — кнопки в «Дворе»
+      case 'cycle': if (isMyTurn()) { e.stopPropagation(); closeAllSheets(); doCycle(p); } break;
+      case 'swap': if (isMyTurn()) { e.stopPropagation(); closeAllSheets(); doSwap(p); } break;
       case 'purge': if (isMyTurn()) { e.stopPropagation(); const uid = +el.dataset.uid; closeAllSheets(); if (guest()) netDo('purge', { uid }); else guarded(async () => { const r = await E.purgeBad(S, p, uid); if (!r.ok) toast(esc(r.why || 'Нельзя')); }); } break;
       case 'res': { e.stopPropagation(); const q = S.players[+el.dataset.i]; if (q) showRes(q, el.dataset.s); } break;
       case 'fetch': if (isMyTurn()) { e.stopPropagation(); const id = el.dataset.id; { const sc = el.closest('.scrim'); if (sc && sc.close) sc.close(); } if (guest()) netDo('fetch', { id }); else guarded(async () => { await E.fetchCard(S, p, id); }); } break;

@@ -848,6 +848,9 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { // Регент Северин: +1 действие; Банкирша Эльвира: +1🪙 за каждые 5🪙
     const S = mk(), [a] = S.players; a.greats = ['severin', 'elvira']; a.gold = 23;
     eq(E.buysLeft(S, a), 2, 'Северин: два действия за ход'); ok(E.dawnGold(S, a, E.mods(S, a)).g >= 4, 'Эльвира: при 23🪙 — +4🪙'); }
+  { // ошибка с 10.18: бот оценивал игрока с Похотью и «Щитом ордена» в колоде — оценка броска звала саму себя без конца (переполнение стека)
+    const S = mk(), [a, b] = S.players; est(S, a, 'barracks', 'outpost'); b.sins = ['sin_lust']; b.deck = ['ordershield', 'tax', 'tax']; b._mode = null;
+    let fine = true; try { E.Bot.mode(S, b); E.Bot.avgPower(S, b); } catch (e) { fine = false; } ok(fine, 'Похоть + «Щит ордена»: оценка броска без бесконечной рекурсии'); }
   console.log(`\nИТОГ: ${passes} проверок прошли, ${fails} не прошли`);
 })().catch(e => { console.log('CRASH', e.stack); });
 // ===== Ярмарка на ход (карты двора): таких карт в основе больше нет — проверка убрана =====

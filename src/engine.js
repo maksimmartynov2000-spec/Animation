@@ -2584,6 +2584,7 @@ const Engine = (() => {
     mode(S, q) {
       const c = q._mode;
       if (c && c.t === S.turnNo) return c.m;
+      q._mode = { t: S.turnNo, m: 1 }; // на время расчёта: повторный вход (Похоть → avgPower → pNum → mode) берёт 1 кубик — без бесконечной рекурсии (ошибка с 10.18)
       const m = this.rollEV(S, q, 2) > this.rollEV(S, q, 1) + 0.05 ? 2 : 1;
       q._mode = { t: S.turnNo, m };
       return m;

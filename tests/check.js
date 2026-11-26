@@ -19,7 +19,7 @@ const FULL = [
   ['faith:i15', 'faith.js', ['i15']], ['faith:mini', 'faith.js', ['mini']], ['faith:mac', 'faith.js', ['mac']],
   ['tab:i15', 'tab.js', ['i15']], ['tab:mini', 'tab.js', ['mini']], ['tut:i15', 'tut.js', ['i15']], ['tut:mini', 'tut.js', ['mini']],
   ['fly', 'fly.js', []], ['head', 'head.js', []], ['headbig', 'headbig.js', []],
-  ['upd', 'upd.js', []], ['prefs', 'prefs.js', []], ['save', 'save.js', []], ['catalog', 'catalog.js', []], ['curses', 'curses.js', []], ['sins', 'sins.js', []], ['rituals', 'rituals.js', []], ['hints', 'hints.js', []], ['pair', 'pair.js', []], ['net2', 'net2.js', []], ['netwin', 'netwin.js', [], 600], ['table3', 'table3.js', []],
+  ['upd', 'upd.js', []], ['prefs', 'prefs.js', []], ['save', 'save.js', []], ['catalog', 'catalog.js', []], ['curses', 'curses.js', []], ['sins', 'sins.js', []], ['rituals', 'rituals.js', []], ['hints', 'hints.js', []], ['pair', 'pair.js', []], ['net2', 'net2.js', []], ['netwin', 'netwin.js', [], 600], ['bans', 'bans.js', []], ['table3', 'table3.js', []],
   ['standalone', 'standalone.js', []],
   ['monkey', 'monkey.js', ['games=1', 'turns=100'], 500],
 ];
