@@ -100,7 +100,10 @@ const Engine = (() => {
   // свойство со знамён игрока без учёта отвлечённого лорда (Куртизанка) — для правил, которые нельзя брать из mods(): там чудеса
   const banHas = (p, key) => !!p && allBans(p).some(id => id !== (p.distracted && p.distracted.id) && (D.BAN[id].mods || {})[key]);
   const sinSafe = (p) => banHas(p, 'sinSafe'); // Магистр Целестин (v10.21): грехи не мешают ритуалам и чудесам
+  const dueOf = (S, p, v) => (banHas(p, 'halfDues') ? Math.floor(v / 2) : v); // Банкирша Эльвира: платежи в начале хода вдвое меньше (вниз)
   const twoRit = (p) => banHas(p, 'twoRituals'); // Аббатиса Гертруда: два ритуала сразу
+  // Регент Северин: выбранное знамя соперника действует у вас до конца вашего хода (только пока Северин у вас и идёт ваш ход)
+  const regentOf = (S, p) => { const id = p && p.turn && p.turn.regent; return id && D.BAN[id] && S.players[S.cur] === p && banHas(p, 'regentSeal') ? id : null; };
   const RSLOTS = ['ritual', 'ritual2']; // p.ritual — первый ритуал, p.ritual2 — второй (только с Гертрудой)
   const ritualSlots = (p) => RSLOTS.filter(k => p && p[k]);
   const miraclesOn = (p) => (!p || ((p.sins || []).length && !sinSafe(p)) || cursed(p, 'relic') ? [] : miraclesOf(p));
@@ -122,6 +125,7 @@ const Engine = (() => {
     for (const id of allBans(p)) if (id !== off) add(D.BAN[id].mods);
     for (const e of p.estates) if (!e.ruined) add(D.ESTATES[e.id].mods);
     if (faithsOf(S, p).length && faithActive(S, p)) { const st = faithStage(S, p); for (const f of p.faiths) { const F = D.FAITHS[f]; add(F.mods); if (st >= 2) add(F.mods2); if (st >= 3) add(F.mods3); } }
+    { const rg = regentOf(S, p); if (rg) add(D.BAN[rg].mods); } // печать регента (v10.21): свойство знамени соперника — до конца своего хода
     for (const id of miraclesOn(p)) add(RIT[id].miracle.mods); // чудеса ритуалов
     // модуль «Придворные»: свойства карт, которые сидят при дворе
     if (on(S, 'seats')) for (const id of p.seats || []) add((D.COURT[id].seat || {}).mods);
@@ -138,6 +142,7 @@ const Engine = (() => {
     if (faithsOf(S, p).length && faithActive(S, p)) { const st = faithStage(S, p); for (const f of p.faiths) { const F = D.FAITHS[f]; add(F.mods, F.name); if (st >= 2) add(F.mods2, F.name); if (st >= 3) add(F.mods3, F.name); } }
     for (const id of miraclesOn(p)) add(RIT[id].miracle.mods, `Чудо «${RIT[id].miracle.name}»`);
     if (on(S, 'seats')) for (const id of p.seats || []) add((D.COURT[id].seat || {}).mods, D.COURT[id].name);
+    { const rg = regentOf(S, p); if (rg) add(D.BAN[rg].mods, `Печать регента: ${D.BAN[rg].name}`); }
     return [...new Set(out)];
   }
   // сколько свойства даёт каждый источник: [{ name, v }] — для расшифровки дохода «2 · пара +2 · Хаген +1»
@@ -151,6 +156,7 @@ const Engine = (() => {
     if (faithsOf(S, p).length && faithActive(S, p)) { const st = faithStage(S, p); for (const f of p.faiths) { const F = D.FAITHS[f], o = {}; for (const x of [F.mods, st >= 2 ? F.mods2 : null, st >= 3 ? F.mods3 : null]) for (const k in x || {}) o[k] = (o[k] || 0) + x[k]; add(o, F.name, 'faith:' + f); } }
     for (const id of miraclesOn(p)) add(RIT[id].miracle.mods, `Чудо «${RIT[id].miracle.name}»`, 'miracle:' + id);
     if (on(S, 'seats')) for (const id of p.seats || []) add((D.COURT[id].seat || {}).mods, D.COURT[id].name, 'seat:' + id);
+    { const rg = regentOf(S, p); if (rg) add(D.BAN[rg].mods, `Печать регента: ${D.BAN[rg].name}`, 'regent:' + rg); }
     return out;
   }
   // союз провинции: каждые 3 владения одной провинции (любые, можно одинаковые; руины не в счёт) — один союз; бонусы копятся
@@ -362,7 +368,7 @@ const Engine = (() => {
     const extra = p.upkeepExtra || 0; p.upkeepExtra = 0;
     const list = upkeepList(p);
     if (!list.length) return;
-    const need = upkeepOf(p) + extra;
+    const need = dueOf(S, p, upkeepOf(p) + extra);
     if (need <= 0) return;
     if (p.gold >= need) {
       p.gold -= need; p.stats.upkeep += need;
@@ -374,8 +380,8 @@ const Engine = (() => {
     if (!Array.isArray(keep)) keep = [];
     keep = keep.filter(id => list.includes(id));
     // оставить можно только тех, на кого хватает золота
-    while (keep.length && keep.reduce((s, id) => s + upkeepCost(p, id), 0) + extra > p.gold) keep.pop();
-    const pay = keep.length ? keep.reduce((s, id) => s + upkeepCost(p, id), 0) + extra : 0;
+    while (keep.length && dueOf(S, p, keep.reduce((s, id) => s + upkeepCost(p, id), 0) + extra) > p.gold) keep.pop();
+    const pay = keep.length ? dueOf(S, p, keep.reduce((s, id) => s + upkeepCost(p, id), 0) + extra) : 0;
     const gone = list.filter(id => !keep.includes(id));
     p.greats = p.greats.filter(id => !gone.includes(id)); p.lords = p.lords.filter(id => !gone.includes(id));
     for (const id of gone) { if (!D.BAN[id].heir) (D.BAN[id].tier === 'g' ? S.gDeck : S.lDeck).unshift(id); p.stats.released++; log(S, `${nm(p)}: не хватило золота на содержание — «${D.regName(D.BAN[id])}» уходит под низ колоды великих лордов`, p.i, 'upkeep'); }
@@ -441,19 +447,17 @@ const Engine = (() => {
   }
   async function startOfTurn(S, p) {
     p.turn = freshTurn();
-    // Клара Меняла (v10.21): долг — до содержания; нечем — сколько есть, остальное прощено
-    if (p.loan) { const v = Math.min(p.loan, p.gold); p.gold -= v; log(S, `${nm(p)}: долг Кларе Меняле — −${v}🪙${v < p.loan ? ` (из ${p.loan}🪙: больше нечем)` : ''}`, p.i, 'upkeep'); emit(S, 'loan', { p: p.i, paid: v, due: p.loan }); p.loan = 0; }
+    // Клара Меняла (v10.21): долг — до содержания; есть 4🪙 — списывают 4🪙, нет — долг прощён (решение владельца); Эльвира — вдвое меньше
+    if (p.loan) { const due = dueOf(S, p, p.loan), v = p.gold >= due ? due : 0; p.gold -= v; log(S, v ? `${nm(p)}: долг Кларе Меняле — −${v}🪙` : `${nm(p)}: долг Кларе Меняле (${due}🪙) прощён — столько нет`, p.i, 'upkeep'); emit(S, 'loan', { p: p.i, paid: v, due }); p.loan = 0; }
     if (p.lockNext) { p.turn.curse.lock = 1; p.lockNext = false; log(S, `${nm(p)}: Куртизанка — в этот ход нанимать знамёна нельзя`, p.i, 'envy'); }
     await payUpkeep(S, p);
     // обет «Десятина» (Собор Единого): 1🪙 — в банк
-    { const tf = faithBan(S, p, 'tithe'); if (tf) { const v = Math.min(1, p.gold); if (v) { p.gold -= v; log(S, `${nm(p)}: десятина «${D.FAITHS[tf].name}» — −${v}🪙`, p.i, 'faith'); } } }
+    { const tf = faithBan(S, p, 'tithe'); if (tf) { const v = Math.min(dueOf(S, p, 1), p.gold); if (v) { p.gold -= v; log(S, `${nm(p)}: десятина «${D.FAITHS[tf].name}» — −${v}🪙`, p.i, 'faith'); } } }
     // обет «Щедрость» (Праздник Урожая): 1🪙 самому бедному сопернику
-    { const gf = faithBan(S, p, 'gift'); if (gf && p.gold > 0) { let poor = null; for (const o of opps(S, p)) if (!poor || o.gold < poor.gold) poor = o; const v = Math.min(p.gold, D.FAITHS[gf].oathN || 1); if (poor && v) { p.gold -= v; poor.gold += v; log(S, `${nm(p)}: щедрость «${D.FAITHS[gf].name}» — ${v}🪙 ${nmD(poor)}`, p.i, 'faith'); } } }
+    { const gf = faithBan(S, p, 'gift'); if (gf && p.gold > 0) { let poor = null; for (const o of opps(S, p)) if (!poor || o.gold < poor.gold) poor = o; const v = Math.min(p.gold, dueOf(S, p, D.FAITHS[gf].oathN || 1)); if (poor && v) { p.gold -= v; poor.gold += v; log(S, `${nm(p)}: щедрость «${D.FAITHS[gf].name}» — ${v}🪙 ${nmD(poor)}`, p.i, 'faith'); } } }
     // грехи (v10.15): платежи — по золоту до дохода начала хода; не хватает — сколько есть
-    if (sinned(p, 'pride')) { const v = Math.min(regCount(p), p.gold); if (v) { p.gold -= v; log(S, `${nm(p)}: Гордыня — −${v}🪙 за знамёна`, p.i, 'sin'); } }
-    if (sinned(p, 'greed')) { const v = Math.floor(p.gold / 5); if (v) { p.gold -= v; log(S, `${nm(p)}: Алчность — −${v}🪙 в банк`, p.i, 'sin'); } }
-    // Инквизитор Кассиан (v10.21): грешник в начале своего хода платит каждому сопернику с Кассианом
-    if ((p.sins || []).length) for (const o of opps(S, p)) { const t = mods(S, o).sinTax || 0; if (!t) continue; const v = Math.min(t, p.gold); if (v) { p.gold -= v; o.gold += v; log(S, `${modSources(S, o, 'sinTax').join(', ') || 'Кассиан'}: ${nm(p)} — грешники, платят ${v}🪙 ${nmD(o)}`, p.i, 'sin'); } }
+    if (sinned(p, 'pride')) { const v = Math.min(dueOf(S, p, regCount(p)), p.gold); if (v) { p.gold -= v; log(S, `${nm(p)}: Гордыня — −${v}🪙 за знамёна`, p.i, 'sin'); } }
+    if (sinned(p, 'greed')) { const v = dueOf(S, p, Math.floor(p.gold / 5)); if (v) { p.gold -= v; log(S, `${nm(p)}: Алчность — −${v}🪙 в банк`, p.i, 'sin'); } }
     // Клевета: в этот ход карты двора покупать нельзя
     if (p.slanderNext) { p.turn.curse.slander = 1; p.slanderNext = false; log(S, `${nm(p)}: Клевета — в этот ход карты двора покупать нельзя`, p.i, 'envy'); }
     if (Object.keys(p.turn.curse).length) emit(S, 'curse', { p: p.i, ids: Object.keys(p.turn.curse) });
@@ -489,6 +493,7 @@ const Engine = (() => {
     if (g > 0) { p.gold += g; p.stats.startInc += g; log(S, `${nm(p)} получили в начале хода +${g}🪙 (${src.join(', ')})`, p.i, 'gold'); }
     const take = (o, v, why) => { v = Math.min(v, o.gold); if (v <= 0) return; o.gold -= v; p.gold += v; tribute.push({ i: o.i, v, why: why.split(' ')[0] }); log(S, `${why}: ${nm(o)} отдали ${v}🪙 ${nmD(p)}`, p.i, 'steal'); };
     if (m.tithe) for (const o of rivals(S, p, o => o.gold > 0)) take(o, m.tithe, 'Десятина');
+    if (m.sinTax) for (const o of opps(S, p)) { const n = (o.sins || []).length; if (n && o.gold > 0) take(o, n * m.sinTax, `Инквизитор Карл — за ${n} ${D.plural(n, 'грех', 'греха', 'грехов')}`); } // v10.21
     if (m.tribute) for (const o of rivals(S, p, o => o.gold > 0 && prod(S, o).war < pr.war)) take(o, m.tribute, 'Дань — у них ⚔️ меньше');
     if (on(S, 'faith')) {
       const mine = faithsOf(S, p);
@@ -1290,6 +1295,31 @@ const Engine = (() => {
     p.gold += g; p.loan = (p.loan || 0) + due; p.turn.loaned = true;
     log(S, `${nm(p)}: Клара Меняла — ${g}🪙 в долг, в начале следующего хода отдать ${due}🪙`, p.i, 'gold');
     emit(S, 'loan', { p: p.i, got: g, due }); emit(S, 'change');
+    return { ok: true };
+  }
+  // Регент Северин: печать регента — раз в ход свойство знамени соперника до конца хода
+  // печать берёт только то, что сработает до конца вашего хода: без свойств «в начале хода» и «в чужой ход»;
+  // две веры и два ритуала не берутся — после хода они оставили бы лишнюю веру или ритуал без хозяина
+  const REGENT_NOT = new Set(['startGold', 'craftIncome', 'tithe', 'provIncome', 'peekTop', 'candleGold', 'lordIncome', 'sinGold', 'redIncome', 'landIncome', 'savings', 'estateGold', 'freeSiege', 'sinTax', 'halfDues', // в начале хода
+    'walls', 'shield', 'captureImmune', 'redBonus', 'raidDraw', 'buyToll', 'oppRegGold', 'landOthers', 'darkGuard', 'defendGold', 'sinFee', // в чужой ход
+    'twoFaiths', 'twoRituals', 'regentSeal']);
+  const regentUseful = (id) => Object.keys((D.BAN[id] && D.BAN[id].mods) || {}).some(k => !REGENT_NOT.has(k));
+  const regentOptions = (S, p) => { const out = []; for (const o of opps(S, p)) for (const id of allBans(o)) if (regentUseful(id)) out.push({ i: o.i, id }); return out; };
+  function regentBlock(S, p) {
+    if (S.winner !== null || S.players[S.cur] !== p) return 'Сейчас не ваш ход';
+    if (!banHas(p, 'regentSeal')) return 'Нужен Регент Северин';
+    if (p.turn.regent) return 'Печать уже поставлена в этот ход';
+    if (!regentOptions(S, p).length) return 'У соперников нет подходящих знамён';
+    return null;
+  }
+  function regentCopy(S, p, id) {
+    const why = regentBlock(S, p);
+    if (why) return { ok: false, why };
+    const o = regentOptions(S, p).find(x => x.id === id);
+    if (!o) return { ok: false, why: 'Такого знамени у соперников нет' };
+    p.turn.regent = id;
+    log(S, `${nm(p)}: печать регента — до конца хода у них свойство «${D.regName(D.BAN[id])}» (${nmG(S.players[o.i])}): ${D.BAN[id].text}`, p.i, 'info');
+    emit(S, 'regent', { p: p.i, id, from: o.i }); emit(S, 'change');
     return { ok: true };
   }
   // Евстафий: раз в ход сбросить карту из руки и взять новую
@@ -3178,7 +3208,9 @@ const Engine = (() => {
           case 'curseIncome': v += on(S, 'spy') ? n * T * (opps(S, p).reduce((t, o) => t + o.estates.filter(e => ES(e).bad && e.by === p.i).length, 0) + 0.3) : 0; break;
           case 'marketSwap': v += T * 0.6; break;
           case 'freeSiege': v += on(S, 'sieges') ? T * 0.9 : 0; break;
-          case 'sinTax': v += on(S, 'faith') ? n * T * (opps(S, p).filter(o => (o.sins || []).length).length + 0.2) * 0.9 : 0; break;
+          case 'sinTax': v += on(S, 'faith') ? n * T * (opps(S, p).reduce((t, o) => t + (o.sins || []).length, 0) + 0.3) * 0.9 : 0; break;
+          case 'halfDues': v += T * (upkeepOf(p) + 2) * 0.5; break;
+          case 'regentSeal': v += T * 1.0; break;
           case 'sinSafe': v += on(S, 'faith') ? ((p.sins || []).length ? 6 : 2) : 0; break;
           default: v += 1;
         }
@@ -3404,6 +3436,11 @@ const Engine = (() => {
         for (const k of swapHand(p)) { const v = this.power(S, p, p.hand[k], avg); if (v < hv) { hv = v; hi = k; } }
         for (const k of swapRow(S)) { const v = this.power(S, p, S.courtRow[k], avg); if (v > rv) { rv = v; ri = k; } }
         if (hi >= 0 && ri >= 0 && rv - hv > 1.2) { const r = await swapMarket(S, p, hi, ri); if (r.ok) await pause(S, 'play'); if (S.winner !== null) return; }
+      }
+      if (!regentBlock(S, p)) { // Северин: печать регента — самое выгодное на этот ход свойство соперника (до броска: доход тоже в счёт)
+        const T = Math.max(1, this.horizon(S)); let best = null, bv = 0.3;
+        for (const o of regentOptions(S, p)) { const mm = {}; for (const [k, x] of Object.entries(D.BAN[o.id].mods || {})) if (!REGENT_NOT.has(k)) mm[k] = x; const v = this.modValue(S, p, mm, {}) / T; if (v > bv) { bv = v; best = o.id; } }
+        if (best) { const r = regentCopy(S, p, best); if (r.ok) await pause(S, 'play'); if (S.winner !== null) return; }
       }
       if (!cycleBlock(S, p)) {
         let k0 = -1, v0 = Infinity;
@@ -3949,7 +3986,7 @@ const Engine = (() => {
     cuFrom, modParts, incomeParts, dawnParts, guardOf, spyWalls, oathFree, discardOf, playedOf, takeFromDiscard, backToDeck, purgeBad, purgeBlock, prodSources, dawnGold, modSources, fetchLeft,
     nmG, shortG, canOwnEstate, plotSlots, seatMax, fairLimit, fairOf, isCursed, cursed, sinned, sinCount, takeSin, startPenance, penanceBlock,
     rollPreview, RIT, ritualOn, ritualsFor, ritualsOf, ritualBlock, startRitual, ritualAct, ritualActBlock, ritualProgress, ritualSlots, twoRit, sinSafe,
-    takeLoan, loanBlock, cycleCard, cycleBlock, swapMarket, swapBlock, swapRow, swapHand, freePurgeOn, haveNow, miraclesOf, miraclesOn, miracleOn, deckTopOf, borrowIdx, handFree, upkeepCost, extraCost, goalShort, attackOdds, rite, riteBlock, faithStage, faithCandles, oathBuy, oathPlay, canSeat, seatFromDiscard, unseatOptions, handSize, siegeOdds, razeOdds, spyInfo, capturable, destroyable, targetsOf, sameFaith, truce, buyAction, canBuyAction, extraOn, behindLeader, hireFree, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
+    takeLoan, loanBlock, cycleCard, cycleBlock, swapMarket, swapBlock, swapRow, swapHand, freePurgeOn, regentBlock, regentCopy, regentOptions, regentOf, regentUseful, REGENT_NOT, dueOf, haveNow, miraclesOf, miraclesOn, miracleOn, deckTopOf, borrowIdx, handFree, upkeepCost, extraCost, goalShort, attackOdds, rite, riteBlock, faithStage, faithCandles, oathBuy, oathPlay, canSeat, seatFromDiscard, unseatOptions, handSize, siegeOdds, razeOdds, spyInfo, capturable, destroyable, targetsOf, sameFaith, truce, buyAction, canBuyAction, extraOn, behindLeader, hireFree, pRoll, estateIncome, nm, ES, Bot, rnd, PERSONAS, NATURAL,
   };
 })();
 if (typeof module !== 'undefined') module.exports = Engine;

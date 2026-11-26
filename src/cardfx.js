@@ -266,7 +266,7 @@
     darkGuard: (n) => ({ v: `−${n}`, i: 'int', c: 'проклятиям и козням против вас' }),
     darkSpy: (n) => ({ v: `+${n}`, i: 'int', c: 'вашим проклятиям и козням' }),
     darkWinGold: (n) => ({ v: `+${n}`, i: 'gold', c: 'проклятие легло или козни удались' }),
-    loan: () => ({ v: '+3', i: 'gold', c: 'раз в ход — в долг; в начале следующего хода, до содержания, отдайте 4🪙 — сколько есть' }),
+    loan: () => [{ v: '+3', i: 'gold', c: 'по желанию, раз в ход — в долг' }, { dawn: 1, v: '−4', i: 'gold', c: 'если брали: в начале следующего хода, до содержания; нет 4🪙 — долг прощён' }],
     defendGold: (n) => ({ v: `+${n}`, i: 'gold', c: 'отбили нападение или шпионаж' }),
     sinFee: (n) => ({ v: `+${n}`, i: 'gold', c: 'соперник взял грех — возьмите у него' }),
     markGold: (n) => ({ v: `+${n}`, i: 'gold', c: 'за каждую отметку вашего ритуала' }),
@@ -282,7 +282,9 @@
     curseIncome: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале хода — за каждое ваше проклятие у соперников' }),
     marketSwap: () => ({ i: 'card', c: 'раз в ход: карту двора из руки (не Подать и не фамильную) — в ряд рынка, взамен любую карту этого ряда — в руку' }),
     freeSiege: (n) => ({ dawn: 1, pre: 'siege', v: `+${n}`, i: 'war', c: 'в начале хода — бесплатное нападение на любого соперника; проиграли — отдайте ему 3🪙' }),
-    sinTax: (n) => ({ v: `+${n}`, i: 'gold', c: 'соперник с грехом в начале своего хода платит вам' }),
+    sinTax: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале вашего хода — с каждого соперника за каждый его грех' }),
+    halfDues: () => ({ dawn: 1, v: '÷2', i: 'gold', c: 'платежи в начале хода — содержание, обеты, Гордыня, Алчность, долг Кларе — вдвое меньше' }),
+    regentSeal: () => ({ i: 'banner', c: 'печать регента: раз в ход — свойство знамени соперника до конца хода; не «в начале хода» и не «в чужой ход»' }),
     sinSafe: () => ({ i: 'faith', c: 'грехи не мешают вашим ритуалам: начинать можно, отметки не сгорают, чудеса не молчат' }),
     fairCourt: () => null,
     seasonDouble: () => ({ i: 'spring', c: 'хорошее от сезона ×2, плохое — нет' }),
@@ -290,7 +292,7 @@
   const ORDER = ['provBonus_N', 'provBonus_S', 'provBonus_E', 'provBonus_W', 'dice2', 'buys', 'advantage', 'peek', 'rerollOne', 'doubleDraw', 'extraTurn', 'raidSym', 'riteTwice', 'candleGold', 'estateGold', 'dreamPeek', 'freeCourtBuy', 'freeEstateBuy', 'freeLandBuy', 'freeRaidBuy', 'craftAny', 'banIncome', 'allyAll', 'doubleGold', 'stageUp', 'oathFree', 'lootPlus', 'fetch', 'hand', 'reroll', 'predict', 'shift', 'vasCheap', 'lordCheap', 'savings', 'retireDraw', 'retireGold', 'faithGold', 'faithEase', 'faithAdoptGold', 'freeRenounce', 'twoFaiths', 'infidelTithe', 'faithTithe', 'shield', 'spyWinGold', 'freeSpy', 'plotThird', 'symIncome_trade', 'symIncome_faith', 'symFee_trade', 'symFee_faith', 'regCheap', 'symBuy', 'tradeCheap', 'blueBonus', 'greenBonus', 'winter', 'redBonus', 'raidShield', 'redOwn', 'siege', 'defense', 'walls', 'spy', 'guard', 'stealBonus',
     'warCry', 'startGold', 'tithe', 'buyToll', 'interest', 'symIncome_sci', 'symIncome_war', 'symIncome_int', 'landIncome', 'craftIncome', 'plotIncome', 'redIncome', 'unionGold', 'tribute', 'symFee_sci', 'symFee_int', 'symFee_war', 'siegeWinGold',
     'fairPlus', 'freeBasic', 'allyScholar', 'lowRollGold', 'regGold', 'oppRegGold', 'seatSlots', 'seatIncome', 'seatGold', 'seatFromDiscard', 'seatGuard', 'provIncome', 'warmGold', 'holdBonus', 'raidDraw', 'lordIncome', 'landBuyGold',
-    'plotSlots', 'plotSpread', 'plotGold', 'timedPlotBonus', 'plotProtect', 'harbor', 'extraTurn', 'captureImmune', 'envyImmune', 'marketDiscount', 'landOthers', 'landOwn', 'courtCheap', 'ownCheap', 'greatCheap', 'courtToHand', 'unionSize', 'unionFast', 'unionNoSym', 'unionBounty', 'seasonDouble', 'seasonBonus', 'freeCheap', 'seatGuard', 'riteExtra', 'riteGold', 'peekTop', 'darkSpy', 'darkWinGold', 'darkGuard', 'curseSure', 'curseIncome', 'loan', 'defendGold', 'sinFee', 'markGold', 'schemeKeep', 'cycle', 'freePurge', 'siegeLossFee', 'sinGold', 'twoRituals', 'cleanCapture', 'freeSin', 'marketSwap', 'freeSiege', 'sinTax', 'sinSafe'];
+    'plotSlots', 'plotSpread', 'plotGold', 'timedPlotBonus', 'plotProtect', 'harbor', 'extraTurn', 'captureImmune', 'envyImmune', 'marketDiscount', 'landOthers', 'landOwn', 'courtCheap', 'ownCheap', 'greatCheap', 'courtToHand', 'unionSize', 'unionFast', 'unionNoSym', 'unionBounty', 'seasonDouble', 'seasonBonus', 'freeCheap', 'seatGuard', 'riteExtra', 'riteGold', 'peekTop', 'darkSpy', 'darkWinGold', 'darkGuard', 'curseSure', 'curseIncome', 'loan', 'defendGold', 'sinFee', 'markGold', 'schemeKeep', 'cycle', 'freePurge', 'siegeLossFee', 'sinGold', 'twoRituals', 'cleanCapture', 'freeSin', 'marketSwap', 'freeSiege', 'sinTax', 'sinSafe', 'halfDues', 'regentSeal'];
   // какой модуль нужен способности, чтобы она работала (остальные работают всегда)
   const MOD_NEEDS = { lootPlus: 'sieges', oathFree: 'faith', stageUp: 'faith', riteTwice: 'faith', dreamPeek: 'seats', siege: 'sieges', defense: 'sieges', walls: 'sieges', siegeWinGold: 'sieges', captureImmune: 'sieges', spyWinGold: 'spy', freeSpy: 'spy',
     faithGold: 'faith', faithEase: 'faith', faithAdoptGold: 'faith', freeRenounce: 'faith', infidelTithe: 'faith', faithTithe: 'faith', twoFaiths: 'faith', plotThird: 'plots', lordCheap: 'lords',
@@ -310,7 +312,7 @@
     if (ps.length === 1) out.push({ v: `+${prod[ps[0]]}`, i: ps[0], c: 'постоянно' });
     else if (ps.length > 1) out.push({ v: '+', i: ps.flatMap(s => Array(prod[s]).fill(s)), c: 'постоянно' });
     const keys = Object.keys(m || {}).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
-    for (const k of keys) { if (!m[k]) continue; const x = MOD[k] ? MOD[k](m[k], m) : k in MOD ? null : { c: k }; if (x) out.push(x); }
+    for (const k of keys) { if (!m[k]) continue; const x = MOD[k] ? MOD[k](m[k], m) : k in MOD ? null : { c: k }; if (Array.isArray(x)) out.push(...x); else if (x) out.push(x); } // свойство может дать несколько значков (Клара: долг и возврат)
     return out;
   }
   // титулы и союзы провинций — те же числа, что в движке (Engine.mods / prod / walls / startOfTurn)

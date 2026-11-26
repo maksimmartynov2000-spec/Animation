@@ -172,7 +172,7 @@ function broker() {
   await gClick('.scrim:not(.out) [data-act="penance"]');
   ok('покаяние по сети: шаг 1 у хозяина, 5🪙 ушли ему', await until((S, g, h, hg) => g.penance && g.penance.step === 1 && h.gold === hg + 5, hg), JSON.stringify(await hostQ((S, g, h) => ({ pen: g.penance, hg: h.gold }))) + ' было ' + hg);
   await gCloseAll();
-  // 6. v10.21: новые знамёна у гостя — Клара (долг), Евстафий (сбросить и взять), Ортензия (обмен с рынком)
+  // 6. v10.21: новые знамёна у гостя — Клара (долг), Евстафий (сбросить и взять), Ортензия (обмен с рынком), Северин (печать регента)
   ok('ход гостя для знамён (тот же ход, до броска)', await guestTurn());
   await hostSet((S, g) => { g.vassals = ['klara']; g.lords = ['eustace']; g.greats = ['ortensia']; g.sins = []; g.penance = null; g.gold = 20; g.hand = ['tax', 'scribe', 'tax']; g.deck = ['collector', 'tax']; S.courtRow[0] = 'spicer'; });
   const pickG = (re) => guest.evaluate((src) => { const s = [...document.querySelectorAll('.scrim:not(.out)')].pop(); const b = s && [...s.querySelectorAll('.optlist [data-v]')].find(x => new RegExp(src).test(x.innerText)); if (b) b.click(); return !!b; }, re.source);
@@ -182,6 +182,10 @@ function broker() {
   ok('Евстафий по сети: карта сброшена, новая взята', await until((S, g) => g.turn.cycled && g.hand.length === 3), JSON.stringify(await hostQ((S, g) => ({ hand: g.hand, c: g.turn.cycled }))));
   await gClick('[data-act="ex"][data-k="swap"]'); await gSheet(/какую карту отдать/); await pickG(/Писарь/); await gSheet(/какую карту взять/); await pickG(/Торговец пряностями/);
   ok('Ортензия по сети: обмен с рынком у хозяина', await until((S, g) => g.hand.includes('spicer') && S.courtRow[0] === 'scribe'), JSON.stringify(await hostQ((S, g) => ({ hand: g.hand, row: S.courtRow }))));
+  // Северин: печать регента у гостя — свойство Гуго хозяина (+1 действие) до конца хода
+  await hostSet((S, g, h) => { g.greats = ['ortensia', 'severin']; g.turn.regent = null; h.lords = ['hugo']; });
+  await gClick('[data-act="ex"][data-k="regent"]'); await gSheet(/чьё свойство взять/); await pickG(/Гуго/);
+  ok('Северин по сети: печать на Гуго у хозяина', await until((S, g) => g.turn.regent === 'hugo'), JSON.stringify(await hostQ((S, g) => ({ r: g.turn.regent }))));
   await gCloseAll();
   // стол у обоих сходится
   await guest.waitForTimeout(1200);
