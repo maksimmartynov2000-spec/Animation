@@ -876,6 +876,129 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { // ошибка с 10.18: бот оценивал игрока с Похотью и «Щитом ордена» в колоде — оценка броска звала саму себя без конца (переполнение стека)
     const S = mk(), [a, b] = S.players; est(S, a, 'barracks', 'outpost'); b.sins = ['sin_lust']; b.deck = ['ordershield', 'tax', 'tax']; b._mode = null;
     let fine = true; try { E.Bot.mode(S, b); E.Bot.avgPower(S, b); } catch (e) { fine = false; } ok(fine, 'Похоть + «Щит ордена»: оценка броска без бесконечной рекурсии'); }
+
+  // ================= v10.22: Дома — стартовые владения, фамильные карты, способности Розы и Солнца, наследники =================
+  const RR = (S, who, r, ro) => T.resolveRoll(S, who, r, ro || {});
+  { // два числа: Пасека на 1 и 4 — срабатывает на 4 у соперника; Набег Волчьего логова на 4 и 7
+    const S = mk(), [a, b] = S.players; est(S, a, 'apiary', 'wolfden'); a.gold = 0; b.gold = 10;
+    await RR(S, b, 4); eq(a.gold, 4, 'Пасека (1 и 4): +1🪙 на 4 у соперника; Волчье логово (4 и 7): забрали 3🪙');
+    eq(b.gold, 7, 'Волчье логово: у того, чей ход, −3🪙');
+    await RR(S, b, 7); eq(a.gold, 7, 'Волчье логово: и на 7');
+    eq(D.numText([1, 4]), '1 и 4', 'числа через «и»'); eq(D.numText([9, 10, 11]), '9–11', 'подряд — через тире'); }
+  { // Сад ядов: на любом дубле у кого угодно +5🪙; без дубля — ничего
+    const S = mk(), [a, b] = S.players; est(S, a, 'poisongarden'); a.gold = 0;
+    await RR(S, b, 6, { dbl: false }); eq(a.gold, 0, 'Сад ядов: не дубль — ничего');
+    await RR(S, b, 6, { dbl: true }); eq(a.gold, 5, 'Сад ядов: дубль у соперника — +5🪙');
+    await RR(S, a, 4, { dbl: true }); eq(a.gold, 10, 'Сад ядов: и на своём дубле'); }
+  { // Аптекарский огород: Земля на 1 — +1🪙 и карта, в ход любого игрока
+    const S = mk(), [a, b] = S.players; est(S, a, 'herbgarden'); a.gold = 0;
+    await RR(S, b, 1); ok(a.gold === 1 && a.hand.length === 1, 'Аптекарский огород: +1🪙 и карта в ход соперника'); }
+  { // Скрипторий: карта и +1🪙 за каждые 2 📜; Звездочётная башня: 2 карты
+    const NOU = FULL.filter(k => k !== 'unions'); // без «Союзов»: три владения одной провинции дали бы ещё значки
+    const S = mk(['tA', 'tB'], NOU), [a] = S.players; est(S, a, 'scriptorium', 'observatory', 'observatory'); a.gold = 0;
+    await RR(S, a, 2); ok(a.gold === 1 && a.hand.length === 1, 'Скрипторий: 📜2 — +1🪙 и карта');
+    await RR(S, a, 4); eq(a.hand.length, 5, 'Звездочётная башня ×2 на 4: по 2 карты с каждой'); }
+  { // Оружейная: +1🪙 за ⚔️ и +1⚔️ до конца хода; Верфь: +2🪙 за каждый Набег; Голубятня: +2🪙 и +2🔗 до конца хода
+    const S = mk(['tA', 'tB'], FULL.filter(k => k !== 'unions')), [a] = S.players; est(S, a, 'armory', 'wolfden', 'privateer', 'dovecote'); a.gold = 0;
+    await RR(S, a, 9); ok(a.gold === 1 + 2 + 2 && a.temp.war === 1 && a.temp.int === 2, 'на 9: Оружейная +1🪙 и +1⚔️, Верфь +2🪙, Голубятня +2🪙 и +2🔗'); }
+  { // значки «до конца хода» гаснут у всех — Священная роща дала +2🕯 в чужой ход
+    const S = mk(), [a, b] = S.players; est(S, a, 'sacredgrove'); a.gold = 0;
+    await RR(S, b, 3); ok(a.temp.faith === 2 && a.gold === 0, 'Священная роща: +2🕯 до конца хода, золота нет');
+    E.endTurn(S, b); eq(a.temp.faith, 0, 'конец хода соперника: значки владельца рощи погасли'); }
+  { // Королевский сад: Ремесло — только в свой ход, +1🪙 и карта двора без действия; Тронный зал — следующая карта двора на 2🪙 дешевле
+    const S = mk(), [a, b] = S.players; est(S, a, 'royalgarden', 'throneroom'); a.gold = 0;
+    await RR(S, b, 1); eq(a.gold, 0, 'Королевский сад: в чужой ход не срабатывает (Ремесло)');
+    await RR(S, a, 1); ok(a.gold === 1 && a.turn.fairCourt === 1, 'Королевский сад: +1🪙 и карта двора без траты действия');
+    await RR(S, a, 5); ok(a.gold === 3 && a.turn.courtDisc === 2, 'Тронный зал: +2🪙, скидка 2🪙 на карту двора');
+    eq(E.marketPrice(S, a, 5, true), 3, 'скидка — на карту двора'); eq(E.marketPrice(S, a, 5, false), 5, 'на владение скидки нет');
+    S.courtRow = ['spicer', 'scribe', 'herald', 'collector']; a.gold = 10; a.turn.rolled = true; const pr = E.marketPrice(S, a, D.COURT.spicer.cost, true);
+    ok((await E.buy(S, a, 'court', 0)).ok && a.gold === 10 - pr && !a.turn.courtDisc, 'купили карту двора — скидка потрачена'); }
+  { // Дворцовая кухня: +1🪙 за каждую карту в руке, без потолка
+    const S = mk(), [a] = S.players; est(S, a, 'palacekitchen'); a.gold = 0; a.hand = ['tax', 'tax', 'tax', 'tax', 'tax'];
+    await RR(S, a, 2); eq(a.gold, 5, 'Дворцовая кухня: 5 карт в руке — +5🪙'); }
+  { // Меняльная контора и Ярмарочная площадь — Земли: срабатывают и в ход соперника
+    const S = mk(), [a, b] = S.players; est(S, a, 'exchange', 'fairsquare'); a.gold = 0;
+    await RR(S, b, 3); eq(a.gold, 1, 'Меняльная контора — Земля: на 3 у соперника +1🪙 за ⚖️ (Площадь даёт ⚖️)');
+    await RR(S, b, 5); eq(a.gold, 3, 'Ярмарочная площадь — Земля: на 5 у соперника +2🪙'); }
+  { // Солнечная нива: есть вера — срабатывает ещё раз целиком; Храм зари: +1🪙 за 🕯 и +1🕯; Колокольня: +2🪙 и +1🪙 за ступень веры
+    const S = mk(), [a, b] = S.players; est(S, a, 'sunfield', 'dawntemple', 'belltower'); a.gold = 0;
+    await RR(S, b, 1); eq(a.gold, 1, 'Солнечная нива: без веры — +1🪙');
+    a.faiths = ['seer']; await RR(S, b, 1); eq(a.gold, 3, 'Солнечная нива: с верой — ещё раз: +2🪙');
+    a.gold = 0; await RR(S, a, 2); ok(a.gold === 1 && a.temp.faith === 1, 'Храм зари: 🕯1 (Колокольня) — +1🪙 и +1🕯 до конца хода');
+    a.gold = 0; a.temp.faith = 0; await RR(S, a, 5); eq(a.gold, 2 + E.faithStage(S, a), 'Колокольня: +2🪙 и +1🪙 за ступень веры');
+    a.faiths = []; a.gold = 0; await RR(S, a, 6); eq(a.gold, 2, 'Колокольня без веры: +2🪙'); }
+  { // Дом шёпота: на 6–7 своего броска — шпионаж без карты, удача — 2🪙
+    const S = mk(), [a, b] = S.players; est(S, a, 'whisperhouse'); a.gold = 0; b.gold = 10; a.temp.int = 60; ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? false : null);
+    await RR(S, a, 6); ans = null; ok(a.gold === 2 && b.gold === 8, 'Дом шёпота: шпионаж без карты — украли 2🪙'); }
+  { // Астролябия: бросок только для вас — чужие Земли и Набеги молчат
+    const S = mk(), [a, b] = S.players; est(S, a, 'vineyard'); est(S, b, 'vineyard', 'wolfden'); a.gold = 10; b.gold = 0;
+    await RR(S, a, 4, { own: true }); ok(a.gold === 10 && b.gold === 0, 'бросок только для вас: Логово соперника не забрало');
+    await RR(S, a, 1, { own: true }); ok(a.gold === 11 && b.gold === 0, 'бросок только для вас: ваш Виноградник +1🪙, чужой — молчит'); }
+  // ---- фамильные карты ----
+  { const S = mk(), [a] = S.players; est(S, a, 'field', 'pasture', 'blight'); a.gold = 0; await fx(S, a, D.COURT.deer_house.fx); eq(a.gold, 2, 'Торговый дом: +1🪙 за владение, проклятие не в счёт'); }
+  { // Меняла: своё — в ряд, из ряда — себе; дороже — доплатить разницу
+    const S = mk(), [a] = S.players; est(S, a, 'vineyard'); a.gold = 5; S.estateRow = ['field', 'mine', 'bakery', 'pasture'];
+    const uid = a.estates[0].uid, k = S.estateRow.indexOf('mine'), diff = Math.max(0, D.ESTATES.mine.cost - D.ESTATES.vineyard.cost);
+    ans = (q) => (q.type === 'swapEstate' ? { uid, k } : null); await fx(S, a, D.COURT.deer_swap.fx); ans = null;
+    ok(a.estates.some(e => e.id === 'mine') && !a.estates.some(e => e.id === 'vineyard') && S.estateRow[k] === 'vineyard' && a.gold === 5 - diff, `Меняла: Виноградник в ряд, Рудник себе, доплата ${diff}🪙`);
+    ans = () => null; await fx(S, a, D.COURT.deer_swap.fx); ans = null; ok(a.estates.some(e => e.id === 'mine'), 'Меняла: отказ — ничего не меняется'); }
+  { const S = mk(['tA', 'tB'], FULL.filter(k => k !== 'unions')), [a] = S.players; est(S, a, 'observatory', 'observatory', 'observatory', 'observatory'); await fx(S, a, D.COURT.owl_wisdom.fx); eq(a.hand.length, 2, 'Мудрость предков: 📜4 — 2 карты');
+    const S2 = mk(), [c] = S2.players; est(S2, c, 'observatory'); await fx(S2, c, D.COURT.owl_wisdom.fx); eq(c.hand.length, 0, 'Мудрость предков: 📜1 — карт нет'); }
+  { // Астролябия целиком: бросок, доход только себе
+    const S = mk(), [a, b] = S.players; est(S, a, 'vineyard'); b.gold = 5; est(S, b, 'wolfden', 'piratecove', 'fishvillage'); a.gold = 10; ans = (q) => (q.type === 'ownRoll' ? 1 : null);
+    await fx(S, a, D.COURT.owl_astro.fx); ans = null; ok(S.log.some(x => /Астролябия/.test(x.t)) && b.gold === 5, 'Астролябия: ещё бросок — соперник ничего не получил и не забрал'); }
+  { const S = mk(), [a, b] = S.players; big(a); est(S, b, 'field', 'mine'); await fx(S, a, D.COURT.wolf_hunt.fx); eq(a.stats.sieges, 2, 'Волчья охота: два нападения подряд'); }
+  { const S = mk(), [a] = S.players; a.gold = 0; await fx(S, a, D.COURT.wolf_trophy.fx); eq(a.gold, 1, 'Трофеи: захватов нет — +1🪙'); a.stats.captured = 3; await fx(S, a, D.COURT.wolf_trophy.fx); eq(a.gold, 7, 'Трофеи: 3 захвата — +6🪙'); }
+  { const S = mk(), [a, b] = S.players; est(S, a, 'wolfden', 'piratecove'); a.gold = 0; b.gold = 10; await fx(S, a, D.COURT.serpent_board.fx); ok(a.gold === 3 && b.gold === 8, 'Абордаж: самый богатый отдал 1🪙 за каждый Набег (2) и +1🪙'); }
+  { // Пиратский рейд: Набеги сейчас у каждого соперника; Щит ордена защищает
+    const S = mk(['tA', 'tB', 'tC']), [a, b, c] = S.players; est(S, a, 'wolfden'); a.gold = 0; b.gold = 10; c.gold = 10;
+    await fx(S, a, D.COURT.serpent_raid.fx); ok(a.gold === 6 && b.gold === 7 && c.gold === 7, 'Пиратский рейд: по 3🪙 с каждого соперника');
+    b.shield = 2; await fx(S, a, D.COURT.serpent_raid.fx); ok(b.gold === 7 && c.gold === 4, 'Пиратский рейд: у кого Щит ордена — ничего'); }
+  { // Медовые соты: метка «+1» на Земле до конца партии
+    const S = mk(), [a, b] = S.players; est(S, a, 'apiary'); const uid = a.estates[0].uid; a.gold = 0; ans = (q) => (q.type === 'landUp' ? uid : null);
+    await fx(S, a, D.COURT.bear_honey.fx); await fx(S, a, D.COURT.bear_honey.fx); ans = null;
+    eq(a.estates[0].up, 2, 'Медовые соты: две метки на Пасеке'); await RR(S, b, 4); eq(a.gold, 3, 'Пасека с двумя метками: +3🪙'); }
+  { // Спячка: до броска — без броска, +2🪙 за Землю; после броска — не играется
+    const S = mk(), [a] = S.players; est(S, a, 'field', 'pasture', 'mine'); a.gold = 0;
+    const lands = a.estates.filter(e => D.ESTATES[e.id].t === 'land').length;
+    a.hand = ['bear_sleep']; ok(await E.play(S, a, 0) && a.gold === 2 * lands && a.turn.rolled, `Спячка: без броска, +${2 * lands}🪙`);
+    ok(!(await E.roll(S, a, 1)), 'после Спячки бросить нельзя');
+    const S2 = mk(), [c] = S2.players; c.turn.rolled = true; c.hand = ['bear_sleep']; ok(!(await E.play(S2, c, 0)) && c.hand.length === 1, 'Спячка после броска не играется'); }
+  { const S = mk(), [a] = S.players; a.gold = 0; a.turn.played = ['tax', 'tax']; a.hand = ['lion_pride']; await E.play(S, a, 0); eq(a.gold, 3, 'Прайд: +1🪙 за каждую сыгранную карту, и эту тоже'); }
+  { const S = mk(), [a] = S.players; await fx(S, a, D.COURT.lion_grace.fx); eq(a.turn.fairCourt, 1, 'Королевская милость: карта двора без траты действия'); }
+  { // Шёпот розы: удача — случайная карта из руки соперника — вам в руку
+    const S = mk(), [a, b] = S.players; a.temp.int = 60; b.hand = ['spicer']; ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? false : null);
+    await fx(S, a, D.COURT.rose_whisper.fx, { card: 'rose_whisper' }); ans = null; ok(a.hand.includes('spicer') && !b.hand.length, 'Шёпот розы: карта из руки соперника — у вас'); }
+  { // Подмена: ваша карта — на случайную из руки соперника
+    const S = mk(), [a, b] = S.players; a.hand = ['tax']; b.hand = ['spicer']; ans = (q) => (q.type === 'swapHand' ? 'tax' : null);
+    await fx(S, a, D.COURT.rose_swap.fx); ans = null; ok(a.hand[0] === 'spicer' && b.hand[0] === 'tax', 'Подмена: Подать — сопернику, его карта — вам'); }
+  { // Восход: 1 карта; есть вера — ещё по карте за каждую ступень
+    const S = mk(), [a] = S.players; await fx(S, a, D.COURT.sun_dawn.fx); eq(a.hand.length, 1, 'Восход без веры: 1 карта');
+    a.faiths = ['seer']; const st = E.faithStage(S, a); await fx(S, a, D.COURT.sun_dawn.fx); eq(a.hand.length, 1 + 1 + st, `Восход с верой на ${st} ступени: ещё ${1 + st}`); }
+  { // Святое перемирие: до своего хода — ни нападений, ни шпионов
+    const S = mk(), [a, b] = S.players; await fx(S, a, D.COURT.sun_truce.fx); ok(a.sanctum && !E.targetsOf(S, b).includes(a), 'Святое перемирие: соперник не может выбрать вас целью');
+    big(b); const s0 = b.stats.sieges; await T.applyFx(S, b, [['siege', 2]]); eq(b.stats.sieges, s0, 'Святое перемирие: нападения нет');
+    await T.startOfTurn(S, a); ok(!a.sanctum, 'Святое перемирие кончилось в начале своего хода'); }
+  // ---- способности Домов и наследники ----
+  { // Озарение (Солнце): с верой в начале хода карта
+    const S = mk(['sun', 'tB']), [a] = S.players; a.hand = []; await T.startOfTurn(S, a); eq(a.hand.length, 0, 'Озарение: без веры карты нет');
+    a.faiths = ['seer']; await T.startOfTurn(S, a); eq(a.hand.length, 1, 'Озарение: есть вера — карта в начале хода'); }
+  { // Тайная канцелярия (Роза): в начале хода шпионаж без карты
+    const S = mk(['rose', 'tB']), [a, b] = S.players; a.temp.int = 0; b.gold = 10; ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? false : null);
+    const n0 = S.log.length; await T.startOfTurn(S, a); ans = null; ok(S.log.slice(n0).some(x => /тайная канцелярия/.test(x.t)) && S.log.slice(n0).some(x => /Шпионаж/.test(x.t)), 'Тайная канцелярия: шпионаж в начале хода'); }
+  { // Элиан: +1🪙 за ступень веры в начале хода; Леди Вивьен: удачный шпионаж — следующие сильнее (до +3)
+    const S = mk(), [a, b] = S.players; a.lords = ['heir_sun']; a.faiths = ['seer']; const st = E.faithStage(S, a);
+    ok(E.dawnGold(S, a, E.mods(S, a)).src.some(x => x === `ступени веры +${st}`), 'Элиан: в начале хода +1🪙 за ступень веры');
+    const S2 = mk(), [c, d] = S2.players; c.lords = ['heir_rose']; c.temp.int = 60; const A0 = E.spyInfo(S2, c, d, 1).A;
+    ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? false : null); await T.doSpy(S2, c, 1, 'steal', 2, {}); ans = null;
+    eq(E.spyInfo(S2, c, d, 1).A, A0 + 1, 'Леди Вивьен: после удачи шпион сильнее на 1🔗'); c.spyGrowN = 9; eq(E.spyInfo(S2, c, d, 1).A, A0 + 3, 'Леди Вивьен: не больше +3🔗'); }
+  { // Клара (решение владельца): содержание знамён — первым, долг — после
+    const S = mk(), [a] = S.players; a.lords = ['heir_lion']; a.loan = 4; a.gold = 4; const up = E.upkeepOf(a);
+    await T.startOfTurn(S, a); const i1 = S.log.findIndex(x => /Содержание|содержание/.test(x.t) && x.pi === a.i), i2 = S.log.findIndex(x => /долг Кларе/.test(x.t));
+    ok(a.lords.includes('heir_lion') && i2 > i1 && a.loan === 0, `Клара: сначала содержание (−${up}🪙), потом долг из того, что осталось`); }
+  { // все 8 Домов: колода — Подать ×6, Сборщик и две фамильные; владения и наследник на месте
+    let good = true; for (const h of Object.keys(D.HOUSES).filter(x => !/^t[A-C]$/.test(x))) { const H = D.HOUSES[h]; if (H.deck.length !== 3 || H.deck[0] !== 'collector' || H.estates.length !== 3 || !D.BAN[H.heir] || H.estates.some(id => D.ESTATES[id].house !== h)) good = false; }
+    ok(good && Object.keys(D.HOUSES).filter(x => !/^t[A-C]$/.test(x)).length === 8, 'все 8 Домов: колода из Сборщика и двух фамильных, 3 своих владения, наследник'); }
   console.log(`\nИТОГ: ${passes} проверок прошли, ${fails} не прошли`);
 })().catch(e => { console.log('CRASH', e.stack); });
 // ===== Ярмарка на ход (карты двора): таких карт в основе больше нет — проверка убрана =====
