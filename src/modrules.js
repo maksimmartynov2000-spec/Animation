@@ -23,8 +23,9 @@
     const houses = ids('house'), court = ids('court').filter(id => !D.COURT[id].sig && !D.COURT[id].scheme), schemes = ids('court').filter(id => D.COURT[id].scheme);
     const bans = ids('ban').filter(id => !D.BAN[id].heir), est = ids('estate').filter(id => D.ESTATES[id].t !== 'bad'), curses = ids('estate').filter(id => D.ESTATES[id].t === 'bad');
     houses.forEach(h => {
-      const H = D.HOUSES[h], sig = H.deck.find(id => D.COURT[id] && D.COURT[id].sig), st = (H.estates || []).find(id => D.ESTATES[id] && D.ESTATES[id].house === h);
-      out.push(`${H.sigil} <b>${H.name}</b>: карта Дома${st ? `, стартовое владение ${q(D.ESTATES[st].name)}` : ''}, Наследник ${q(D.BAN[H.heir].name)}${sig ? `, фамильная карта ${q(D.COURT[sig].name)}` : ''}.`);
+      // v10.22: у каждого Дома три своих стартовых владения и две фамильные карты
+      const H = D.HOUSES[h], sig = H.deck.filter(id => D.COURT[id] && D.COURT[id].sig), st = (H.estates || []).filter(id => D.ESTATES[id] && D.ESTATES[id].house === h);
+      out.push(`${H.sigil} <b>${H.name}</b>: карта Дома${st.length ? `, ${st.length > 1 ? 'стартовые владения' : 'стартовое владение'} ${st.map(id => q(D.ESTATES[id].name)).join(', ')}` : ''}, Наследник ${q(D.BAN[H.heir].name)}${sig.length ? `, ${sig.length > 1 ? 'фамильные карты' : 'фамильная карта'} ${sig.map(id => q(D.COURT[id].name)).join(', ')}` : ''}.`);
     });
     if (court.length) out.push(`Карты двора: ${court.map(id => q(D.COURT[id].name)).join(', ')}.`);
     if (schemes.length) out.push(`Козни (карты двора): ${schemes.map(id => q(D.COURT[id].name)).join(', ')}.`);
