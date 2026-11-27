@@ -676,7 +676,7 @@ const Engine = (() => {
           log(S, `   Абордаж: ${nm(p)} забрали ${amt}🪙 у ${nmG(o)} — по ${a}🪙 за каждый Набег`, p.i, 'steal');
           break;
         }
-        case 'raidNow': raidNow(S, p); break; // Пиратский рейд
+        case 'raidNow': raidNow(S, p, a, b); break; // Пиратский рейд (a — сколько забирает каждый Набег, если задано; b — только один лучший Набег)
         case 'landUp': await landUp(S, p, a); break; // Медовые соты
         case 'sleep': { // Спячка: до броска — в этот ход без броска, +a🪙 за каждую вашу Землю
           if (p.turn.rolled) { log(S, `   Бросок уже был — Спячка не сработала`, p.i, 'quiet'); break; }
@@ -1443,8 +1443,10 @@ const Engine = (() => {
     await resolveRoll(S, p, total, { dbl, own: true });
   }
   // Пиратский рейд: ваши Набеги срабатывают сейчас у каждого соперника — как будто он выбросил их число
-  function raidNow(S, p) {
-    const m = mods(S, p), raids = p.estates.filter(e => ES(e).t === 'raid');
+  function raidNow(S, p, flat, one) {
+    const m = mods(S, p);
+    let raids = p.estates.filter(e => ES(e).t === 'raid');
+    if (one && raids.length) raids = [raids.reduce((x, y) => (ES(y).inc > ES(x).inc ? y : x))];
     if (!raids.length) { log(S, `   Пиратский рейд: Набегов нет`, p.i, 'quiet'); return; }
     if (cursed(p, 'bandits')) { log(S, `   Пиратский рейд: Разбойничий стан — Набеги молчат`, p.i, 'quiet'); return; }
     const ev = [];
@@ -1454,7 +1456,7 @@ const Engine = (() => {
         const d = ES(e);
         for (let x = 0; x < (m.raidDouble ? 2 : 1) + wr; x++) {
           if (e.ruined) { repair(S, p, e, ev); continue; }
-          const amt = o.shield > 0 ? 0 : Math.min(Math.max(0, d.inc + (m.redBonus || 0) + provB(m, d) - (mods(S, o).raidShield || 0)), o.gold);
+          const amt = o.shield > 0 ? 0 : Math.min(flat != null ? flat : Math.max(0, d.inc + (m.redBonus || 0) + provB(m, d) - (mods(S, o).raidShield || 0)), o.gold);
           if (amt > 0) { o.gold -= amt; p.gold += amt; p.stats.raidInc += amt; ev.push({ to: p.i, from: o.i, amt, src: d.name, id: e.id, uid: e.uid, t: 'raid', parts: raidParts(S, p, d, 'redBonus', o, amt) }); }
           else ev.push({ to: p.i, from: o.i, amt: 0, src: d.name, id: e.id, uid: e.uid, t: 'raid', zero: true });
         }
