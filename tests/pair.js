@@ -98,7 +98,9 @@ function broker() {
   const g2 = await guest.evaluate(() => { const V = window.__VD; return { gid: V.S.gid, w: V.S.winner, view: V.view, round: V.S.round, res: document.querySelectorAll('.page.results:not(.out)').length, houses: V.S.players.map(q => q.house), me: V.ME }; });
   ok('новая партия началась у обоих', h2.gid !== gid1 && g2.gid === h2.gid && h2.w === null && g2.w === null && h2.res === 0 && g2.res === 0, JSON.stringify([h2, g2]));
   await both(async (s) => s && s.round >= 2);
-  const s3h = await st(host), s3g = await st(guest);
+  // стол сверяем, когда последнее обновление дошло до гостя: до 4 с ждём, пока золото у обоих совпадёт (настоящий рассинхрон не сойдётся)
+  let s3h = await st(host), s3g = await st(guest);
+  for (let k = 0; k < 20 && !(s3h && s3g && JSON.stringify(s3h.gold) === JSON.stringify(s3g.gold)); k++) { await host.waitForTimeout(200); s3h = await st(host); s3g = await st(guest); }
   ok('вторая партия идёт: стол сходится', s3h && s3g && JSON.stringify(s3h.gold) === JSON.stringify(s3g.gold), JSON.stringify([s3h && s3h.gold, s3g && s3g.gold]));
   await guest.screenshot({ path: SP + 'v10/pair-game2-guest.png' });
   // ---- 4. закончить, выйти в меню, снова «Играть вдвоём» — без кода ----
