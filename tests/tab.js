@@ -30,7 +30,7 @@ const dev = process.argv[2] || 'i15';
   // сыграть карту: летит на стол и в сброс
   const s0 = await stt();
   // берём карту без «возьмите карту»: иначе рука не уменьшится и проверка ложно упадёт (раздача случайная)
-  const pk = await p.evaluate(() => { const hs = [...document.querySelectorAll('.handz .hcard[data-act="sel"]')]; const dr = (h) => ((DATA.COURT[h.dataset.id] || {}).fx || []).filter(o => o[0] === 'draw').reduce((t, o) => t + (o[1] || 1), 0); const i = Math.max(0, hs.findIndex(h => !dr(h))); return { i, draw: hs[i] ? dr(hs[i]) : 0, id: hs[i] ? hs[i].dataset.id : '' }; });
+  const pk = await p.evaluate(() => { const hs = [...document.querySelectorAll('.handz .hcard[data-act="sel"]')]; const dr = (h) => ((DATA.COURT[h.dataset.id] || {}).fx || []).filter(o => o[0] === 'draw').reduce((t, o) => t + (o[1] || 1), 0); const quiet = (h) => !dr(h) && !((DATA.COURT[h.dataset.id] || {}).sig); /* v10.22: фамильные карты бывают с окном выбора (Меняла, Соты, Астролябия) или без броска (Спячка) — берём Подать/Сборщика */ const qi = hs.findIndex(h => quiet(h) && /^(tax|collector)$/.test(h.dataset.id)); const i = qi >= 0 ? qi : Math.max(0, hs.findIndex(quiet)); return { i, draw: hs[i] ? dr(hs[i]) : 0, id: hs[i] ? hs[i].dataset.id : '' }; });
   await p.click(`.handz .hcard[data-act="sel"] >> nth=${pk.i}`); await p.waitForTimeout(250);
   await p.evaluate(() => { window.__maxPlay = 0; window.__ivP = setInterval(() => { window.__maxPlay = Math.max(window.__maxPlay, document.querySelectorAll('.board > .hcard').length); }, 16); });
   await p.click('.abar [data-act="play"]');

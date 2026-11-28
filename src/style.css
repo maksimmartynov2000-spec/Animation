@@ -681,6 +681,10 @@ body[data-view="game"] #toasts { bottom: calc(var(--bar-h) + var(--tab-h) + 18px
 .opt .r { text-align: right; white-space: nowrap; }
 .opt .muted { font-size: 13px; line-height: 1.35; }
 .kv.bribe { margin: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; gap: 6px 12px; }
+/* v10.22: окно шпионажа — подпись над текстом, во всю ширину */
+.kv.spyx { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.kv.spyx dt { font-size: 12.5px; margin-top: 6px; }
+.kv.spyx dt:first-child { margin-top: 0; }
 .bribe-cmp { margin: 0; font-weight: 700; font-size: 14.5px; padding: 8px 12px; border-radius: 10px; background: var(--vert-t); }
 .bribe-cmp.bad { background: var(--gules-t); }
 .trash-sum { margin: 0; font-weight: 700; font-size: 14px; }

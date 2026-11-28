@@ -12,7 +12,7 @@
   const SYMS = ['trade', 'sci', 'war', 'int', 'faith'];
   const PGEN = { N: 'Севера', S: 'Юга', E: 'Востока', W: 'Запада' };
   const plural = (n, a, b, c) => { const m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 10 || h >= 20) ? b : c; };
-  const numText = (n) => !n || !n.length ? '' : n.length === 1 ? String(n[0]) : n.every((v, i) => !i || v === n[i - 1] + 1) ? `${n[0]}–${n[n.length - 1]}` : n.join(', ');
+  const numText = (n) => !n || !n.length ? '' : n.length === 1 ? String(n[0]) : n.every((v, i) => !i || v === n[i - 1] + 1) ? `${n[0]}–${n[n.length - 1]}` : n.join(' и ');
 
   // ---------- владения ----------
   const WHO = { land: ['any', 'в ход любого игрока'], craft: ['own', 'в свой ход'], raid: ['other', 'в ход другого игрока'], hold: ['own', 'в свой ход'], bad: ['other', 'в ход другого игрока'] };
@@ -28,18 +28,29 @@
     schemer: () => ({ v: '✕', i: 'banner', c: 'он не нанимает знамёна', big: true }),
   };
   function estate(d) {
-    const trig = d.t === 'wall' || d.bad ? { who: 'none', label: d.t === 'wall' ? 'от кубика не срабатывает' : 'действует всегда', nums: [] } : { who: WHO[d.t][0], label: WHO[d.t][1], nums: d.n };
+    const trig = d.t === 'wall' || d.bad ? { who: 'none', label: d.t === 'wall' ? 'от кубика не срабатывает' : 'действует всегда', nums: [] }
+      : d.dbl ? { who: 'any', label: 'на любом дубле — у кого угодно', nums: [] } : { who: WHO[d.t][0], label: WHO[d.t][1], nums: d.n };
     let main;
     if (d.t === 'wall') main = [{ v: `+${d.walls}`, i: 'wall', big: true }];
     else if (d.t === 'raid') main = [{ v: `+${d.inc}`, i: 'gold', c: 'заберите у того, чей ход', big: true }];
     else if (d.t === 'hold') main = [{ v: `+${d.inc}`, i: 'gold', c: 'заберите у самого богатого соперника', big: true }];
     else if (d.bad) main = [CURSE[d.bad] ? CURSE[d.bad](d) : { c: d.badText, big: true }];
     else if (d.perProv) main = [{ v: `+${d.perN}`, i: 'gold', x: 'prov' + d.perProv, c: `за каждое ваше владение ${PGEN[d.perProv]}`, big: true }];
+    else if (d.per === 'hand') main = [{ v: `+${d.perN}`, i: 'gold', x: 'card', c: 'за каждую карту в вашей руке', big: true }]; // Дворцовая кухня (v10.22)
+    else if (d.per && d.perDiv) main = [{ v: `+${d.perN}`, i: 'gold', x: d.per, c: `за каждые ${d.perDiv} ваших значка`, big: true }]; // Скрипторий
     else if (d.per) {
       const x = d.per === 'land' ? 'land' : d.per === 'raid' ? 'raid' : d.per === 'provS' ? 'provS' : d.per === 'prov' ? null : d.per;
       const c = d.per === 'land' ? 'за каждую вашу Землю' : d.per === 'raid' ? 'за каждый ваш Набег' : d.per === 'provS' ? 'за каждое ваше владение Юга' : d.per === 'prov' ? 'за каждую провинцию, где у вас есть владение' : 'за каждый ваш значок';
       main = [Object.assign({ v: `+${d.perN}`, i: 'gold', c, big: true }, x ? { x } : {})];
-    } else main = [{ v: `+${d.inc}`, i: 'gold', big: true }];
+    } else main = d.inc || !(d.draw || d.temp || d.spy) ? [{ v: `+${d.inc}`, i: 'gold', big: true }] : [];
+    // v10.22: что владение даёт сверх золота
+    if (d.perStage) main.push({ v: `+${d.perStage}`, i: 'gold', c: 'за каждую ступень вашей веры' });
+    if (d.spy) main.unshift({ pre: 'spy', v: `+${d.spy[0]}`, i: 'int', c: `шпионаж без карты: удача — ${spyCap(d.spy[1], d.spy[2])}`, big: !main.length });
+    if (d.draw) main.push({ v: `+${d.draw}`, i: 'card', c: main.length ? '' : plural(d.draw, 'карта', 'карты', 'карт'), big: !main.length });
+    if (d.temp) for (const k in d.temp) main.push({ v: `+${d.temp[k]}`, i: k, c: 'до конца хода', big: !main.length });
+    if (d.fairCourt) main.push({ v: '0', i: 'action', c: 'карта двора в этот ход — без траты действия' });
+    if (d.courtDisc) main.push({ v: `−${d.courtDisc}`, i: 'gold', c: 'следующая карта двора в этот ход' });
+    if (d.faithTwice) main.push({ v: '↻', i: 'faith', c: 'есть вера — срабатывает ещё раз' });
     // пара: ещё одно ваше владение этой же провинции — владение приносит больше
     if (d.pair && d.p) main.push({ pre: 'prov' + d.p, v: `+${d.pair}`, i: 'gold', c: `пара — у вас есть ещё владение ${PGEN[d.p]}` });
     const perm = [];
@@ -70,6 +81,7 @@
     if (eff === 'denounce') return `соперник сбрасывает ${p} ${plural(p, 'случайную карту', 'случайные карты', 'случайных карт')} из руки`;
     if (eff === 'slander') return 'в свой следующий ход он не покупает карты двора';
     if (eff === 'feast') return `он сбрасывает случайную карту из руки и теряет ${p}🪙`;
+    if (eff === 'handCard') return 'случайная карта из его руки — вам в руку';
     return '';
   }
   function fx(list) {
@@ -108,6 +120,19 @@
         case 'shield': return { i: 'raid', c: 'до конца вашего следующего хода чужие Набеги и Твердыни у вас ничего не забирают' };
         case 'levy': return { v: `+${a}`, i: 'gold', c: 'заберите у самого богатого соперника' };
         case 'unseat': return { i: 'seat', c: 'опала: придворный соперника — в его сброс' };
+        // ---------- v10.22: фамильные карты Домов ----------
+        case 'goldPerEstate': return { v: `+${a}`, i: 'gold', c: 'за каждое ваше владение' };
+        case 'swapEstate': return { v: '⇄', i: 'gold', c: 'своё владение — на владение из ряда рынка; дороже — доплатите разницу' };
+        case 'drawPerSym': return { v: '+1', i: 'card', x: a, c: `за каждые ${b} ваших значка` };
+        case 'ownRoll': return { v: '+1', i: 'dice', c: 'бросок только для вас: срабатывают ваши владения, у соперников — ничего' };
+        case 'goldPerCapture': return { v: `+${a}`, i: 'gold', x: 'siege', c: `за каждое владение, захваченное вами за партию (пока ни одного — +${b}🪙)` };
+        case 'raidNow': return a ? { v: `+${a}`, i: 'gold', x: 'raid', c: 'за каждый ваш Набег — сразу, с каждого соперника' } : { v: '!', i: 'raid', c: 'ваши Набеги — прямо сейчас, у каждого соперника' };
+        case 'landUp': return { pre: 'land', v: `+${a}`, i: 'gold', c: 'одной вашей Земле — до конца партии' };
+        case 'sleep': return { pre: 'dice', v: `+${a}`, i: 'gold', x: 'land', c: 'до броска: в этот ход без броска — за каждую вашу Землю' };
+        case 'goldPerPlay': return { v: `+${a}`, i: 'gold', x: 'card', c: 'за каждую сыгранную вами в этот ход карту (и эту тоже)' };
+        case 'swapHand': return { v: '⇄', i: 'card', c: 'ваша карта из руки — на случайную из руки соперника' };
+        case 'drawPerStage': return { v: `+${a}`, i: 'card', c: 'и ещё по карте за каждую ступень каждой вашей веры' };
+        case 'truce': return { i: 'wall', c: 'до вашего хода — ни нападений, ни шпионов против вас' };
         default: return { c: k };
       }
     });
@@ -166,6 +191,9 @@
     shield: (n) => ({ v: `−${n}`, i: 'siege', c: 'нападения и шпионы против вас слабее' }),
     spyWinGold: (n) => ({ pre: 'spy', v: `+${n}`, i: 'gold', c: 'за каждый удачный шпионаж' }),
     freeSpy: () => ({ dawn: 1, pre: 'spy', v: '+1', i: 'int', c: 'в начале хода — шпионаж без карты: удача — украдите 2🪙' }),
+    faithDraw: (n) => ({ dawn: 1, v: `+${n}`, i: 'card', c: 'в начале хода, пока у вас есть вера' }), // Дом Солнца (v10.22)
+    stageDawn: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале хода — за каждую ступень вашей веры' }), // Элиан
+    spyGrow: (n) => ({ pre: 'spy', v: '+1', i: 'int', c: `за каждый удачный шпионаж — навсегда, до +${n}` }), // Леди Вивьен
     plotThird: () => ({ i: 'dice', c: '🎲-замысел: назовите ещё одно число' }),
     twoFaiths: () => ({ i: ['faith', 'faith'], c: 'две веры сразу: ступени и обеты обеих; обряд — один в ход' }),
     symIncome_trade: (n) => ({ dawn: 1, v: `+${n}`, i: 'gold', c: 'в начале хода — за каждые 2 ваших ⚖️' }),
@@ -294,7 +322,7 @@
     'fairPlus', 'freeBasic', 'allyScholar', 'lowRollGold', 'regGold', 'oppRegGold', 'seatSlots', 'seatIncome', 'seatGold', 'seatFromDiscard', 'seatGuard', 'provIncome', 'warmGold', 'holdBonus', 'raidDraw', 'lordIncome', 'landBuyGold',
     'plotSlots', 'plotSpread', 'plotGold', 'timedPlotBonus', 'plotProtect', 'harbor', 'extraTurn', 'captureImmune', 'envyImmune', 'marketDiscount', 'landOthers', 'landOwn', 'courtCheap', 'ownCheap', 'greatCheap', 'courtToHand', 'unionSize', 'unionFast', 'unionNoSym', 'unionBounty', 'seasonDouble', 'seasonBonus', 'freeCheap', 'seatGuard', 'riteExtra', 'riteGold', 'peekTop', 'darkSpy', 'darkWinGold', 'darkGuard', 'curseSure', 'curseIncome', 'loan', 'defendGold', 'sinFee', 'markGold', 'schemeKeep', 'cycle', 'freePurge', 'siegeLossFee', 'sinGold', 'twoRituals', 'cleanCapture', 'freeSin', 'marketSwap', 'freeSiege', 'sinTax', 'sinSafe', 'deposit', 'delist'];
   // какой модуль нужен способности, чтобы она работала (остальные работают всегда)
-  const MOD_NEEDS = { lootPlus: 'sieges', oathFree: 'faith', stageUp: 'faith', riteTwice: 'faith', dreamPeek: 'seats', siege: 'sieges', defense: 'sieges', walls: 'sieges', siegeWinGold: 'sieges', captureImmune: 'sieges', spyWinGold: 'spy', freeSpy: 'spy',
+  const MOD_NEEDS = { faithDraw: 'faith', stageDawn: 'faith', spyGrow: 'spy', lootPlus: 'sieges', oathFree: 'faith', stageUp: 'faith', riteTwice: 'faith', dreamPeek: 'seats', siege: 'sieges', defense: 'sieges', walls: 'sieges', siegeWinGold: 'sieges', captureImmune: 'sieges', spyWinGold: 'spy', freeSpy: 'spy',
     faithGold: 'faith', faithEase: 'faith', faithAdoptGold: 'faith', freeRenounce: 'faith', infidelTithe: 'faith', faithTithe: 'faith', twoFaiths: 'faith', plotThird: 'plots', lordCheap: 'lords',
     spy: 'spy', guard: 'spy', stealBonus: 'spy', plotSlots: 'plots', plotGold: 'plots', plotIncome: 'plots', timedPlotBonus: 'plots', plotProtect: 'plots', plotSpread: 'plots',
     unionGold: 'unions', envyImmune: 'balance', unionSize: 'unions', unionFast: 'unions', greatCheap: 'great', unionNoSym: 'unions', unionBounty: 'unions', seatSlots: 'seats', lordIncome: 'lords', seatGuard: 'seats', seatIncome: 'seats', seatGold: 'seats', seatFromDiscard: 'seats',

@@ -20,7 +20,7 @@ const dev = process.argv[2] || 'i15';
   await p.click('[data-act="setup"]'); await p.waitForTimeout(400); await p.click('[data-act="start"]');
   let s = await waitMy(); await p.waitForTimeout(600);
   // золото на планке и в шапке рынка
-  const g1 = await p.evaluate(() => { const g = document.querySelector('.pbar.own .goldbig'), r = g.getBoundingClientRect(), cs = getComputedStyle(g); return { w: Math.round(r.width), h: Math.round(r.height), fs: cs.fontSize, color: cs.color, text: g.innerText.trim() }; });
+  const g1 = await p.evaluate(() => { const g = document.querySelector('.pbar.own .goldbig'), r = g.getBoundingClientRect(), cs = getComputedStyle(g); return { w: Math.round(r.width), h: Math.round(r.height), fs: cs.fontSize, color: cs.color, text: g.innerText.trim().split('\n')[0].trim() }; }); // v10.22: рядом с числом бывает отметка «−1» (соперник забрал золото — например, Пиратский рейд), сравниваем само число
   ok('золото на планке — заметная «казна»', g1.h >= 34 && parseFloat(g1.fs) >= 23 && String(s.gold) === g1.text, JSON.stringify(g1));
   await shot('1-board');
   if (!s.big) { await p.click('.abar [data-act="drawer"][data-d="market"]'); await p.waitForTimeout(450); }
@@ -40,6 +40,8 @@ const dev = process.argv[2] || 'i15';
   if (!s.big) { await p.evaluate(() => { const c = document.querySelector('.drawer [data-act="drawer-close"]'); if (c) c.click(); }); await p.waitForTimeout(300); }
   // сыграть всё, бросить
   await p.evaluate(() => { const a = document.querySelector('.abar [data-act="play-all"]'); if (a && !a.disabled) a.click(); }); await p.waitForTimeout(900);
+  // v10.22: «Сыграть все» играет и фамильные карты с окном выбора (Меняла, Соты, Подмена) — отвечаем «не меняться» / первым вариантом
+  for (let g = 0; g < 4; g++) { const any = await p.evaluate(() => { const sc = [...document.querySelectorAll('.scrim:not(.out)')].pop(); if (!sc) return false; const bs = [...sc.querySelectorAll('.optlist [data-v]')]; const b = bs.find(x => /Не меняться|Отказаться/.test(x.innerText)) || bs[0]; if (b) b.click(); return !!b; }); if (!any) break; await p.waitForTimeout(700); }
   await p.evaluate(() => { const r = [...document.querySelectorAll('.abar [data-act="roll"]')].pop(); if (r) r.click(); }); await p.waitForTimeout(2800);
   s = await stt();
   if (!s.big) { await p.click('.abar [data-act="drawer"][data-d="market"]'); await p.waitForTimeout(450); }

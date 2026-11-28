@@ -11,7 +11,9 @@ const SP = require('path').join(__dirname, '..', '.work') + '/';
   for (let i = 0; i < 300; i++) { if (await p.evaluate(() => window.__VD.isMyTurn() && !window.__VD.busy && !document.body.classList.contains('dealing'))) break; await p.waitForTimeout(100); }
   await p.waitForTimeout(1300);
   const h0 = await p.evaluate(() => window.__VD.S.players[window.__VD.ME].inPlay.length);
-  await p.click('.handz .hcard[data-act="sel"]'); await p.waitForTimeout(350);
+  // v10.22: фамильные карты бывают с окном выбора (Меняла, Соты, Подмена) — берём Подать или Сборщика
+  const pk = await p.evaluate(() => Math.max(0, [...document.querySelectorAll('.handz .hcard[data-act="sel"]')].findIndex(h => !(DATA.COURT[h.dataset.id] || {}).sig)));
+  await p.click(`.handz .hcard[data-act="sel"] >> nth=${pk}`); await p.waitForTimeout(350);
   await p.click('.handz .hcard.sel'); await p.waitForTimeout(600);
   const bar = await p.evaluate(() => { const x = document.querySelector('.scrim:not(.out) .buybar [data-buyproxy]'); return x ? { text: x.innerText.replace(/\s+/g, ' '), off: x.disabled } : null; });
   await p.screenshot({ path: SP + 'v10/handplay-1.png' });

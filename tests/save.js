@@ -12,7 +12,9 @@ const SAVE_KEY = 'velikie-doma-save-v1';
   // испорченное сохранение подкладываем при загрузке страницы, до запуска игры: запись из старой страницы прямо перед
   // перезагрузкой браузер иногда не успевает сохранить — новая страница её не видит, и тест ложно падает
   await p.addInitScript((k) => { const m = location.hash.match(/^#inject=(.*)$/); if (m) { try { localStorage.setItem(k, decodeURIComponent(m[1])); } catch (e) {} history.replaceState(null, '', location.pathname + location.search); } }, SAVE_KEY);
-  await p.addInitScript(() => { try { localStorage.setItem('velikie-doma-prefs-v1', JSON.stringify({ v2: 1, v3: 1, v10: 1, house: 'deer', opps: 1, speed: 'turbo', mods: ['lords', 'faith', 'plots', 'seats', 'sieges', 'spy'], coins: true })); } catch (e) {} });
+  // v10.22: соперник — любой Дом, кроме Розы: её Тайная канцелярия шпионит в начале её хода, и окно откупа открылось бы ещё до вашего хода
+  const OPP = ['deer', 'owl', 'wolf', 'serpent', 'bear', 'lion', 'sun'].filter(h => h !== 'deer')[Math.floor(Math.random() * 6)];
+  await p.addInitScript((opp) => { try { localStorage.setItem('velikie-doma-prefs-v1', JSON.stringify({ v2: 1, v3: 1, v10: 1, house: 'deer', seats: [{ type: 'bot', house: opp }], opps: 1, speed: 'turbo', mods: ['lords', 'faith', 'plots', 'seats', 'sieges', 'spy'], coins: true })); } catch (e) {} }, OPP);
   const home = async () => { await p.waitForSelector('#splash', { state: 'detached', timeout: 6000 }).catch(() => {}); await p.waitForTimeout(400); };
   const hasCont = () => p.evaluate(() => !!document.querySelector('[data-act="continue"]'));
   const toastSeen = async () => { for (let i = 0; i < 30; i++) { const t = await p.evaluate(() => [...document.querySelectorAll('.toast')].map(x => x.innerText).join(' | ')); if (/прошлой версии/.test(t)) return t; await p.waitForTimeout(150); } return ''; };

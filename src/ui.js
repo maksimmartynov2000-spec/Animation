@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.21'; // блок «Знамёна»: 25 новых — 8 вассалов, 9 лордов, 8 великих; долг, обмен с рынком, два ритуала, бесплатное нападение
+  const VERSION = '10.22'; // блок 5 «Дома»: Роза и Солнце, свои стартовые владения у 8 Домов, 16 фамильных карт, понятное окно шпионажа
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -331,6 +331,23 @@
         break;
       }
       case 'summon': toast(`😈 ${d.p === ME ? 'Вы собрали' : `${esc(H(S.players[d.p]).short)} собрали`} все семь грехов — призыв знамён!`, 4500); break;
+      // ---------- v10.22: фамильные карты Домов — тосты, чтобы соперник видел, что произошло ----------
+      case 'raidNow': {
+        const got = d.ev.filter(x => x.amt > 0), me = got.filter(x => x.from === ME).reduce((t, x) => t + x.amt, 0), all = got.reduce((t, x) => t + x.amt, 0);
+        if (d.p === ME) toast(all ? `🏴‍☠️ Пиратский рейд: +${all}🪙` : '🏴‍☠️ Пиратский рейд: взять нечего', 3200);
+        else if (me) toast(`🏴‍☠️ ${esc(H(S.players[d.p]).short)}: Пиратский рейд — вы отдали ${me}🪙`, 3800);
+        break;
+      }
+      case 'swapHand': {
+        const cn = (id) => `«${esc(D.COURT[id].name)}»`;
+        if (d.a === ME) toast(`🌹 Подмена: отдали ${cn(d.give)}, взяли ${cn(d.take)}`, 4200);
+        else if (d.t === ME) toast(`🌹 ${esc(H(S.players[d.a]).short)}: Подмена — забрали у вас ${cn(d.take)}, дали ${cn(d.give)}`, 4800);
+        break;
+      }
+      case 'sanctum': if (d.p !== ME) toast(`🕊 ${esc(H(S.players[d.p]).short)}: Святое перемирие — до их хода на них не нападают и не шпионят`, 4200); break;
+      case 'sleep': if (d.p !== ME) toast(`🌙 ${esc(H(S.players[d.p]).short)}: Спячка — без броска, +${d.gold}🪙`, 3600); break;
+      case 'landUp': if (d.p !== ME) { const e = S.players[d.p].estates.find(x => x.uid === d.uid); if (e) toast(`🍯 ${esc(H(S.players[d.p]).short)}: «${esc(D.ESTATES[e.id].name)}» теперь приносит на ${d.up}🪙 больше`, 3600); } break;
+      case 'swapEstate': if (d.p !== ME) toast(`⇄ ${esc(H(S.players[d.p]).short)}: Меняла — «${esc(D.ESTATES[d.give].name)}» на рынок, себе «${esc(D.ESTATES[d.take].name)}»`, 4200); break;
       case 'unseat': {
         const nm1 = esc(D.COURT[d.id].name);
         if (d.lust) { if (d.a == null) { if (d.t === ME) toast(`😈 Похоть: «${nm1}» уходит от вашего двора в сброс`, 3600); } else if (d.t === ME) toast(`😈 Похоть: ${esc(E.shortG(S.players[d.a]))} переманили вашего придворного «${nm1}»`, 3600); else if (d.a === ME) toast(`😈 Похоть: «${nm1}» теперь при вашем дворе`, 3600); break; }
@@ -421,8 +438,8 @@
           const cn = (id) => `«${esc((D.COURT[id] || D.BAN[id] || {}).name || id)}»`;
           const pe = d.plantEstate && D.ESTATES[d.plantEstate] ? `«${esc(D.ESTATES[d.plantEstate].name)}»` : '';
           const tossed = d.toss && d.toss.length ? d.toss.map(cn).join(', ') : '';
-          const extra = pe ? `вам подбросили проклятие ${pe}` : d.arson ? `поджог: вы потеряли ${d.arson}🪙` : d.toss ? [tossed ? `в сброс ушли ${tossed}` : '', d.lose ? `−${d.lose}🪙` : ''].filter(Boolean).join(', ') : d.slander ? 'клевета: в свой ход вы не купите карты двора' : d.grab ? `забрали из вашего сброса ${cn(d.grab)}` : d.burn ? `сожгли ${D.cards(d.burn)} из вашего сброса` : d.poach ? `переманили вассала ${cn(d.poach)}` : d.distract ? `${cn(d.distract)} отвлечён до конца вашего хода` : d.riot ? `содержание в ваш ход +${d.riot}🪙` : null;
-          const extra2 = pe ? `${pe} теперь у ${esc(E.shortG(S.players[d.t]))}` : d.arson ? `${tn} теряют ${d.arson}🪙` : d.toss ? `${tn}: ${[tossed ? `в сброс ${tossed}` : '', d.lose ? `−${d.lose}🪙` : ''].filter(Boolean).join(', ')}` : d.slander ? `${tn} не купят карты двора в свой ход` : d.grab ? `${cn(d.grab)} — в вашем сбросе` : d.burn ? `сожгли ${D.cards(d.burn)}` : d.poach ? `${cn(d.poach)} теперь ваш` : d.distract ? `${cn(d.distract)} отвлечён` : d.riot ? `смута: содержание у них +${d.riot}🪙` : null;
+          const extra = pe ? `вам подбросили проклятие ${pe}` : d.arson ? `поджог: вы потеряли ${d.arson}🪙` : d.toss ? [tossed ? `в сброс ушли ${tossed}` : '', d.lose ? `−${d.lose}🪙` : ''].filter(Boolean).join(', ') : d.slander ? 'клевета: в свой ход вы не купите карты двора' : d.handCard ? `забрали из вашей руки ${cn(d.handCard)}` : d.lock ? 'в свой следующий ход вы не наймёте знамён' : d.tax ? `вы отдали в банк ${d.tax}🪙` : d.grab ? `забрали из вашего сброса ${cn(d.grab)}` : d.burn ? `сожгли ${D.cards(d.burn)} из вашего сброса` : d.poach ? `переманили вассала ${cn(d.poach)}` : d.distract ? `${cn(d.distract)} отвлечён до конца вашего хода` : d.riot ? `содержание в ваш ход +${d.riot}🪙` : null;
+          const extra2 = pe ? `${pe} теперь у ${esc(E.shortG(S.players[d.t]))}` : d.arson ? `${tn} теряют ${d.arson}🪙` : d.toss ? `${tn}: ${[tossed ? `в сброс ${tossed}` : '', d.lose ? `−${d.lose}🪙` : ''].filter(Boolean).join(', ')}` : d.slander ? `${tn} не купят карты двора в свой ход` : d.handCard ? `${cn(d.handCard)} — в руке у ${an}` : d.lock ? `${tn} не наймут знамён в свой ход` : d.tax ? `${tn} отдали в банк ${d.tax}🪙` : d.grab ? `${cn(d.grab)} — в вашем сбросе` : d.burn ? `сожгли ${D.cards(d.burn)}` : d.poach ? `${cn(d.poach)} теперь ваш` : d.distract ? `${cn(d.distract)} отвлечён` : d.riot ? `смута: содержание у них +${d.riot}🪙` : null;
           if (d.buyoff) { if (d.t === ME) toast(`🗝 Вы откупились от шпиона ${an}: −${d.buyoff}🪙`, 3800); else if (d.a === ME) toast(`🗝 ${tn} откупились от вашего шпиона: +${d.buyoff}🪙`, 3800); break; }
           if (d.A != null && d.G != null && flyOn()) {
             // шпион против стражи — посреди стола, без окна; владение (вымогательство) переезжает после сцены
@@ -1051,6 +1068,11 @@
       case 'peek': return throwDone().then(() => askPeek(p, q));
       case 'dream': return askDream(p, q);
       case 'freeSiege': return askFreeSiege(p, q);
+      case 'swapEstate': return askSwapEstate(p, q); // v10.22: Меняла
+      case 'ownRoll': return askOwnRoll(p, q); // Астролябия
+      case 'landUp': return askLandUp(p, q); // Медовые соты
+      case 'swapHand': return askSwapHand(p, q); // Подмена
+      case 'swapWho': return askSwapWho(p, q);
       case 'grab': return askPickCard(p, q, '🗝 Перехват: какую карту забрать?', 'Карта из сброса соперника уйдёт в ваш сброс.');
       case 'snatch': return askPickCard(p, q, '🌑 Перехват: какую карту взять?', 'Карта из сброса соперника — вам в руку, её можно сыграть уже в этот ход.');
       case 'fetchOne': return askPickCard(p, q, '⛪ Святые мощи: что вернуть в руку?', 'Карта из вашего сброса — в руку. Сыгранные в этот ход не берутся.');
@@ -1270,11 +1292,13 @@
   }
   // что захваченное владение будет давать вам
   function forMe(d, p) {
-    const m = E.mods(S, p), n = D.numText(d.n);
+    const m = E.mods(S, p), n = d.dbl ? 'любом дубле' : D.numText(d.n);
+    // v10.22: золото — если оно есть; что ещё даёт владение (карты, значки, шпионаж, покупка без действия) — словами
+    const gold = (v) => [v || !D.perkText(d).length ? `+${v}🪙` : '', ...D.perkText(d)].filter(Boolean).join(', ');
     let t;
     if (d.t === 'wall') t = `🧱 +${d.walls} к обороне от осад`;
-    else if (d.t === 'land') t = `на ${n} — +${E.estateIncome(S, p, d, m)}🪙 вам в ход любого игрока`;
-    else if (d.t === 'craft') t = `на ${n} — +${E.estateIncome(S, p, d, m)}🪙 на вашем броске`;
+    else if (d.t === 'land') t = `на ${n} — ${gold(E.estateIncome(S, p, d, m))} вам в ход любого игрока`;
+    else if (d.t === 'craft') t = `на ${n} — ${gold(E.estateIncome(S, p, d, m))} на вашем броске`;
     else if (d.t === 'raid') t = `на ${n} — забирать ${d.inc + (m.redBonus || 0)}🪙 у того, чей ход`;
     else t = `на ${n} вашего броска — ${d.inc}🪙 у самого богатого соперника`;
     const x = [];
@@ -1295,17 +1319,71 @@
     return choiceSheet(q.blackmail ? `Вымогательство: что требуем у ${esc(H(t).gen)}?` : `Что забираем у ${esc(E.shortG(t))}?`, `<p class="note">${q.blackmail ? 'Соперник отдаст это владение — или заплатит вам его цену и оставит себе. ' : 'Владение перейдёт к вам в руинах: доход оно начнёт приносить, когда первый раз сработает и отстроится. '}Под названием — что оно будет приносить именно вам, с вашими бонусами.</p>`, opts);
   }
   // откуп от шпионажа: до броска заплатить шпиону 3🪙 за каждую 🔗 разницы — шпионаж отменён
+  // v10.22 (по снимку владельца): окно шпионажа говорит, чем шпионят, что вы потеряете при удаче шпиона и что — при провале, и шанс
   function askBuyoff(p, q) {
     const a = S.players[q.from];
-    const who = esc(H(a).short);
-    const WHAT = { estate: (n) => `заберут ваше владение до ${n}🪙`, steal: (n) => `украдут ${n}🪙`, poach: () => 'переманят вашего вассала (заплатив его цену)', distract: () => 'один ваш лорд не будет действовать ваш ход', riot: (n) => `в ваш ход содержание великих лордов на ${n}🪙 дороже`, sabotage: () => 'сорвут замысел или прогонят придворного', grab: () => 'заберут карту из вашего сброса', burn: (n) => `сожгут ${D.cards(n)} из вашего сброса`, arson: (n) => `вы потеряете ${n}🪙`, denounce: (n) => `вы сбросите ${D.cards(n)} из руки`, slander: () => 'в свой ход вы не купите карты двора', feast: (n) => `вы сбросите карту из руки и потеряете ${n}🪙` };
-    const what = q.plantEstate ? `подбросят вам проклятие «${esc(D.ESTATES[q.plantEstate].name)}»` : (WHAT[q.effect] || (() => 'шпионаж против вас'))(q.param);
-    const body = `<p class="note">${who} шпионят против вас: если удастся — ${what}. Шпион ${q.A} + 🎲 против вашей стражи ${q.G} + 🎲 (🔗 + 🧱).</p>
-      <p class="note">До броска можно откупиться: ${R.spyBuyoff}🪙 за каждую 🔗 разницы сил, не меньше ${R.spyBuyoff}🪙. У вас ${p.gold}🪙.</p>`;
+    const who = esc(H(a).short), sb = E.mods(S, a).stealBonus || 0, reg = E.regCount(p);
+    const how = q.card && D.COURT[q.card] ? `карта «${esc(D.COURT[q.card].name)}»` : q.src ? `«${esc(q.src)}»` : 'шпион';
+    const WHAT = {
+      estate: (n) => `заберут одно ваше владение до ${n}🪙`, steal: (n) => `украдут ${Math.min(n + sb, p.gold)}🪙`,
+      poach: () => 'переманят вашего вассала (заплатив вам его цену)', distract: () => 'один ваш лорд не будет действовать до конца вашего следующего хода',
+      lock: () => 'в свой следующий ход вы не сможете нанимать знамёна', tax: (n) => `вы отдадите в банк ${Math.min(p.gold, n * reg)}🪙 — по ${n}🪙 за каждое ваше знамя`,
+      riot: (n) => `в ваш следующий ход содержание великих лордов на ${n}🪙 дороже`, sabotage: () => 'сорвут ваш замысел или прогонят придворного',
+      grab: () => 'заберут карту из вашего сброса', burn: (n) => `сожгут ${D.cards(n)} из вашего сброса`, arson: (n) => `вы потеряете ${Math.min(n, p.gold)}🪙`,
+      denounce: (n) => `вы сбросите ${D.cards(n)} из руки — наугад`, slander: () => 'в свой следующий ход вы не купите карты двора',
+      feast: (n) => `вы сбросите случайную карту из руки и потеряете ${n}🪙`, handCard: () => 'заберут случайную карту из вашей руки' };
+    const what = q.plantEstate ? `подбросят вам проклятие «${esc(D.ESTATES[q.plantEstate].name)}»` : (WHAT[q.effect] || (() => 'шпион что-то у вас отнимет'))(q.param);
+    const pct = Math.round((q.odds || 0) * 100), dg = E.mods(S, p).defendGold || 0;
+    const body = `<dl class="kv bribe spyx"><dt>Кто</dt><dd>${who} — ${how}</dd>
+      <dt>Если шпион победит</dt><dd><b>${what}</b></dd>
+      <dt>Если стража отобьёт</dt><dd>вы ничего не теряете${dg ? `, а получите +${dg}🪙 (${esc(E.modSources(S, p, 'defendGold').join(', ') || 'стража')})` : ''}</dd>
+      <dt>Силы</dt><dd>шпион ${q.A} + 🎲 против вашей стражи ${q.G} + 🎲 (🔗 и 🧱) — шпион побеждает примерно в ${pct}% бросков, поровну — в вашу пользу</dd></dl>
+      <p class="note">Откупиться можно только до броска: ${R.spyBuyoff}🪙 за каждую 🔗 разницы сил, не меньше ${R.spyBuyoff}🪙. У вас ${p.gold}🪙.</p>`;
     return choiceSheet(`${H(a).sigil} ${who} подослали шпиона`, body, [
-      { icon: '🪙', value: true, html: `<b>Откупиться за ${q.cost}🪙</b><br><span class="muted">золото — ${esc(H(a).dat)}, шпионаж отменён; у вас останется ${p.gold - q.cost}🪙</span>`, right: `−${q.cost}🪙` },
-      { icon: '🎲', value: false, html: '<b>Пусть бросают кубики</b><br><span class="muted">стража против шпиона</span>', right: '' },
+      { icon: '🪙', value: true, html: `<b>Откупиться за ${q.cost}🪙</b><br><span class="muted">золото — ${esc(H(a).dat)}, шпионажа не будет; у вас останется ${p.gold - q.cost}🪙</span>`, right: `−${q.cost}🪙` },
+      { icon: '🎲', value: false, html: `<b>Пусть бросают кубики</b><br><span class="muted">стража отобьётся примерно в ${100 - pct}% бросков</span>`, right: '' },
     ]);
+  }
+  // ---------- v10.22: фамильные карты с выбором ----------
+  // Меняла: шаг 1 — какое своё владение отдать, шаг 2 — что взять из ряда (доплата, если новое дороже)
+  async function askSwapEstate(p, q) {
+    for (let g = 0; g < 9; g++) {
+      const own = q.own.map(uid => p.estates.find(e => e.uid === uid)).filter(Boolean);
+      const give = await choiceSheet('⇄ Меняла: какое владение отдаёте?', '<p class="note">Ваше владение уйдёт в ряд рынка, а вы возьмёте владение из ряда. Новое дороже — доплатите разницу; дешевле — разницу не возвращают.</p>',
+        [...own.map(e => { const d = D.ESTATES[e.id]; return { icon: D.ETYPE[d.t].mark, value: e.uid, right: `цена ${d.cost}🪙`, html: `<b>${esc(d.name)}</b><br><span class="muted">${forMe(d, p)}</span>` }; }),
+          { icon: '✋', value: null, html: '<b>Не меняться</b>' }]);
+      if (give == null) return null;
+      const e = p.estates.find(x => x.uid === give); if (!e) return null;
+      const d0 = D.ESTATES[e.id];
+      const row = q.row.map(k => ({ k, id: S.estateRow[k] })).filter(x => x.id).map(x => ({ ...x, diff: Math.max(0, D.ESTATES[x.id].cost - d0.cost) }));
+      const can = row.filter(x => x.diff <= p.gold), dear = row.length - can.length;
+      const k = await choiceSheet(`⇄ Меняла: что берёте вместо «${esc(d0.name)}»?`, `<p class="note">«${esc(d0.name)}» встанет в ряд на место выбранного. Справа — доплата. У вас ${p.gold}🪙${dear ? `; ещё ${dear} — не по карману` : ''}.</p>`,
+        [...can.map(x => { const d = D.ESTATES[x.id]; return { icon: D.ETYPE[d.t].mark, value: x.k, right: x.diff ? `+${x.diff}🪙` : '0🪙', html: `<b>${esc(d.name)}</b><br><span class="muted">${forMe(d, p)}</span>` }; }),
+          { icon: '↩', value: -1, html: '<b>Назад</b><br><span class="muted">отдать другое владение</span>' }]);
+      if (k !== -1) return { uid: give, k };
+    }
+    return null;
+  }
+  // Астролябия: сколько кубиков — в среднем сколько принесут ваши владения
+  function askOwnRoll(p, q) {
+    const ev = (n) => { try { return E.Bot.ownRollEV(S, p, n); } catch (x) { return null; } };
+    const line = (n) => { const v = ev(n); return v != null && v >= 0 ? `ваши владения принесут в среднем ${v.toFixed(1).replace('.', ',')}🪙` : ''; };
+    return choiceSheet('🎲 Астролябия: бросок только для вас', '<p class="note">Срабатывают только ваши владения на выпавшем числе; соперники с этого броска ничего не получают.</p>', [
+      { icon: '🎲', value: 1, html: `<b>Один кубик</b><br><span class="muted">${line(1)}</span>` },
+      { icon: '🎲🎲', value: 2, html: `<b>Два кубика</b><br><span class="muted">${line(2)}</span>` }]);
+  }
+  // Медовые соты: какой Земле метку «+1🪙» (до конца партии; можно на ту же ещё раз)
+  function askLandUp(p, q) {
+    return choiceSheet('🍯 Медовые соты: какой Земле метку «+1🪙»?', '<p class="note">Метка лежит на карте до конца партии: эта Земля всегда приносит на 1🪙 больше. Можно класть и на ту же Землю ещё раз.</p>',
+      q.options.map(uid => { const e = p.estates.find(x => x.uid === uid); const d = D.ESTATES[e.id]; return { icon: '🟦', value: uid, right: e.up ? `+${e.up}` : '', html: `<b>${esc(d.name)}</b>${e.up ? ` <span class="muted">· меток: ${e.up}</span>` : ''}<br><span class="muted">${forMe(d, p)}</span>` }; }));
+  }
+  // Подмена: какую карту отдать — взамен случайная карта из руки соперника
+  function askSwapHand(p, q) {
+    const o = S.players[q.from];
+    return choiceSheet('🌹 Подмена: какую карту отдаёте?', `<p class="note">Ваша карта уйдёт в руку ${esc(H(o).dat)}, а вам — случайная карта из их руки (там ${D.cards(o.hand.length)}).</p>`, q.options.map(id => cardOpt(id, id)));
+  }
+  function askSwapWho(p, q) {
+    return choiceSheet('🌹 Подмена: с кем меняемся?', '', q.options.map(i => { const o = S.players[i]; return { icon: H(o).sigil, value: i, html: `<b>${esc(H(o).short)}</b><br><span class="muted">в руке ${D.cards(o.hand.length)}</span>` }; }));
   }
   function askBribe(p, q) {
     const a = S.players[q.from];
@@ -2154,7 +2232,7 @@
   // v10.21: действия знамён — из «Двора» и строки «Ещё можно»
   async function doLoan(p) {
     const g = R.loanGold || 3, due = R.loanDue || 4;
-    const yes = await choiceSheet('⚖️ Клара Меняла: взять в долг?', `<p class="note">По желанию: сейчас +${g}🪙. Взяли — в начале следующего хода, до содержания, спишут ${due}🪙.</p>`,
+    const yes = await choiceSheet('⚖️ Клара Меняла: взять в долг?', `<p class="note">По желанию: сейчас +${g}🪙. Взяли — в начале следующего хода, после содержания знамён, спишут ${due}🪙.</p>`,
       [{ icon: '💰', value: 1, html: `<b>Взять ${g}🪙 в долг</b><br><span class="muted">в начале следующего хода −${due}🪙</span>` }, { icon: '✖️', value: 0, html: '<b>Не брать</b>' }]);
     if (!yes || !isMyTurn()) return;
     if (guest()) netDoWait('loan', {}); else guarded(async () => { const r = E.takeLoan(S, p); if (!r.ok) toast(esc(r.why || 'Нельзя')); });
@@ -2508,11 +2586,15 @@
     return h;
   }
   // что плитка приносит своему хозяину сейчас — со всеми надбавками
-  function tileInc(q, d, m) {
+  function tileInc(q, d, m, up = 0) {
     if (d.t === 'wall') return `<b>+${d.walls}</b>${gico('wall')}`;
     if (d.bad) return ({ tax: `<b>✕</b>${gico('craft')}`, blight: `<b>✕</b>${gico('land')}`, quarantine: '<b>✕</b>🏠', bandits: `<b>✕</b>${gico('raid')}${gico('hold')}`, walls: `<b>−${Math.abs(d.walls || 0)}</b>${gico('wall')}`, evileye: `<b>1</b>${gico('dice')}`, relic: `<b>✕</b>${gico('faith')}`, schemer: `<b>✕</b>${gico('banner')}` })[d.bad] || '<b>!</b>'; // проклятие: что отнимает
-    const v = d.t === 'raid' ? d.inc + (m.redBonus || 0) : d.t === 'hold' ? Math.min(d.cap || 99, d.inc + (m.holdBonus || 0)) : E.estateIncome(S, q, d, m);
-    return `<b>+${v}</b>${gico('gold')}`;
+    const v = (d.t === 'raid' ? d.inc + (m.redBonus || 0) : d.t === 'hold' ? Math.min(d.cap || 99, d.inc + (m.holdBonus || 0)) : E.estateIncome(S, q, d, m)) + up;
+    // v10.22: владение без золота — что даёт вместо него (шпионаж, карты, значки); с золотом — значок карты или шпиона рядом
+    if (!v && d.spy) return `${gico('spy')}<b>+${d.spy[0]}</b>${gico('int')}`;
+    if (!v && d.draw) return `<b>+${d.draw}</b>${gico('card')}`;
+    if (!v && d.temp) { const k = Object.keys(d.temp)[0]; return `<b>+${d.temp[k]}</b>${gico(k)}`; }
+    return `<b>+${v}</b>${gico('gold')}${d.draw ? gico('card') : ''}`;
   }
   function faithTile(q, f, mine) {
     const F = D.FAITHS[f], my = mine && !WATCH && isMyTurn() && S.players[S.cur] === q;
@@ -2547,7 +2629,7 @@
       const cls = ['tile', 't-' + (d.bad ? 'bad' : d.t), take ? 'take' : give ? 'give' : g.v ? 'fire' : '', g.ruined ? 'ruin' : '', arr ? 'arr' : '', g.hold ? 'hold' : ''].filter(Boolean).join(' ');
       const bubble = take ? `<span class="coin">+${take}</span>` : give ? `<span class="coin give">−${give}</span>` : g.v ? `<span class="coin got${g.v < 0 ? ' neg' : ''}">${g.v > 0 ? '+' : '−'}${Math.abs(g.v)}</span>` : '';
       const what = take ? `, забрать ${take}` : give ? `, отдать ${give}` : '';
-      return `<button class="${cls}" data-act="${man.length ? 'coin-card' : 'info-estate'}" data-id="${g.id}" data-o="${q.i}" data-k="t${q.i}:${g.id}${g.ruined ? '#r' : ''}"${cs.length ? ` data-coins="${cs.map(c => c.k).join(',')}"` : ''} aria-label="${esc(d.name)}${g.n > 1 ? ` ×${g.n}` : ''}${what}"><span class="artw"><img src="${artOf(g.id)}" alt="" draggable="false"></span>${d.n.length ? `<span class="num">${CardFX.numText(d.n)}</span>` : ''}${g.n > 1 ? `<span class="stk">×${g.n}</span>` : ''}${d.p ? `<span class="prov">${gico('prov' + d.p)}</span>` : ''}<span class="inc">${g.ruined ? 'руины' : tileInc(q, d, m) + (d.sym ? `<img class="ic sy" src="${IMG(`icons/i_${d.sym}.svg`)}" alt="">` : '')}</span>${bubble}</button>`;
+      return `<button class="${cls}" data-act="${man.length ? 'coin-card' : 'info-estate'}" data-id="${g.id}" data-o="${q.i}" data-k="t${q.i}:${g.id}${g.ruined ? '#r' : ''}"${cs.length ? ` data-coins="${cs.map(c => c.k).join(',')}"` : ''} aria-label="${esc(d.name)}${g.n > 1 ? ` ×${g.n}` : ''}${what}"><span class="artw"><img src="${artOf(g.id)}" alt="" draggable="false"></span>${d.n.length ? `<span class="num">${CardFX.numText(d.n)}</span>` : ''}${g.n > 1 ? `<span class="stk">×${g.n}</span>` : ''}${d.p ? `<span class="prov">${gico('prov' + d.p)}</span>` : ''}<span class="inc">${g.ruined ? 'руины' : tileInc(q, d, m, Math.max(0, ...q.estates.filter(e => g.uids.includes(e.uid)).map(e => e.up || 0))) + (d.sym ? `<img class="ic sy" src="${IMG(`icons/i_${d.sym}.svg`)}" alt="">` : '')}</span>${bubble}</button>`;
     });
     const f = tileFit(gs.length + ft.length, mine), v = mine ? '' : 'o';
     return `<div class="trow${f.more ? ' more' : ''}" style="--cols:${f.cols}${f.s < 1 ? `;--${v}tw:${f.w}px;--${v}th:${f.h}px` : ''}">${ft.concat(tiles).join('')}</div>`;
@@ -2870,6 +2952,7 @@
     if (!isMyTurn() || WATCH || busy || !p || p.hand[i] == null) return;
     const oath = E.oathPlay(S, p, p.hand[i]);
     if (oath) { toast(esc(oath)); return; }
+    if (D.COURT[p.hand[i]].preRoll && p.turn.rolled) { toast(`«${esc(D.COURT[p.hand[i]].name)}» — только до броска`); return; } // v10.22: Спячка
     flown = { id: p.hand[i], t: performance.now() };
     flyHand(i, 'table'); selCard = null;
     if (guest()) netDo('play', { i }); else guarded(async () => { await E.play(S, p, i); });
@@ -2929,7 +3012,7 @@
     } else if (my) {
       if (selCard) {
         const i = selCard.i, id = selCard.id, c = D.COURT[id], f = CardFX.court(c);
-        const atk = attackOf(id), oath = E.oathPlay(S, p, id), dis = busy;
+        const atk = attackOf(id), late = c.preRoll && p.turn.rolled ? 'Только до броска' : '', oath = E.oathPlay(S, p, id) || late, dis = busy;
         const canPlot = c.plot && p.plots.length < E.plotSlots(S, p);
         const playTxt = atk === 'siege' ? 'Захват' : atk === 'raze' ? 'Обстрел' : atk === 'plant' ? 'Подсунуть' : atk === 'spy' ? 'Шпион' : 'Сыграть';
         const rk = 'retire:' + id + ':' + i;
@@ -2938,7 +3021,7 @@
           + (R.retire !== false && !p.turn.retired ? (armedOn(rk) ? `<button class="sq warn" data-act="retire" data-i="${i}" ${dis ? 'disabled' : ''}>${gico('trash')}<span>Точно?</span></button>` : `<button class="sq" data-act="retire" data-i="${i}" ${dis || E.faithBan(S, p, 'no_retire') ? 'disabled' : ''}>${gico('trash')}<span>Отставка</span></button>`) : '')
           + `<button class="sq" data-act="desel" aria-label="Отмена">${'<span class="em">✕</span>'}<span>Отмена</span></button>`;
         const eff = miniChips(f.play, 3);
-        pa = `<button class="primary${atk ? ' atk' : ''}" data-act="play" data-i="${i}" ${dis || oath ? 'disabled' : ''}><span>${oath ? 'Обет: нельзя' : playTxt}</span>${oath ? '' : `<small class="pfx">${eff}</small>`}</button>`;
+        pa = `<button class="primary${atk ? ' atk' : ''}" data-act="play" data-i="${i}" ${dis || oath ? 'disabled' : ''}><span>${late || (oath ? 'Обет: нельзя' : playTxt)}</span>${oath ? '' : `<small class="pfx">${eff}</small>`}</button>`;
       } else if (!p.turn.rolled) {
         const all = p.hand.length > 1 ? `<button class="second all" data-act="play-all" ${busy ? 'disabled' : ''}>Сыграть<small>все карты</small></button>` : '';
         const tray = (n) => `<button class="tdie-w${all ? ' cmp' : ''}" data-act="roll" data-n="${n}" ${busy ? 'disabled' : ''} aria-label="Бросить ${n === 2 ? 'два кубика' : 'кубик'}">${kbd(n)}<span class="dd">${Array.from({ length: n }, (_, k) => `<span class="tdie">${pipsHtml(k ? 3 : 5)}</span>`).join('')}</span><small>${n === 2 ? '2 кубика' : '1 кубик'}</small></button>`;
@@ -3102,7 +3185,7 @@
     let h = `<div class="res">${SYMS5.map(s => `<button class="rsb" data-act="res" data-s="${s}" data-i="${p.i}" aria-label="${esc(D.SYM_NAME[s])}: откуда">${D.SYM[s]} ${pr[s]}${tmp(s)}</button>`).join('')}${modOn('sieges') ? `<button class="rsb" data-act="res" data-s="walls" data-i="${p.i}" aria-label="Стены: откуда">🧱 ${E.walls(S, p)}</button>` : ''}</div>`;
     if (dg.g || up) h += `<p class="note">🌅 В начале вашего хода: ${dg.g ? `+${dg.g}🪙 (${esc(dg.src.join(', '))})` : 'дохода нет'}${up ? `; содержание −${up}🪙` : ''}.</p>`;
     h += `<div class="sec-h"><h3>Дом и знамёна</h3><span>${E.regCount(p)}/${E.goal(S)} · действуют всегда</span></div><div class="pgrid mini">${wrap(pcard('house', p.house, { badge: dawnB(dawnOf(D.HOUSES[p.house].mods)) }), dwhy('house:' + p.house))}${bans.map(id => (dist === id ? pcard('ban', id, { o: p.i, st: 'built', cls: 'built', badge: '<span class="pcb tag">отвлечён</span>' }) : wrap(pcard('ban', id, { o: p.i, st: 'built', cls: 'built', badge: dawnB(dawnOf(D.BAN[id].mods)) }), dwhy('ban:' + id) + banAct(p, id, mine && my)))).join('')}</div>`;
-    if (p.loan) h += `<p class="note">⚖️ Долг Кларе Меняле: ${p.loan}🪙 — спишут в начале следующего хода, до содержания.</p>`;
+    if (p.loan) h += `<p class="note">⚖️ Долг Кларе Меняле: ${p.loan}🪙 — спишут в начале следующего хода, после содержания знамён.</p>`;
     if (p.deposit) h += `<p class="note">🏦 Вклад у Банкирши Эльвиры: ${p.deposit}🪙 — в начале каждого хода +${p.deposit}🪙. Его не украсть; уйдёт Эльвира — вклад пропадёт.</p>`;
     if (!bans.length) h += `<p class="muted" style="margin:0;font-size:13px">Знамён пока нет — нанять можно ${L.big ? `в колонке «Знамёна» ${shopSide()}` : 'кнопкой «Знамёна» внизу стола'}.</p>`;
     if (modOn('faith') && (p.faiths || []).length) { const st = E.faithStage(S, p); h += `<div class="sec-h"><h3>Вера</h3><span>ступень ${['I', 'II', 'III'][st - 1]} · 🕯${E.faithCandles(S, p)}</span></div><div class="pgrid mini">${p.faiths.map(f => wrap(pcard('faith', f, { cls: 'built', badge: `<span class="pcb own">🕯 ${['I', 'II', 'III'][st - 1]}</span>` }), dwhy('faith:' + f))).join('')}</div>`; }
@@ -4704,10 +4787,14 @@
   // ---------- действия ----------
   // «Сыграть все»: сначала карты «возьмите карты», потом остальные, кроме нападений и очищения колоды
   async function playAll(p, still) {
+    const own = (id) => D.COURT[id].preRoll || D.COURT[id].fx.some(op => op[0] === 'ownRoll'); // v10.22: Спячка и Астролябия — решает игрок
     for (let g = 0; g < 20 && p.hand.length && still(); g++) {
-      const i = p.hand.findIndex(id => D.COURT[id].fx.some(op => op[0] === 'draw'));
-      const j = i >= 0 ? i : p.hand.findIndex(id => !D.COURT[id].fx.some(op => ['siege', 'spy', 'forage', 'board', 'trash'].includes(op[0])));
-      await E.play(S, p, j >= 0 ? j : 0);
+      const ok = (id) => !own(id);
+      const i = p.hand.findIndex(id => ok(id) && D.COURT[id].fx.some(op => op[0] === 'draw'));
+      const j = i >= 0 ? i : p.hand.findIndex(id => ok(id) && !D.COURT[id].fx.some(op => ['siege', 'spy', 'forage', 'board', 'trash'].includes(op[0])));
+      const k = j >= 0 ? j : p.hand.findIndex(ok);
+      if (k < 0) break;
+      await E.play(S, p, k);
       await wait(120);
     }
   }

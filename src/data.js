@@ -126,24 +126,34 @@ const DATA = (() => {
     schemer: { name: 'Заговор', n: [], t: 'bad', bad: 'schemer', inc: 0, cost: 2, copies: 1, badText: 'Он не нанимает знамёна.' },
 
     // стартовые владения Домов: по три у каждого (вместо Пашни и Пекарни), в колоду рынка не входят
-    vineyard: { name: 'Виноградник', n: [1], t: 'land', inc: 1, cost: 1, p: 'S', house: 'deer' },
-    exchange: { name: 'Меняльная контора', n: [2, 3], t: 'craft', per: 'trade', perN: 1, cost: 2, p: 'S', house: 'deer' },
-    fairsquare: { name: 'Ярмарочная площадь', n: [4, 5], t: 'craft', inc: 2, cost: 3, p: 'S', sym: 'trade', walls: 2, house: 'deer' },
-    herbgarden: { name: 'Аптекарский огород', n: [1], t: 'land', inc: 1, cost: 1, p: 'E', house: 'owl' },
-    scriptorium: { name: 'Скрипторий', n: [2, 3], t: 'craft', per: 'sci', perN: 1, cost: 2, p: 'E', house: 'owl' },
-    observatory: { name: 'Звездочётная башня', n: [3, 4], t: 'craft', inc: 2, cost: 3, p: 'E', sym: 'sci', walls: 2, house: 'owl' },
-    huntground: { name: 'Охотничьи угодья', n: [1], t: 'land', inc: 1, cost: 1, p: 'N', house: 'wolf' },
-    armory: { name: 'Оружейная', n: [2, 3], t: 'craft', per: 'war', perN: 1, cost: 2, p: 'N', house: 'wolf' },
-    wolfden: { name: 'Волчье логово', n: [4], t: 'raid', inc: 2, cost: 3, p: 'N', sym: 'war', house: 'wolf' },
-    fishvillage: { name: 'Рыбацкая деревня', n: [1], t: 'land', inc: 1, cost: 1, p: 'W', house: 'serpent' },
-    privateer: { name: 'Верфь', n: [2, 3], t: 'craft', per: 'raid', perN: 1, cost: 2, p: 'W', house: 'serpent' },
-    piratecove: { name: 'Пиратская бухта', n: [5, 6], t: 'raid', inc: 1, cost: 3, p: 'S', sym: 'war', house: 'serpent' },
-    apiary: { name: 'Пасека', n: [1], t: 'land', inc: 1, cost: 1, p: 'W', house: 'bear' },
-    meadery: { name: 'Ягодная поляна', n: [2, 3], t: 'land', inc: 1, cost: 2, p: 'W', house: 'bear' },
-    sacredgrove: { name: 'Священная роща', n: [6], t: 'land', inc: 1, cost: 3, p: 'W', house: 'bear' },
-    royalgarden: { name: 'Королевский сад', n: [1], t: 'land', inc: 1, cost: 1, p: 'S', house: 'lion' },
-    palacekitchen: { name: 'Дворцовая кухня', n: [2, 3], t: 'craft', inc: 1, cost: 2, p: 'S', pair: 1, house: 'lion' },
-    throneroom: { name: 'Тронный зал', n: [5, 6], t: 'craft', inc: 2, cost: 3, p: 'S', sym: 'trade', walls: 2, house: 'lion' },
+    // v10.22 (Блок 5 «Дома»): у каждого Дома свои стартовые владения. Числа через «и» — на двух числах сразу;
+    // dbl — на любом дубле у кого угодно; draw — ещё и карты владельцу; temp — значки до конца хода; perDiv — «за каждые N значков»;
+    // per 'hand' — за каждую карту в руке; perStage — за каждую ступень веры; faithTwice — есть вера: срабатывает ещё раз целиком;
+    // fairCourt — в этот ход карта двора без траты действия; courtDisc — следующая карта двора в этот ход дешевле; spy — шпионаж без карты
+    vineyard: { name: 'Виноградник', n: [1, 2], t: 'land', inc: 1, cost: 1, p: 'S', house: 'deer' },
+    exchange: { name: 'Меняльная контора', n: [3], t: 'land', per: 'trade', perN: 1, cost: 2, p: 'S', house: 'deer' },
+    fairsquare: { name: 'Ярмарочная площадь', n: [4, 5], t: 'land', inc: 2, cost: 3, p: 'S', sym: 'trade', walls: 2, house: 'deer' },
+    herbgarden: { name: 'Аптекарский огород', n: [1], t: 'land', inc: 1, draw: 1, cost: 1, p: 'E', house: 'owl' },
+    scriptorium: { name: 'Скрипторий', n: [2, 3], t: 'craft', per: 'sci', perN: 1, draw: 1, cost: 2, p: 'E', house: 'owl' },
+    observatory: { name: 'Звездочётная башня', n: [4, 5], t: 'craft', inc: 2, draw: 2, cost: 3, p: 'E', sym: 'sci', walls: 2, house: 'owl' },
+    huntground: { name: 'Охотничьи угодья', n: [6, 8], t: 'land', inc: 2, cost: 1, p: 'N', house: 'wolf' },
+    armory: { name: 'Оружейная', n: [9, 10, 11], t: 'craft', per: 'war', perN: 1, temp: { war: 1 }, cost: 2, p: 'N', house: 'wolf' },
+    wolfden: { name: 'Волчье логово', n: [4, 7], t: 'raid', inc: 3, cost: 3, p: 'N', sym: 'war', house: 'wolf' },
+    fishvillage: { name: 'Рыбацкая деревня', n: [6], t: 'land', inc: 2, cost: 1, p: 'W', house: 'serpent' },
+    privateer: { name: 'Верфь', n: [8, 9], t: 'craft', per: 'raid', perN: 1, cost: 2, p: 'W', house: 'serpent' },
+    piratecove: { name: 'Пиратская бухта', n: [5, 7], t: 'raid', inc: 2, cost: 3, p: 'S', sym: 'war', house: 'serpent' },
+    apiary: { name: 'Пасека', n: [1, 4], t: 'land', inc: 1, cost: 1, p: 'W', house: 'bear' },
+    meadery: { name: 'Ягодная поляна', n: [2, 5], t: 'land', inc: 1, cost: 2, p: 'W', house: 'bear' },
+    sacredgrove: { name: 'Священная роща', n: [3], t: 'land', inc: 0, temp: { faith: 2 }, cost: 3, p: 'W', sym: 'faith', house: 'bear' },
+    royalgarden: { name: 'Королевский сад', n: [1], t: 'craft', inc: 1, fairCourt: 1, cost: 1, p: 'S', house: 'lion' },
+    palacekitchen: { name: 'Дворцовая кухня', n: [2, 3], t: 'craft', per: 'hand', perN: 1, cost: 2, p: 'S', house: 'lion' },
+    throneroom: { name: 'Тронный зал', n: [5, 6], t: 'craft', inc: 2, courtDisc: 2, cost: 3, p: 'S', sym: 'trade', walls: 2, house: 'lion' },
+    poisongarden: { name: 'Сад ядов', n: ['дубль'], dbl: true, t: 'land', inc: 5, cost: 1, p: 'N', house: 'rose' },
+    whisperhouse: { name: 'Дом шёпота', n: [6, 7], t: 'craft', inc: 0, spy: [1, 'steal', 2], cost: 2, p: 'N', house: 'rose' },
+    dovecote: { name: 'Голубятня', n: [8, 9], t: 'craft', inc: 2, temp: { int: 2 }, cost: 3, p: 'N', sym: 'int', walls: 2, house: 'rose' },
+    sunfield: { name: 'Солнечная нива', n: [1], t: 'land', inc: 1, faithTwice: 1, cost: 1, p: 'E', house: 'sun' },
+    dawntemple: { name: 'Храм зари', n: [2, 3], t: 'craft', per: 'faith', perN: 1, temp: { faith: 1 }, cost: 2, p: 'E', house: 'sun' },
+    belltower: { name: 'Колокольня', n: [5, 6], t: 'craft', inc: 2, perStage: 1, cost: 3, p: 'E', sym: 'faith', walls: 2, house: 'sun' },
   };
 
   const ROLES = {
@@ -248,6 +258,8 @@ const DATA = (() => {
     boatswain: { name: 'Кормчий', role: 'knight', cost: 0, sig: true, fam: 'serpent', fx: [['gold', 2]], seat: { mods: { startGold: 1 } }, stext: '+1🪙 в начале хода.' },
     forester: { name: 'Лесничий', role: 'knight', cost: 0, sig: true, fam: 'bear', fx: [['gold', 1], ['draw', 1]], seat: { mods: { startGold: 1 } }, stext: '+1🪙 в начале хода.' },
     steward: { name: 'Гофмейстер', role: 'merchant', cost: 0, sig: true, fam: 'lion', fx: [['draw', 1], ['gold', 1]], seat: { mods: { courtCheap: 1, startGold: 6 } }, stext: 'Карты двора на рынке вам на 1🪙 дешевле. +6🪙 в начале хода.' },
+    confidante: { name: 'Наперсница', role: 'spy', cost: 0, sig: true, fam: 'rose', fx: [['gold', 1], ['draw', 1]], seat: { mods: { startGold: 1 } }, stext: '+1🪙 в начале хода.' },
+    chaplain: { name: 'Капеллан', role: 'priest', cost: 0, sig: true, fam: 'sun', fx: [['gold', 1], ['draw', 1]], seat: { mods: { startGold: 1 } }, stext: '+1🪙 в начале хода.' },
 
     // Фамильные карты Домов (только в стартовой колоде)
     goldhorn: { name: 'Золотой рог', role: 'merchant', cost: 0, sig: true, fx: [['buys', 1]] },
@@ -256,6 +268,25 @@ const DATA = (() => {
     boarding: { name: 'Абордаж', role: 'knight', cost: 0, sig: true, fx: [['goldPerRaid', 1], ['gold', 1]], plot: 'timed', pfx: [['gold', 4]] },
     bearhoard: { name: 'Медвежий запас', role: 'merchant', cost: 0, sig: true, fx: [['goldPerLand', 1], ['gold', 1]], ally: [['gold', 2]], plot: 'timed', pfx: [['goldPerLand', 1], ['gold', 2]] },
     lionroar: { name: 'Львиный рык', role: 'merchant', cost: 0, sig: true, fx: [['draw', 1]], ally: [['gold', 2]] },
+
+    // v10.22 (Блок 5 «Дома»): по две фамильные карты у каждого из 8 Домов — свои механики, не повторяют рынок.
+    // Прежние фамильные карты (выше) в колоды Домов больше не входят — остались для партий, сохранённых до 10.22
+    deer_house: { name: 'Торговый дом', role: 'merchant', cost: 0, sig: true, fx: [['goldPerEstate', 1]] },
+    deer_swap: { name: 'Меняла', role: 'merchant', cost: 0, sig: true, fx: [['swapEstate']] },
+    owl_wisdom: { name: 'Мудрость предков', role: 'scholar', cost: 0, sig: true, fx: [['drawPerSym', 'sci', 2]] },
+    owl_astro: { name: 'Астролябия', role: 'scholar', cost: 0, sig: true, fx: [['ownRoll']] },
+    wolf_hunt: { name: 'Волчья охота', role: 'knight', cost: 0, sig: true, fx: [['siege', 1], ['siege', 1]] },
+    wolf_trophy: { name: 'Трофеи', role: 'knight', cost: 0, sig: true, fx: [['goldPerCapture', 2, 1]] },
+    serpent_board: { name: 'Абордаж', role: 'knight', cost: 0, sig: true, fx: [['goldPerRaid', 1], ['gold', 1]] }, // v10.22: из банка, как до 10.22 (решение владельца)
+    serpent_raid: { name: 'Пиратский рейд', role: 'knight', cost: 0, sig: true, fx: [['raidNow', 1]] }, // каждый Набег — по 1🪙 с каждого соперника
+    bear_honey: { name: 'Медовые соты', role: 'merchant', cost: 0, sig: true, fx: [['landUp', 1]] },
+    bear_sleep: { name: 'Спячка', role: 'merchant', cost: 0, sig: true, fx: [['sleep', 2]], preRoll: true },
+    lion_pride: { name: 'Прайд', role: 'merchant', cost: 0, sig: true, fx: [['goldPerPlay', 1]] },
+    lion_grace: { name: 'Королевская милость', role: 'merchant', cost: 0, sig: true, fx: [['fairCourt', 1]] },
+    rose_whisper: { name: 'Шёпот розы', role: 'spy', cost: 0, sig: true, fx: [['spy', 2, 'handCard', 1]] },
+    rose_swap: { name: 'Подмена', role: 'spy', cost: 0, sig: true, fx: [['swapHand']] },
+    sun_dawn: { name: 'Восход', role: 'priest', cost: 0, sig: true, fx: [['drawPerStage', 1]] },
+    sun_truce: { name: 'Святое перемирие', role: 'priest', cost: 0, sig: true, fx: [['truce']] },
   };
 
   // ---------- Дома ----------
@@ -267,42 +298,57 @@ const DATA = (() => {
       about: 'Купцы и землевладельцы Юга. Герб — золотой олень.',
       ability: 'Купцы: всё на рынке вам на 1🪙 дешевле.',
       mods: { marketDiscount: 1 }, gold: 3,
-      deck: ['collector', 'scribe', 'goldhorn'], estates: ['vineyard', 'exchange', 'fairsquare'], heir: 'heir_deer', courtier: 'seneschal',
+      deck: ['collector', 'deer_house', 'deer_swap'], estates: ['vineyard', 'exchange', 'fairsquare'], heir: 'heir_deer', courtier: 'seneschal',
     },
     owl: {
       name: 'Дом Совы', short: 'Совы', gen: 'Сов', dat: 'Совам', sigil: '🦉', path: 'Наука', dir: 'sci',
       about: 'Учёные Востока: архивы, звездочёты, расчёт. Герб — сова.',
       ability: 'Раз в ход можно перебросить кубики.',
       mods: { reroll: 1 }, gold: 1,
-      deck: ['collector', 'scribe', 'owlsight'], estates: ['herbgarden', 'scriptorium', 'observatory'], heir: 'heir_owl', courtier: 'bookman',
+      deck: ['collector', 'owl_wisdom', 'owl_astro'], estates: ['herbgarden', 'scriptorium', 'observatory'], heir: 'heir_owl', courtier: 'bookman',
     },
     wolf: {
       name: 'Дом Волка', short: 'Волки', gen: 'Волков', dat: 'Волкам', sigil: '🐺', path: 'Война', dir: 'war',
       about: 'Северные лорды, живут войной. Герб — волк.',
       ability: 'Каждое ваше нападение +2⚔️.',
       mods: { siege: 2 }, gold: 0,
-      deck: ['collector', 'collector', 'wolfpack'], estates: ['huntground', 'armory', 'wolfden'], heir: 'heir_wolf', courtier: 'armsmaster',
+      deck: ['collector', 'wolf_hunt', 'wolf_trophy'], estates: ['huntground', 'armory', 'wolfden'], heir: 'heir_wolf', courtier: 'armsmaster',
     },
     serpent: {
       name: 'Дом Змея', short: 'Змеи', gen: 'Змей', dat: 'Змеям', sigil: '🐍', path: 'Война и море', dir: 'war',
       about: 'Мореходы побережья: торгуют, а при случае грабят. Герб — морской змей.',
       ability: '🟥 Набеги забирают +1🪙 и срабатывают и в ваш ход (золото из банка).',
       mods: { redBonus: 1, redOwn: 1 }, gold: 7,
-      deck: ['collector', 'collector', 'boarding'], estates: ['fishvillage', 'privateer', 'piratecove'], heir: 'heir_serpent', courtier: 'boatswain',
+      deck: ['collector', 'serpent_board', 'serpent_raid'], estates: ['fishvillage', 'privateer', 'piratecove'], heir: 'heir_serpent', courtier: 'boatswain',
     },
     bear: {
       name: 'Дом Медведя', short: 'Медведи', gen: 'Медведей', dat: 'Медведям', sigil: '🐻', path: 'Земли и старые боги', dir: 'faith',
       about: 'Лесные бароны Севера: пашни, пасеки, священные рощи. Герб — бурый медведь.',
       ability: '🟦 Земли приносят вам +1🪙.',
       mods: { blueBonus: 1 }, gold: 2,
-      deck: ['collector', 'collector', 'bearhoard'], estates: ['apiary', 'meadery', 'sacredgrove'], heir: 'heir_bear', courtier: 'forester',
+      deck: ['collector', 'bear_honey', 'bear_sleep'], estates: ['apiary', 'meadery', 'sacredgrove'], heir: 'heir_bear', courtier: 'forester',
     },
     lion: {
       name: 'Дом Льва', short: 'Львы', gen: 'Львов', dat: 'Львам', sigil: '🦁', path: 'Двор', dir: 'trade',
       about: 'Столичная знать: приёмы, посольства, большой двор. Герб — золотой лев.',
       ability: 'Купленная карта двора сразу идёт в руку — её можно сыграть в тот же ход.',
       mods: { courtToHand: 1 }, gold: 5,
-      deck: ['collector', 'scribe', 'lionroar'], estates: ['royalgarden', 'palacekitchen', 'throneroom'], heir: 'heir_lion', courtier: 'steward',
+      deck: ['collector', 'lion_pride', 'lion_grace'], estates: ['royalgarden', 'palacekitchen', 'throneroom'], heir: 'heir_lion', courtier: 'steward',
+    },
+    // v10.22 (Блок 5 «Дома»): Роза — шпионы (нужен модуль «Шпионаж»), Солнце — вера (нужен модуль «Вера»)
+    rose: {
+      name: 'Дом Розы', short: 'Розы', gen: 'Роз', dat: 'Розам', sigil: '🌹', path: 'Интриги и шпионы', dir: 'int',
+      about: 'Интриганы Севера: тайные письма, яды и шёпот за портьерой. Герб — алая роза.',
+      ability: 'Тайная канцелярия: в начале хода — шпионаж без карты; удача — украдите 2🪙.',
+      mods: { freeSpy: 1 }, gold: 3,
+      deck: ['collector', 'rose_whisper', 'rose_swap'], estates: ['poisongarden', 'whisperhouse', 'dovecote'], heir: 'heir_rose', courtier: 'confidante',
+    },
+    sun: {
+      name: 'Дом Солнца', short: 'Солнечные', gen: 'Солнечных', dat: 'Солнечным', sigil: '☀️', path: 'Вера и свет', dir: 'faith',
+      about: 'Храмовые князья Востока: колокольни, паломники и рассветные службы. Герб — золотое солнце.',
+      ability: 'Озарение: пока у вас есть вера, в начале хода возьмите карту.',
+      mods: { faithDraw: 1 }, gold: 4,
+      deck: ['collector', 'sun_dawn', 'sun_truce'], estates: ['sunfield', 'dawntemple', 'belltower'], heir: 'heir_sun', courtier: 'chaplain',
     },
   };
 
@@ -351,7 +397,7 @@ const DATA = (() => {
   // v10.21 — блок «Знамёна»: по 8 новых в каждом ряду; black — чёрная рамка у знамён про проклятия и козни
   ban('v', 'faith', 'lukas', 'Брат Лукас', 'звонарь', 12, { riteGold: 1 }, 'Каждый обряд вашей веры — ещё +1🪙.', { needs: 'faith' });
   ban('v', 'faith', 'vedana', 'Знахарка Ведана', 'травница', 13, { darkGuard: 2 }, 'Проклятия и козни против вас слабее на 2🔗.', { needs: 'spy', black: 1 });
-  ban('v', 'trade', 'klara', 'Клара Меняла', 'ростовщица', 12, { loan: 1 }, 'По желанию, раз в ход: возьмите 3🪙 в долг. Если брали — в начале следующего хода, до содержания, спишут 4🪙.');
+  ban('v', 'trade', 'klara', 'Клара Меняла', 'ростовщица', 12, { loan: 1 }, 'По желанию, раз в ход: возьмите 3🪙 в долг. Если брали — в начале следующего хода, после содержания, спишут 4🪙.');
   ban('v', 'sci', 'miron', 'Мирон Звездочёт', 'составитель календарей', 12, { peekTop: 1 }, 'В начале хода посмотрите верхнюю карту своей колоды двора — можно положить её под низ.');
   ban('v', 'war', 'helga', 'Хельга Дозорная', 'начальница дозора', 12, { defendGold: 3 }, 'Отбили нападение или шпионаж — +3🪙.', { needs: 'sieges|spy' });
   ban('v', 'int', 'melania', 'Сводня Мелания', 'хозяйка тайного дома', 12, { sinFee: 4 }, 'Соперник взял грех — возьмите у него 4🪙.', { needs: 'faith' });
@@ -402,6 +448,8 @@ const DATA = (() => {
   ban('l', 'war', 'heir_serpent', 'Дуглас', 'наследник Дома Змея', 25, { redIncome: 2 }, 'В начале хода +2🪙 за каждый ваш 🟥 Набег.', { heir: 'serpent' });
   ban('l', 'faith', 'heir_bear', 'Уна', 'наследница Дома Медведя', 25, { landIncome: 1 }, 'В начале хода +1🪙 за каждые 2 ваши 🟦 Земли.', { heir: 'bear' });
   ban('l', 'trade', 'heir_lion', 'Леонора', 'наследница Дома Льва', 25, { allyAll: 1 }, 'Свита срабатывает у всех ваших карт двора — даже у первой за ход.', { heir: 'lion' });
+  ban('l', 'int', 'heir_rose', 'Леди Вивьен', 'наследница Дома Розы', 25, { spyGrow: 3 }, 'Каждый удачный шпионаж делает ваши следующие шпионажи сильнее на 1🔗 — до конца партии, до +3🔗.', { heir: 'rose' });
+  ban('l', 'faith', 'heir_sun', 'Элиан', 'наследник Дома Солнца', 25, { stageDawn: 1 }, 'В начале хода +1🪙 за каждую ступень вашей веры (I–III).', { heir: 'sun' });
 
   // великие лорды — власть над столом; содержание в начале хода, иначе уходят под низ своей колоды
   ban('g', 'trade', 'jacob', 'Заимодавец Якоб', 'королевский банкир', 34, { savings: 1 }, 'В начале хода +1🪙 за каждые 5🪙 в казне.', { upkeep: 1, take: [['gold', 6]] });
@@ -665,6 +713,19 @@ const DATA = (() => {
       case 'shield': return 'до вашего следующего хода чужие 🟥 Набеги и 🟪 Твердыни у вас ничего не забирают';
       case 'fetchOne': return 'возьмите карту из своего сброса в руку — не сыгранную в этот ход';
       case 'levy': return `возьмите ${a}🪙 у самого богатого соперника`;
+      // v10.22: фамильные карты Домов
+      case 'goldPerEstate': return `+${a}🪙 за каждое ваше владение`;
+      case 'swapEstate': return 'обменяйте своё владение на владение из ряда рынка; новое дороже — доплатите разницу';
+      case 'drawPerSym': return `возьмите по карте за каждые ${b} ваших ${SYM[a]}`;
+      case 'ownRoll': return 'бросьте кубики ещё раз — этот бросок только для вас: срабатывают ваши владения, у соперников — ничего';
+      case 'goldPerCapture': return `+${a}🪙 за каждое владение, захваченное вами за партию (пока ни одного — +${b}🪙)`;
+      case 'raidNow': return a ? `каждый ваш 🟥 Набег прямо сейчас забирает у каждого соперника ${a}🪙` : 'ваши 🟥 Набеги срабатывают прямо сейчас — у каждого соперника';
+      case 'landUp': return `одна ваша 🟦 Земля до конца партии приносит на ${a}🪙 больше`;
+      case 'sleep': return `до броска: в этот ход не бросайте кубики — вместо этого +${a}🪙 за каждую вашу 🟦 Землю`;
+      case 'goldPerPlay': return `+${a}🪙 за каждую карту, сыгранную вами в этот ход (и эту тоже)`;
+      case 'swapHand': return 'ваша карта из руки — на случайную из руки соперника';
+      case 'drawPerStage': return `возьмите ${cards(a)}; есть вера — ещё по карте за каждую её ступень`;
+      case 'truce': return 'до вашего следующего хода никто не нападает на вас и не шпионит за вами';
       case 'unseat': return 'опала: отправьте одного придворного соперника в его сброс';
       default: return k;
     }
@@ -672,6 +733,18 @@ const DATA = (() => {
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   function fxText(fx) { return fx.map((op, i) => i === 0 ? cap(fxLine(op)) : fxLine(op)).join('; '); }
 
+  // v10.22: что владение даёт сверх золота — словами (Аптекарский огород, Скрипторий, Колокольня, Сад и др.)
+  function perkText(d) {
+    const x = [];
+    if (d.perStage) x.push(`+${d.perStage}🪙 за каждую ступень вашей веры`);
+    if (d.spy) x.push(`шпионаж без карты (+${d.spy[0]}🔗): удача — украдите ${d.spy[2]}🪙`);
+    if (d.draw) x.push(`возьмите ${cards(d.draw)}`);
+    if (d.temp) for (const k in d.temp) x.push(`+${d.temp[k]}${SYM[k]} до конца хода`);
+    if (d.fairCourt) x.push('в этот ход карта двора без траты действия');
+    if (d.courtDisc) x.push(`следующая карта двора в этот ход на ${d.courtDisc}🪙 дешевле`);
+    if (d.faithTwice) x.push('есть вера — срабатывает ещё раз');
+    return x;
+  }
   function estateText(d) {
     let s;
     if (d.t === 'wall') return `🧱 Стены +${d.walls}. Захватить нельзя`;
@@ -682,14 +755,18 @@ const DATA = (() => {
     else if (d.perProv) s = `+${d.perN}🪙 за каждое ваше владение ${PROV[d.perProv].gen}`;
     else if (d.per === 'provS') s = `+${d.perN}🪙 за каждое ваше владение Юга`;
     else if (d.per === 'prov') s = `+${d.perN}🪙 за каждую провинцию, где у вас есть владение`;
+    else if (d.per === 'hand') s = `+${d.perN}🪙 за каждую карту в вашей руке`;
+    else if (d.per && d.perDiv) s = `+${d.perN}🪙 за каждые ${d.perDiv} ваших ${SYM[d.per]}`;
     else if (d.per) s = `+${d.perN}🪙 за каждый ваш значок ${SYM[d.per]}`;
-    else s = `+${d.inc}🪙`;
+    else s = d.inc || !perkText(d).length ? `+${d.inc}🪙` : '';
+    { const x = perkText(d); if (x.length) s = [s, ...x].filter(Boolean).join('; '); s = s.charAt(0).toUpperCase() + s.slice(1); }
     if (d.pair) s += `; пара ${PROV[d.p].gen} — ещё +${d.pair}🪙`;
     if (d.walls) s += `; 🧱 стены +${d.walls}`;
     if (d.ptext) s += `. Постоянно: ${d.ptext}`;
     return s;
   }
-  const numText = (n) => !n.length ? '—' : n.length > 1 ? `${n[0]}–${n[n.length - 1]}` : `${n[0]}`;
+  // v10.22: несмежные числа — через «и» («1 и 4»), смежные — диапазоном («2–3»)
+  const numText = (n) => !n.length ? '—' : n.length === 1 ? `${n[0]}` : n.every((v, i) => !i || v === n[i - 1] + 1) ? `${n[0]}–${n[n.length - 1]}` : n.join(' и ');
 
   function reqText(req) {
     const parts = [];
@@ -735,7 +812,7 @@ const DATA = (() => {
       ballista: 'sieges', ram: 'sieges', catapult: 'sieges', siegetower: 'sieges', trebuchet: 'sieges', interceptor: 'spy', torchman: 'spy', courtesan: 'spy', agitator: 'spy', recruiter: 'spy',
       pr_grain: 'faith', pr_bounty: 'faith', pr_star: 'faith', pr_seer: 'faith', pr_flame: 'faith', pr_blade: 'faith', pr_shade: 'faith', pr_circle: 'faith', pr_cathedral: 'faith', pr_ash: 'faith', pr_harvest: 'faith', pr_mercy: 'faith',
       keeper: 'seats', fairwarden: 'seats', taxfarmer: 'seats', tutor: 'seats', physician: 'seats', dreamer: 'seats', captain: 'seats', huntsman: 'seats', bannerman: 'seats', favorite: 'seats', gossip: 'seats',
-      seneschal: 'seats', tollman: 'seats', bookman: 'seats', clockmaker: 'seats', armsmaster: 'seats', centurion: 'seats', ladyinwaiting: 'seats', confidante: 'seats', boatswain: 'seats', fence: 'seats', seeress: 'seats', sorceress: 'seats', meadmaker: 'seats', forester: 'seats', steward: 'seats', chamberlain: 'seats', envoyfam: 'seats', inspector: 'seats', harvestpriestess: 'seats', bellringer: 'seats' },
+      seneschal: 'seats', chaplain: 'seats', tollman: 'seats', bookman: 'seats', clockmaker: 'seats', armsmaster: 'seats', centurion: 'seats', ladyinwaiting: 'seats', confidante: 'seats', boatswain: 'seats', fence: 'seats', seeress: 'seats', sorceress: 'seats', meadmaker: 'seats', forester: 'seats', steward: 'seats', chamberlain: 'seats', envoyfam: 'seats', inspector: 'seats', harvestpriestess: 'seats', bellringer: 'seats' },
     ban: {},
     // 🟪 Твердыни — не в основе, а с модулями нападений
     estate: { wall: 'sieges', cliffkeep: 'sieges', secretoffice: 'spy', plaguehouse: 'spy', banditpost: 'spy', falsetax: 'spy', blight: 'spy', ashes: 'spy&sieges', evileye: 'spy', cursedrelic: 'spy&faith', schemer: 'spy', mint: 'sieges|spy', citadel: 'sieges|spy', customs: 'sieges|spy', granary: 'sieges|spy', merchants: 'sieges|spy', fortress: 'sieges|spy', chancery: 'sieges|spy', thieves: 'sieges|spy', robberkeep: 'sieges|spy', embassy: 'sieges|spy' },
@@ -752,6 +829,6 @@ const DATA = (() => {
   const tierOf = (id) => (BAN[id] ? BAN[id].tier : null);
   const heirOf = (h) => HOUSES[h] && HOUSES[h].heir;
 
-  return { MODULES, MODULE_KEYS, MODULE_PICK, LENGTHS, modMembers, PRESETS, NEEDS, regName, tierOf, heirOf, SYMS, SYM, SYM_NAME, DIRS, TIERS, RULES, PROV, ETYPE, ESTATES, ROLES, COURT, HOUSES, BAN, FAITHS, RITUALS, STEP_NAME, riteCostText, fxText, fxLine, estateText, numText, reqText, plural, cards, banners };
+  return { MODULES, MODULE_KEYS, MODULE_PICK, LENGTHS, modMembers, PRESETS, NEEDS, regName, tierOf, heirOf, SYMS, SYM, SYM_NAME, DIRS, TIERS, RULES, PROV, ETYPE, ESTATES, ROLES, COURT, HOUSES, BAN, FAITHS, RITUALS, STEP_NAME, riteCostText, fxText, fxLine, estateText, perkText, numText, reqText, plural, cards, banners };
 })();
 if (typeof module !== 'undefined') module.exports = DATA;
