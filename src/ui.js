@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.24'; // содержание всех знамён (вассал 1🪙, лорд 2🪙, великий 4🪙); карты, вернувшиеся в колоду рынка, замешиваются; 10.23 — бот-Медведь с Похотью и «Спячкой» не зависает
+  const VERSION = '10.25'; // «Вражда» разделена на четыре модуля: Осады, Шпионаж, Беды, Твердыни (решение владельца); Каменная стена — при Осадах, Шпионаже или Бедах
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -104,9 +104,12 @@
   const pname = (p) => `${H(p).sigil} ${esc(p.i === ME && !hotseat() ? 'Вы' : H(p).short)}`;
   // ---------- модули: что включено в этой партии (или в настройке, пока партии нет) ----------
   const MODK = D.MODULE_PICK || D.MODULE_KEYS; // лорды — в основе, «Баланс» убран
-  // объединённый модуль («Вражда», «Двор») включён, когда включены все его части
+  // объединённый модуль («Двор») включён, когда включены все его части
   const setupOn = (k) => D.modMembers(k).every(x => setup.mods.includes(x));
   const modOn = (k) => D.modMembers(k).every(x => (S ? E.on(S, x) : setup.mods.includes(x)));
+  // v10.25: бросок «🔗 против стражи» — у Шпионажа и Бед; защита — при Осадах, Шпионаже или Бедах
+  const spyModOn = () => modOn('spy') || modOn('bad');
+  const fightModOn = () => modOn('sieges') || spyModOn();
   const needOf = (kind, id) => D.NEEDS[kind] && D.NEEDS[kind][id];
   // нужен модуль: 'a|b' — любой из них, 'a&b' — оба; знамёна лордов и великих — только со своим модулем
   const needMet = (k) => !k || k.split('|').some(x => x.split('&').every(y => modOn(y)));
@@ -125,7 +128,7 @@
   const tierList = (p, t) => (t === 'v' ? p.vassals : t === 'l' ? p.lords : p.greats);
   // «12 знамён: 6 вассалов, 4 лорда и 2 великих лорда»
   const goalLine = () => `${D.banners(goalNow())}: ${goalTxt()}`;
-  // части объединённых модулей называем общим именем: «Осады» и «Шпионаж» — «Вражда», «Замыслы» и «Придворные» — «Двор»
+  // части объединённых модулей называем общим именем: «Замыслы» и «Придворные» — «Двор»
   const modName = (k) => { const m = D.MODULES[k] || {}; return (D.MODULES[m.member] || m).name || k; };
   const modList = (ks) => [...new Set(ks.map(modName))].map(n => `«${n}»`).join(', ');
   const SYMS5 = D.SYMS;
@@ -146,12 +149,12 @@
 
   // ---------- настройки ----------
   function loadPrefs() {
-    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) { if (!x.v3) { /* настройки v1: «Полная» → «Полная», остальное → «Базовая» */ setup.mods = (x.mods.includes('foreign') && x.mods.includes('sieges') ? D.PRESETS.full : D.PRESETS.basic).modules.slice(); } else setup.mods = x.mods.flatMap(k => D.modMembers(k)).filter(k => D.MODULE_KEYS.includes(k) && !(D.MODULES[k] || {}).hidden || ['lords', 'great', 'sieges', 'spy', 'plots', 'seats'].includes(k)); } pauseBots = x.v10 ? x.pause === true : false; if (x.hint === false) hintOn = false; if (E.SKILL_NAMES && E.SKILL_NAMES[x.skill]) setup.skill = x.skill; if (x.sound === false) sound = false; if (x.music === false) music = false; if (x.sfxVol >= 0 && x.sfxVol <= 100) sfxVol = +x.sfxVol; if (x.musVol >= 0 && x.musVol <= 100) musVol = +x.musVol; if (x.coins === false) manualCoins = false; if (x.rowTap === false) rowTap = false; } } catch (e) { /* хранилище недоступно */ }
+    try { const x = JSON.parse(localStorage.getItem(PREF_KEY) || 'null'); if (x) { if (D.HOUSES[x.house]) setup.house = x.house; if (Array.isArray(x.seats) && x.seats.length) setup.seats = x.seats.filter(s => s && typeof s === 'object').map(s => ({ type: String(s.type), house: D.HOUSES[s.house] ? s.house : 'random' })); else if (x.opps >= 1) setup.seats = Array.from({ length: Math.min(x.opps, R.maxPlayers - 1) }, () => ({ type: 'bot', house: 'random' })); if (x.speed) speed = x.speed; if (Array.isArray(x.mods)) { if (!x.v3) { /* настройки v1: «Полная» → «Полная», остальное → «Базовая» */ setup.mods = (x.mods.includes('foreign') && x.mods.includes('sieges') ? D.PRESETS.full : D.PRESETS.basic).modules.slice(); } else setup.mods = x.mods.flatMap(k => (k === 'conflict' ? ['sieges', 'spy', 'bad', 'holds'] : D.modMembers(k))).filter(k => D.MODULE_KEYS.includes(k) && !(D.MODULES[k] || {}).hidden || ['lords', 'great', 'sieges', 'spy', 'plots', 'seats'].includes(k)); if (!x.v25) { /* v10.25: «Вражда» разделена на четыре модуля — где был шпионаж, будут и Беды; где осады или шпионаж — и Твердыни: партия прежняя */ if (setup.mods.includes('spy') && !setup.mods.includes('bad')) setup.mods.push('bad'); if ((setup.mods.includes('sieges') || setup.mods.includes('spy')) && !setup.mods.includes('holds')) setup.mods.push('holds'); } } pauseBots = x.v10 ? x.pause === true : false; if (x.hint === false) hintOn = false; if (E.SKILL_NAMES && E.SKILL_NAMES[x.skill]) setup.skill = x.skill; if (x.sound === false) sound = false; if (x.music === false) music = false; if (x.sfxVol >= 0 && x.sfxVol <= 100) sfxVol = +x.sfxVol; if (x.musVol >= 0 && x.musVol <= 100) musVol = +x.musVol; if (x.coins === false) manualCoins = false; if (x.rowTap === false) rowTap = false; } } catch (e) { /* хранилище недоступно */ }
     fixSetup();
     // сохранение старой версии правил (v1) с новым движком несовместимо — забываем его
     try { const g = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (g && g.S) { const x = JSON.parse(g.S); if (x.v === 2 && saveFits(x)) savedGame = g; else { saveGone = x.v === 2; localStorage.removeItem(SAVE_KEY); } } } catch (e) { try { localStorage.removeItem(SAVE_KEY); } catch (e2) { /* нет доступа */ } }
   }
-  function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ v2: 1, v3: 1, house: setup.house, opps: setup.seats.length, seats: setup.seats, speed, mods: setup.mods, skill: setup.skill, v10: 1, pause: pauseBots, hint: hintOn, sound, music, sfxVol, musVol, coins: manualCoins, rowTap })); } catch (e) { /* ignore */ } }
+  function savePrefs() { try { localStorage.setItem(PREF_KEY, JSON.stringify({ v2: 1, v3: 1, v25: 1, house: setup.house, opps: setup.seats.length, seats: setup.seats, speed, mods: setup.mods, skill: setup.skill, v10: 1, pause: pauseBots, hint: hintOn, sound, music, sfxVol, musVol, coins: manualCoins, rowTap })); } catch (e) { /* ignore */ } }
   function saveSafe() {
     if (!S || guest()) return; // гость партию не хранит — она у хозяина
     lastSafe = JSON.stringify(S);
@@ -1303,7 +1306,7 @@
     else t = `на ${n} вашего броска — ${d.inc}🪙 у самого богатого соперника`;
     const x = [];
     if (d.sym) x.push(`${D.SYM[d.sym]} +1`);
-    if (d.walls && d.t !== 'wall' && modOn('sieges')) x.push(`🧱 +${d.walls}`);
+    if (d.walls && d.t !== 'wall' && fightModOn()) x.push(`🧱 +${d.walls}`);
     if (d.p && modOn('unions')) { const u = E.unionsOf(p), k = u.counts[d.p] + 1, nd = E.unionNeed(p, d.p); x.push(`${D.PROV[d.p].icon} ${D.PROV[d.p].name}: станет ${k}${nd === 1 ? ' — союз!' : ''}`); }
     const own = p.estates.filter(e => e.id === d.id).length;
     if (own) x.push(`у вас уже ${own}`);
@@ -3216,7 +3219,7 @@
     }
     h += `<div class="sec-h"><h3>Значки</h3><span>правила, которые работают сами</span></div><div class="rtiles">${ruleTiles(p)}</div>`;
     if (modOn('balance')) h += `<div class="sec-h"><h3>Общий стол</h3><span>Зависть и поддержка</span></div><div class="pgrid mini">${balanceCards().join('')}</div>`;
-    const m = E.mods(S, p), sg = modOn('sieges'), sp = modOn('spy');
+    const m = E.mods(S, p), sg = modOn('sieges'), sp = spyModOn();
     if (sg || sp) h += `<div class="sec-h"><h3>Оборона</h3><span>${sg && sp ? 'против нападений и шпионов' : sg ? 'против нападений' : 'против шпионов'}</span></div><dl class="kv">${sg ? `<dt>Против захвата и разрушения</dt><dd>⚔️ ${pr.war} + 🧱 ${E.walls(S, p)}${(m.defense || 0) + (m.shield || 0) ? ` + ${(m.defense || 0) + (m.shield || 0)} (свойства)` : ''} + кубик${m.captureImmune ? '. Ваши владения нельзя захватить и разрушить' : ''}</dd>` : ''}${sp ? `<dt>Против шпиона</dt><dd>🔗 ${pr.int} + 🧱 ${E.spyWalls(S, p)}${E.spyWalls(S, p) < E.walls(S, p) ? ' (замок — вполовину)' : ''}${(m.guard || 0) + (m.shield || 0) ? ` + ${(m.guard || 0) + (m.shield || 0)} (свойства)` : ''} + кубик</dd>` : ''}</dl>`;
     openSheet({ title: `${H(p).sigil} ${esc(H(p).name)}`, body: `<div class="oppbody">${h}</div>` });
   }
@@ -3427,6 +3430,8 @@
     resetTable();
     S = JSON.parse(saved.S); ME = saved.ME; WATCH = !!saved.WATCH;
     if (S.mod && !('seats' in S.mod)) S.mod.seats = false; // партия начата до модуля «Придворные»
+    if (S.mod && !('bad' in S.mod)) S.mod.bad = S.mod.spy !== false; // v10.25: партия начата до разделения «Вражды» — беды шли со шпионажем
+    if (S.mod && !('holds' in S.mod)) S.mod.holds = S.mod.sieges !== false || S.mod.spy !== false; // твердыни — с осадами или шпионажем
     for (const q of S.players) if (!q.seats) q.seats = [];
     // игрок по сети, за которого играл бот, снова сам по себе — вернётся, когда подключится
     for (const q of S.players) if (q.away) { q.isBot = false; q.away = false; }
@@ -3782,7 +3787,7 @@
     // защита: против чего нападать на них бесполезно или труднее — и какая карта это даёт
     const qm = E.mods(S, q), prot = [];
     if ((modOn('sieges') || modOn('spy')) && qm.captureImmune) prot.push(`владения нельзя захватить, отнять и разрушить — «${E.modSources(S, q, 'captureImmune').map(esc).join('», «')}»`);
-    if ((modOn('sieges') || modOn('spy')) && qm.shield) prot.push(`нападения и шпионы против них слабее на ${qm.shield} — «${E.modSources(S, q, 'shield').map(esc).join('», «')}»`);
+    if (fightModOn() && qm.shield) prot.push(`нападения и шпионы против них слабее на ${qm.shield} — «${E.modSources(S, q, 'shield').map(esc).join('», «')}»`);
     if (qm.raidShield) prot.push(`ваши Набеги и Твердыни берут у них на ${qm.raidShield}🪙 меньше — «${E.modSources(S, q, 'raidShield').map(esc).join('», «')}»`);
     if (modOn('seats') && qm.seatGuard) prot.push(`их придворных нельзя прогнать — «${E.modSources(S, q, 'seatGuard').map(esc).join('», «')}»`);
     if (modOn('plots') && qm.plotProtect) prot.push(`их замыслы нельзя сорвать — «${E.modSources(S, q, 'plotProtect').map(esc).join('», «')}»`);
@@ -4044,14 +4049,14 @@
       <li><b>Конец:</b> остаток руки — в сброс, берёте ${R.hand} новые карты. Колода кончилась — перемешайте сброс; посреди хода карты, сыгранные в этот ход, в замес не идут.</li></ol>`;
     b += `<h3>Владения</h3><ul>
       <li>🟦 <b>Земля</b> — доход в ход любого игрока.</li><li>🟩 <b>Ремесло</b> — доход в ваш ход.</li>
-      <li>🟥 <b>Набег</b> — в ход другого игрока забирает золото у того, чей ход.</li>${on('sieges') || on('spy') ? '<li>🟪 <b>Твердыня</b> — в ваш ход забирает золото у самого богатого соперника. У игрока каждая твердыня — по одной.</li>' : ''}
+      <li>🟥 <b>Набег</b> — в ход другого игрока забирает золото у того, чей ход.</li>${on('holds') ? '<li>🟪 <b>Твердыня</b> — в ваш ход забирает золото у самого богатого соперника. У игрока каждая твердыня — по одной.</li>' : ''}
       <li><b>Провинции.</b> У каждого владения — провинция: 🏔 Север, 🌾 Юг, 🔮 Восток, 🌲 Запад. <b>Пара</b>: если у вас есть ещё одно владение той же провинции, владение с «парой» приносит больше. Некоторые карты платят за каждое ваше владение провинции.</li>
-      <li><b>Копии.</b> Владения — по 3 в колоде${on('sieges') ? ' (Каменная стена — тоже)' : ''}${on('sieges') || on('spy') ? `; твердыни — отдельным рядом из ${R.holdRow}, копий каждой — по числу игроков` : ''}. Сколько копий — написано внизу каждой карты.</li></ul>`;
+      <li><b>Копии.</b> Владения — по 3 в колоде${on('sieges') || on('spy') || on('bad') ? ' (Каменная стена — тоже)' : ''}${on('holds') ? `; твердыни — отдельным рядом из ${R.holdRow}, копий каждой — по числу игроков` : ''}. Сколько копий — написано внизу каждой карты.</li></ul>`;
     b += `<h3>Пять направлений</h3><p>⚖️ Торговля, 📜 Наука, ⚔️ Война, 🔗 Интриги, 🕯 Вера. Значки дают владения, знамёна (каждое — 1 значок своего направления) и Дом (1 родной). Значки не тратятся. У каждого значка своё правило:</p><ul>
       <li>⚖️ <b>Торг:</b> каждые ${R.tradeStep}⚖️ — всё на рынке вам на 1🪙 дешевле (но не дешевле 1🪙).</li>
       <li>📜 <b>Знания:</b> каждые ${R.sciStep}📜 — +1 карта в руку.</li>
       <li>🕯 <b>Подаяния:</b> каждые ${R.faithStep}🕯 — +1🪙 в начале хода.${on('faith') ? ' Ещё 🕯 нужны, чтобы принять веру и поднять её ступень.' : ''}</li>
-      ${on('sieges') || on('spy') ? '<li>⚔️ — сила нападения, 🔗 — сила шпионажа и стража.</li>' : ''}</ul>`;
+      ${on('sieges') || on('spy') || on('bad') ? `<li>${on('sieges') ? '⚔️ — сила нападения' : ''}${on('sieges') && (on('spy') || on('bad')) ? ', ' : ''}${on('spy') || on('bad') ? '🔗 — сила шпионажа и стража' : ''}.</li>` : ''}</ul>`;
     b += `<h3>Знамёна</h3><ul>
       <li><b>Цена — только золото.</b> Каждый ваш значок направления карты — скидка 1🪙: у вассала не больше ${R.discCap.v}, у лорда ${R.discCap.l}, у великого лорда ${R.discCap.g}.</li>
       <li><b>Вассалы</b> помогают зарабатывать (содержание ${R.vassalUpkeep}🪙 в ход). ${on('lords') ? '<b>Лорды</b> дороже и меняют правила лично для вас; каждый даёт ещё место при дворе. Наследник Дома — ваш личный лорд.' : ''}${on('great') ? ' <b>Великие лорды</b> — власть над столом и награда при найме, но содержание каждый ход.' : ''}</li>
@@ -4063,7 +4068,7 @@
       b += `<h3>Пример первого хода</h3><div class="mr-ex"><b>Дом Оленя</b><p>На старте ${dg}🪙. В руке две «Подати» и Сборщик податей. Играете обе «Подати» (+2🪙), потом Сборщика: +${cb}🪙 и свита — +${pp}🪙 за каждую «Подать»: итого ${a}🪙. Бросаете 1 кубик, выпало ${fs.n.includes(4) ? 4 : fs.n[0]} — ваша ${fs.name}: +${fs.inc}🪙 (${c}). Действие: покупаете владение — Оленям рынок на ${H0.mods.marketDiscount || 0}🪙 дешевле — или копите на первого вассала: родной ⚖️ Оленей даёт скидку на вассалов Торговли.</p></div>`; }
     b += `<h3>Модули</h3><div class="optlist"><button class="opt" data-mr="__ov"><span class="big">🧩</span><span><b>Как собрать набор</b><br><span class="muted">Готовые наборы, с чего начать, что от чего зависит</span></span><span class="r">›</span></button>${ModRules.ORDER.map(k => `<button class="opt" data-mr="${k}"><span class="big">${D.MODULES[k].icon}</span><span><b>${D.MODULES[k].name}</b><br><span class="muted">${D.MODULES[k].desc}</span></span><span class="r">${on(k) ? '<small>вкл.</small>' : ''}›</span></button>`).join('')}</div>`;
     // сверху — «Как ходить» на один экран; ниже те же разделы, каждый раскрывается по нажатию
-    const hold = on('sieges') || on('spy');
+    const hold = on('holds');
     const quick = `<section class="howto" aria-label="Как ходить"><h2>Как ходить</h2>
       <p class="hgoal">${gico('banner')} Цель — первым собрать ${goalLine()}.</p>
       <ol class="hsteps">
@@ -4087,10 +4092,10 @@
   }
   // «Все карты»: весь набор, как в печати. Фильтр — по наборам: основа, модули и великие лорды включаются по отдельности (v10.13).
   // catSel: null — весь набор (карты выключенных в партии модулей помечены), Set наборов ('base', модули, 'great') — только они.
-  // Карта видна, если все её наборы отмечены: карта Вражды — при «Вражде», карта «Вражда + Вера» — когда отмечены обе.
+  // Карта видна, если все её наборы отмечены: карта Бед — при «Бедах», карта «Беды + Вера» — когда отмечены обе.
   let catSel = null;
-  // «Вражда» в фильтре — двумя кнопками: осады и шпионаж (в настройках партии она включается целиком)
-  const CAT_SETS = () => [['base', '🏰', 'Основа'], ...MODK.flatMap(k => (D.MODULES[k].group && k === 'conflict' ? D.MODULES[k].group.map(m => [m, D.MODULES[m].ownIcon || D.MODULES[m].icon, D.MODULES[m].name]) : [[k, D.MODULES[k].icon, D.MODULES[k].short || D.MODULES[k].name]])), ['great', D.MODULES.great.icon, 'Великие']];
+  // v10.25: Осады, Шпионаж, Беды и Твердыни — отдельные модули и отдельные кнопки фильтра
+  const CAT_SETS = () => [['base', '🏰', 'Основа'], ...MODK.map(k => [k, D.MODULES[k].icon, D.MODULES[k].short || D.MODULES[k].name]), ['great', D.MODULES.great.icon, 'Великие']];
   const gameSets = () => new Set(['base', ...CAT_SETS().map(([k]) => k).filter(k => k !== 'base' && k !== 'great' && modOn(k)), ...(modOn('great') ? ['great'] : [])]);
   // фильтры внутри вкладок: тип владения, роль карты двора, уровень знамени и направление (значок)
   const catSub = { estates: 'all', court: 'all', bans: 'all' };
@@ -4130,8 +4135,8 @@
     };
     const metIn = (k, has) => k.split('|').some(x => x.split('&').every(has));
     const okIn = (kind, id, has) => reqs(kind, id).every(k => metIn(k, has));
-    // набор карты: лорды — в основе; части «Вражды» и «Двора» — по общему модулю
-    const setOf = (m) => (m === 'lords' ? 'base' : m === 'sieges' || m === 'spy' ? m : (D.MODULES[m] && D.MODULES[m].member) || m);
+    // набор карты: лорды — в основе; части «Двора» — по общему модулю
+    const setOf = (m) => (m === 'lords' ? 'base' : (D.MODULES[m] && D.MODULES[m].member) || m);
     const inSel = (m) => catSel.has(setOf(m));
     const show = (kind, id) => { if (!catSel) return true; const r = reqs(kind, id); return r.length ? r.every(k => metIn(k, inSel)) : catSel.has('base'); };
     const offOf = (kind, id) => [...new Set(reqs(kind, id).filter(k => !metIn(k, modOn)).flatMap(k => k.split('|')[0].split('&').filter(x => !modOn(x))))];

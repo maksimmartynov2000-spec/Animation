@@ -83,7 +83,7 @@ const DATA = (() => {
     // perProv — «+N🪙 за каждое ваше владение» этой провинции
     field: { name: 'Пашня', n: [1], t: 'land', inc: 1, cost: 1, p: 'S', copies: 3 },
     bakery: { name: 'Пекарня', n: [2, 3, 4], t: 'craft', inc: 1, cost: 1, p: 'S', copies: 3 },
-    wall: { name: 'Каменная стена', n: [], t: 'wall', inc: 0, cost: 2, walls: 3, fixed: true, copies: 3 }, // v7: обычная карта колоды владений (модуль «Вражда»)
+    wall: { name: 'Каменная стена', n: [], t: 'wall', inc: 0, cost: 2, walls: 3, fixed: true, copies: 3 }, // v7: обычная карта колоды владений (модули «Осады», «Шпионаж» или «Беды» — v10.25)
 
     // Север 🏔
     pasture: { name: 'Пастбище', n: [2], t: 'land', inc: 1, cost: 1, p: 'N', copies: 3, pair: 1 },
@@ -396,13 +396,13 @@ const DATA = (() => {
   ban('v', 'faith', 'benedikt', 'Отец Бенедикт', 'хранитель дорог', 16, { provIncome: 1 }, 'В начале хода +1🪙 за каждую провинцию, где у вас есть владения.');
   // v10.21 — блок «Знамёна»: по 8 новых в каждом ряду; black — чёрная рамка у знамён про проклятия и козни
   ban('v', 'faith', 'lukas', 'Брат Лукас', 'звонарь', 12, { riteGold: 1 }, 'Каждый обряд вашей веры — ещё +1🪙.', { needs: 'faith' });
-  ban('v', 'faith', 'vedana', 'Знахарка Ведана', 'травница', 13, { darkGuard: 2 }, 'Проклятия и козни против вас слабее на 2🔗.', { needs: 'spy', black: 1 });
+  ban('v', 'faith', 'vedana', 'Знахарка Ведана', 'травница', 13, { darkGuard: 2 }, 'Проклятия и козни против вас слабее на 2🔗.', { needs: 'bad', black: 1 });
   ban('v', 'trade', 'klara', 'Клара Меняла', 'ростовщица', 12, { loan: 1 }, 'По желанию, раз в ход: возьмите 3🪙 в долг. Если брали — в начале следующего хода, после содержания, спишут 4🪙.');
   ban('v', 'sci', 'miron', 'Мирон Звездочёт', 'составитель календарей', 12, { peekTop: 1 }, 'В начале хода посмотрите верхнюю карту своей колоды двора — можно положить её под низ.');
-  ban('v', 'war', 'helga', 'Хельга Дозорная', 'начальница дозора', 12, { defendGold: 3 }, 'Отбили нападение или шпионаж — +3🪙.', { needs: 'sieges|spy' });
+  ban('v', 'war', 'helga', 'Хельга Дозорная', 'начальница дозора', 12, { defendGold: 3 }, 'Отбили нападение или шпионаж — +3🪙.', { needs: 'sieges|spy|bad' });
   ban('v', 'int', 'melania', 'Сводня Мелания', 'хозяйка тайного дома', 12, { sinFee: 4 }, 'Соперник взял грех — возьмите у него 4🪙.', { needs: 'faith' });
   ban('v', 'sci', 'berengar', 'Хронист Беренгар', 'летописец обители', 13, { markGold: 2 }, 'Каждая отметка вашего ритуала — +2🪙.', { needs: 'faith' });
-  ban('v', 'int', 'vetta', 'Сестра-тень Ветта', 'связная', 13, { schemeKeep: 1 }, 'Ваши козни после розыгрыша идут в ваш сброс, а не в колоду двора.', { needs: 'spy', black: 1 });
+  ban('v', 'int', 'vetta', 'Сестра-тень Ветта', 'связная', 13, { schemeKeep: 1 }, 'Ваши козни после розыгрыша идут в ваш сброс, а не в колоду двора.', { needs: 'bad', black: 1 });
 
   // лорды — меняют правила лично для вас; каждый даёт +1 место при дворе. По 3 на направление без модулей
   // (15 = 4 × 3 соперника + 3: даже если соперники наняли по 4 лорда из ряда, вам хватит трёх к Наследнику)
@@ -433,8 +433,8 @@ const DATA = (() => {
   // v10.21: новые лорды (Морвена — лорд по решению владельца: девятый)
   ban('l', 'trade', 'beatrice', 'Беатрис Шёлковая', 'хозяйка караванов', 24, { greenBonus: 2 }, '🟩 Ремёсла приносят +2🪙.');
   ban('l', 'sci', 'eustace', 'Евстафий', 'хранитель карт', 25, { cycle: 1 }, 'Раз в ход: сбросьте карту из руки и возьмите новую.');
-  ban('l', 'int', 'morena', 'Морена Шёпот', 'мастер интриг', 25, { darkSpy: 3, darkWinGold: 2 }, 'Ваши проклятия и козни сильнее на 3🔗. Удались — ещё +2🪙.', { needs: 'spy', black: 1 });
-  ban('l', 'faith', 'clement', 'Отец Климент', 'инквизитор', 24, { freePurge: 1 }, 'Раз в ход снимите с себя проклятие — без действия и без золота.', { needs: 'spy', black: 1 });
+  ban('l', 'int', 'morena', 'Морена Шёпот', 'мастер интриг', 25, { darkSpy: 3, darkWinGold: 2 }, 'Ваши проклятия и козни сильнее на 3🔗. Удались — ещё +2🪙.', { needs: 'bad', black: 1 });
+  ban('l', 'faith', 'clement', 'Отец Климент', 'инквизитор', 24, { freePurge: 1 }, 'Раз в ход снимите с себя проклятие — без действия и без золота.', { needs: 'bad', black: 1 });
   ban('l', 'war', 'gautier', 'Готье Кровавый', 'мастер турниров', 25, { siege: 3, siegeLossFee: 3 }, 'Ваше нападение сильнее на 3⚔️. Проиграли нападение — отдайте 3🪙 тому, на кого нападали.', { needs: 'sieges' });
   ban('l', 'int', 'valdemar', 'Князь Вальдемар', 'князь пороков', 25, { sinGold: 1 }, 'В начале хода +1🪙 за каждый ваш грех.', { needs: 'faith' });
   ban('l', 'sci', 'gertrude', 'Аббатиса Гертруда', 'настоятельница обители', 25, { twoRituals: 1 }, 'Можно вести два ритуала своей веры сразу.', { needs: 'faith' });
@@ -465,7 +465,7 @@ const DATA = (() => {
   ban('g', 'faith', 'aurelius', 'Святой Аврелий', 'целитель', 34, { fetch: 1 }, 'Раз в ход возьмите карту из своего сброса в руку — даже сыгранную в этот ход.', { take: [['draw', 2]] });
   // v10.21: новые великие лорды
   ban('g', 'faith', 'hieronymus', 'Патриарх Иероним', 'глава церкви', 35, { riteExtra: 1, riteGold: 2 }, 'Обряд вашей веры можно провести ещё раз за ход (с Титом — три раза). Каждый обряд — ещё +2🪙.', { take: [['draw', 2]], needs: 'faith' });
-  ban('g', 'int', 'lucrezia', 'Лукреция Отравительница', 'королева ядов', 36, { curseSure: 1, curseIncome: 1 }, 'Ваши проклятия ложатся без броска, откупиться от них нельзя. В начале хода +1🪙 за каждое ваше проклятие у соперников.', { take: [['gold', 3]], needs: 'spy', black: 1 });
+  ban('g', 'int', 'lucrezia', 'Лукреция Отравительница', 'королева ядов', 36, { curseSure: 1, curseIncome: 1 }, 'Ваши проклятия ложатся без броска, откупиться от них нельзя. В начале хода +1🪙 за каждое ваше проклятие у соперников.', { take: [['gold', 3]], needs: 'bad', black: 1 });
   ban('g', 'trade', 'ortensia', 'Ортензия', 'владычица гаваней', 35, { marketSwap: 1 }, 'Раз в ход: положите карту двора из руки (не Подать и не фамильную) в ряд рынка и возьмите взамен любую карту из этого ряда.', { take: [['gold', 3]] });
   ban('g', 'war', 'wolfrada', 'Баронесса Вольфрада', 'гроза дорог', 36, { freeSiege: 4 }, 'В начале хода — бесплатное нападение +4⚔️ на любого соперника; проиграли — отдайте ему 3🪙.', { take: [['gold', 3]], needs: 'sieges' });
   ban('g', 'faith', 'karl', 'Инквизитор Карл', 'судья грешников', 35, { sinTax: 2 }, 'В начале вашего хода каждый соперник платит вам 2🪙 за каждый свой грех.', { take: [['gold', 3]], needs: 'faith' });
@@ -784,15 +784,17 @@ const DATA = (() => {
     seats: { member: 'court', hidden: true, name: 'Придворные', short: 'Двор', icon: '🪑', ownIcon: '🪑', desc: 'Карту можно не сыграть, а посадить ко двору ради постоянного свойства. Мест: 2 + 1 за каждого лорда.' },
     unions: { hidden: true, name: 'Союзы провинций', short: 'Союзы', icon: '🏔', desc: 'Каждые 3 владения провинции — союз: 2 значка и золото сразу.' },
     balance: { hidden: true, name: 'Зависть и поддержка', short: 'Баланс', icon: '🫱', desc: 'Лидер по знамёнам платит, отстающие получают золото.' },
-    sieges: { member: 'conflict', hidden: true, name: 'Осады', short: 'Вражда', icon: '⚔️', ownIcon: '⚔️', desc: 'Захват и разрушение владений. Стены.' },
-    spy: { member: 'conflict', hidden: true, name: 'Шпионаж', short: 'Вражда', icon: '⚔️', ownIcon: '🗝', desc: 'Кража, срыв замыслов, вымогательство, опала. Стража.' },
+    // v10.25 (решение владельца): «Вражда» разделена на четыре модуля — Осады, Шпионаж, Беды, Твердыни
+    sieges: { name: 'Осады', short: 'Осады', icon: '⚔️', desc: 'Нападения на владения: захват и разрушение. Защита — 🧱 Стены.' },
+    spy: { name: 'Шпионаж', short: 'Шпионаж', icon: '🗝', desc: 'Кража, вымогательство, переманивание вассалов, запрет найма. Бросок «🔗 против стражи», откуп.' },
+    bad: { name: 'Беды', short: 'Беды', icon: '⬛', desc: 'Проклятия на рынке владений и козни: подбросить сопернику — бросок «🔗 против стражи». Тёмные знамёна.' },
+    holds: { name: 'Твердыни', short: 'Твердыни', icon: '🟪', desc: 'Ряд 🟪 твердынь: на вашем броске каждая забирает золото у самого богатого соперника.' },
     // объединённые модули: включаются целиком, внутри — правила двух прежних
-    conflict: { group: ['sieges', 'spy'], name: 'Вражда', short: 'Вражда', icon: '⚔️', desc: 'Нападения и шпионы: захват и разрушение владений, кража, вымогательство. Одна защита — 🧱 Стены. Ряд 🟪 Твердынь.' },
     court: { group: ['plots', 'seats'], name: 'Двор', short: 'Двор', icon: '🪑', desc: 'Карту двора можно не сыграть: отложить замыслом (⏳ и 🎲) ради сильного эффекта или посадить ко двору ради постоянного свойства.' },
   };
   const MODULE_KEYS = Object.keys(MODULES).filter(k => !MODULES[k].group); // внутренние ключи правил
   // модули на выбор: лорды теперь в основе, «Баланс» убран (его заменил догоняющий наём)
-  const MODULE_PICK = ['faith', 'conflict', 'court']; // модули на выбор (Союзы убраны; великие лорды — это длина партии)
+  const MODULE_PICK = ['faith', 'sieges', 'spy', 'bad', 'holds', 'court']; // модули на выбор (Союзы убраны; великие лорды — это длина партии)
   // длина партии: короткая — только вассалы, средняя — + лорды, длинная — + великие лорды
   const LENGTHS = {
     short: { name: 'Короткая', mods: [], desc: 'Только вассалы, каждый — 1🪙 содержания в ход. Цель — 6 вассалов, около 10 кругов.' },
@@ -814,13 +816,13 @@ const DATA = (() => {
       keeper: 'seats', fairwarden: 'seats', taxfarmer: 'seats', tutor: 'seats', physician: 'seats', dreamer: 'seats', captain: 'seats', huntsman: 'seats', bannerman: 'seats', favorite: 'seats', gossip: 'seats',
       seneschal: 'seats', chaplain: 'seats', tollman: 'seats', bookman: 'seats', clockmaker: 'seats', armsmaster: 'seats', centurion: 'seats', ladyinwaiting: 'seats', confidante: 'seats', boatswain: 'seats', fence: 'seats', seeress: 'seats', sorceress: 'seats', meadmaker: 'seats', forester: 'seats', steward: 'seats', chamberlain: 'seats', envoyfam: 'seats', inspector: 'seats', harvestpriestess: 'seats', bellringer: 'seats' },
     ban: {},
-    // 🟪 Твердыни — не в основе, а с модулями нападений
-    estate: { wall: 'sieges', cliffkeep: 'sieges', secretoffice: 'spy', plaguehouse: 'spy', banditpost: 'spy', falsetax: 'spy', blight: 'spy', ashes: 'spy&sieges', evileye: 'spy', cursedrelic: 'spy&faith', schemer: 'spy', mint: 'sieges|spy', citadel: 'sieges|spy', customs: 'sieges|spy', granary: 'sieges|spy', merchants: 'sieges|spy', fortress: 'sieges|spy', chancery: 'sieges|spy', thieves: 'sieges|spy', robberkeep: 'sieges|spy', embassy: 'sieges|spy' },
+    // 🟪 Твердыни — свой модуль (v10.25); 🧱 Каменная стена — при Осадах, Шпионаже или Бедах; проклятия — Беды
+    estate: { wall: 'sieges|spy|bad', cliffkeep: 'sieges', secretoffice: 'spy', plaguehouse: 'bad', banditpost: 'bad', falsetax: 'bad', blight: 'bad', ashes: 'bad&sieges', evileye: 'bad', cursedrelic: 'bad&faith', schemer: 'bad', mint: 'holds', citadel: 'holds', customs: 'holds', granary: 'holds', merchants: 'holds', fortress: 'holds', chancery: 'holds', thieves: 'holds', robberkeep: 'holds', embassy: 'holds' },
   };
   for (const id in BAN) if (BAN[id].needs) NEEDS.ban[id] = BAN[id].needs;
   NEEDS.ritual = {}; for (const id in RITUALS) if (RITUALS[id].needs) NEEDS.ritual[id] = 'faith&' + RITUALS[id].needs; // ритуал без своего модуля в партию не выходит
   for (const id in COURT) if (COURT[id].faith) NEEDS.court[id] = 'faith';
-  Object.assign(NEEDS.court, { sin_pride: 'faith', sin_greed: 'faith', sin_wrath: 'faith', sin_envy: 'faith', sin_gluttony: 'faith', sin_sloth: 'faith', sin_lust: 'faith', penance: 'faith', arson: 'spy', denounce: 'spy', slander: 'spy', poisonfeast: 'spy', courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats',
+  Object.assign(NEEDS.court, { sin_pride: 'faith', sin_greed: 'faith', sin_wrath: 'faith', sin_envy: 'faith', sin_gluttony: 'faith', sin_sloth: 'faith', sin_lust: 'faith', penance: 'faith', arson: 'bad', denounce: 'bad', slander: 'bad', poisonfeast: 'bad', courtesan: 'spy', agitator: 'spy', torchman: 'spy', trebuchet: 'sieges', dreamer: 'seats', astrologer: 'seats', chronicler: 'seats',
     chamberlain: 'seats', revels: 'seats', augur: 'seats', gatekeeper: 'seats', huntsman: 'seats', cupbearer: 'seats', confessor: 'seats', gossip: 'seats' });
   // убранные карты — убрать и из списка зависимостей
   { const SRC = { court: COURT, estate: ESTATES, ban: BAN, house: HOUSES }; for (const k in SRC) for (const id in NEEDS[k] || {}) if (!SRC[k][id]) delete NEEDS[k][id]; }

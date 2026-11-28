@@ -8,7 +8,7 @@
   const MAP = {
     '🪙': 'gold', '⚔️': 'war', '⚔': 'war', '📜': 'sci', '🔗': 'int',
     '🧱': 'wall', '🎲': 'dice', '🗝️': 'spy', '🗝': 'spy', '⏳': 'plot', '🚩': 'banner',
-    '🟦': 'land', '🟩': 'craft', '🟥': 'raid', '🟪': 'hold',
+    '🟦': 'land', '🟩': 'craft', '🟥': 'raid', '🟪': 'hold', '⬛': 'bad', // v10.25: ⬛ — беды (проклятия и козни)
     '🏔️': 'provN', '🏔': 'provN', '🌾': 'provS', '🔮': 'provE', '🌲': 'provW',
     '🐻': 'bear', '🦁': 'lion', '🦅': 'eagle', '🌞': 'sun',
     '🦌': 'deer', '🦉': 'owl', '🐺': 'wolf', '🥀': 'rose', '🌹': 'rose', '🐍': 'serpent', '🌙': 'moon', '⚖️': 'trade', '⚖': 'trade',
@@ -17,7 +17,7 @@
     '🌳': 'landlord', '🤝': 'unifier', '🃏': 'courtier', '🏰': 'seigneur', '🪑': 'seat', '🛡️': 'guard', '🛡': 'guard', '🌅': 'dawn',
   };
   const NAME = { trade: 'весы', faith: 'свечи', raze: 'разрушение', gold: 'золото', war: 'мечи', sci: 'свитки', int: 'связи', wall: 'стены', dice: 'кубик', spy: 'шпионаж', plot: 'замысел', banner: 'знамя',
-    land: 'Земля', craft: 'Ремесло', raid: 'Набег', hold: 'Твердыня', provN: 'Север', provS: 'Юг', provE: 'Восток', provW: 'Запад', none: 'без роли',
+    land: 'Земля', craft: 'Ремесло', raid: 'Набег', hold: 'Твердыня', bad: 'беда', provN: 'Север', provS: 'Юг', provE: 'Восток', provW: 'Запад', none: 'без роли',
     deer: 'Олени', owl: 'Совы', wolf: 'Волки', rose: 'Розы', serpent: 'Змеи', moon: 'Лунные', bear: 'Медведи', lion: 'Львы', eagle: 'Орлы', sun: 'Солнечные', econ: 'экономика',
     seat: 'место при дворе', guard: 'стража', card: 'карта', action: 'действие', siege: 'осада', trash: 'убрать из игры', reroll: 'переброс', shift: 'сдвиг броска', tag: 'скидка', dawn: 'в начале хода',
     crown: 'лорд', foreign: 'великий лорд', spring: 'Весна', summer: 'Лето', autumn: 'Осень', winter: 'Зима', treasurer: 'Казначей', magister: 'Магистр', marshal: 'Маршал', whisperer: 'Тайный советник', landlord: 'Землевладелец', unifier: 'Объединитель', courtier: 'Первый при дворе', seigneur: 'Сеньор' };

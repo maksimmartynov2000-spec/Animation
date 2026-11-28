@@ -100,8 +100,10 @@ function broker() {
   await guest.waitForTimeout(2500);
   ok('значки снова зелёные', /\bon\b/.test(await dot(host) || '') && /\bon\b/.test(await dot(guest) || ''), `${await dot(host)} / ${await dot(guest)}`);
   await both(async (s) => s && s.round >= 4);
-  const a = await st(host), b2 = await st(guest);
-  ok('партия идёт дальше, стол сходится', a && b2 && JSON.stringify(a.gold) === JSON.stringify(b2.gold), JSON.stringify([a && a.gold, b2 && b2.gold]));
+  // стол сверяем, когда последнее обновление дошло до гостя: до 4 с ждём, пока золото у обоих совпадёт (настоящий рассинхрон не сойдётся)
+  let a = await st(host), b2 = await st(guest); const tc0 = Date.now();
+  for (let k = 0; k < 20 && !(a && b2 && JSON.stringify(a.gold) === JSON.stringify(b2.gold)); k++) { await host.waitForTimeout(200); a = await st(host); b2 = await st(guest); }
+  ok('партия идёт дальше, стол сходится', a && b2 && JSON.stringify(a.gold) === JSON.stringify(b2.gold), JSON.stringify([a && a.gold, b2 && b2.gold]) + ` · ждали ${Date.now() - tc0} мс`);
   // проверка устройства во время партии
   await guest.click('.pbar.foe [data-act="menu"]'); await guest.waitForTimeout(400);
   const opened = await guest.evaluate(() => { const b = [...document.querySelectorAll('.scrim:not(.out) button, .scrim:not(.out) [data-act], .scrim:not(.out) [data-m]')].find(x => /Настройки/.test(x.textContent)); if (b) { b.click(); return true; } return false; });

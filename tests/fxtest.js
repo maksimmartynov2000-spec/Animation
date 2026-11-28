@@ -170,9 +170,9 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     ok(!Object.keys(D.COURT).some(id => D.COURT[id].bad || (D.COURT[id].fx || []).some(o => o[0] === 'plant')), 'бед двора больше нет');
     const schemes = Object.keys(D.COURT).filter(id => D.COURT[id].scheme).sort();
     eq(schemes.join(','), 'arson,denounce,poisonfeast,slander', 'козни: Поджог, Донос, Клевета, Отравленный пир');
-    ok(schemes.every(id => (D.COURT[id].copies || 2) === 2 && D.NEEDS.court[id] === 'spy'), 'козни: по 2 копии, модуль «Шпионаж»');
+    ok(schemes.every(id => (D.COURT[id].copies || 2) === 2 && D.NEEDS.court[id] === 'bad'), 'козни: по 2 копии, модуль «Беды» (v10.25)');
     const S = mk(); eq([...S.estateDeck, ...S.estateRow].filter(x => D.ESTATES[x].t === 'bad').length, 8, 'в колоде и ряду владений 8 проклятий');
-    const S2 = mk(['tA', 'tB'], FULL.filter(k => k !== 'spy')); eq([...S2.estateDeck, ...S2.estateRow].filter(x => D.ESTATES[x].t === 'bad').length, 0, 'без «Шпионажа» проклятий нет');
+    const S2 = mk(['tA', 'tB'], FULL.filter(k => k !== 'bad')); eq([...S2.estateDeck, ...S2.estateRow].filter(x => D.ESTATES[x].t === 'bad').length, 0, 'без «Бед» проклятий нет (v10.25)');
   }
   { // купленное проклятие сразу подбрасывают шпионажем (+3🔗): удача — у соперника на столе, by — кто подбросил
     const S = mk(), [a, b] = S.players; a.turn.rolled = true; a.temp.int = 60; S.estateRow = ['plaguehouse']; let seen = null; ans = (q) => (q.type === 'target' ? (seen = q, 1) : q.type === 'buyoff' ? false : null);
@@ -492,7 +492,27 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
 
   // компактная основа: без 🟪 Твердынь и без надбавок
   { const S = E.newGame({ seed: 4, modules: ['lords'], players: [{ house: 'deer' }, { house: 'owl' }] }); ok(!S.holdRow.length && !S.holdDeck.length, 'основа: 🟪 Твердынь нет'); }
-  { const S = E.newGame({ seed: 4, modules: ['lords', 'sieges'], players: [{ house: 'deer' }, { house: 'owl' }] }); ok(S.holdDeck.length + S.holdRow.length > 0, 'с «Осадами» Твердыни есть'); }
+  { const S = E.newGame({ seed: 4, modules: ['lords', 'holds'], players: [{ house: 'deer' }, { house: 'owl' }] }); ok(S.holdDeck.length + S.holdRow.length > 0, 'с «Твердынями» Твердыни есть (v10.25 — свой модуль)'); }
+  { const S = E.newGame({ seed: 4, modules: ['lords', 'sieges', 'spy', 'bad'], players: [{ house: 'deer' }, { house: 'owl' }] }); ok(!S.holdRow.length && !S.holdDeck.length, 'Осады, Шпионаж и Беды без «Твердынь» — Твердынь нет'); }
+  // ---------- v10.25: «Вражда» разделена — Осады, Шпионаж, Беды, Твердыни ----------
+  { const MK = (mods) => E.newGame({ seed: 7, modules: mods, players: [{ house: 'deer' }, { house: 'owl' }] });
+    const deckOf = (S) => [...S.estateDeck, ...S.estateRow], courtOf = (S) => [...S.courtDeck, ...S.courtRow], bansOf = (S) => [...S.vDeck, ...S.vRow, ...S.lDeck, ...S.lRow, ...S.gDeck, ...S.gRow];
+    const curses = (S) => deckOf(S).filter(x => D.ESTATES[x].t === 'bad').length, walls = (S) => deckOf(S).filter(x => x === 'wall').length;
+    const has = (S, kind, id) => (kind === 'court' ? courtOf(S) : kind === 'ban' ? bansOf(S) : deckOf(S)).includes(id);
+    const sb = MK(['lords', 'great', 'bad']);
+    ok(curses(sb) === 6 && walls(sb) === 3 && has(sb, 'court', 'arson') && !has(sb, 'court', 'blackmailer') && has(sb, 'ban', 'morena') && !has(sb, 'ban', 'maurice') && has(sb, 'ban', 'helga'),
+      'только «Беды»: 6 проклятий (без Пепелища и Реликвии), стена, козни, тёмные знамёна; карт шпионажа нет');
+    const ss = MK(['lords', 'great', 'spy']);
+    ok(curses(ss) === 0 && walls(ss) === 3 && has(ss, 'court', 'blackmailer') && !has(ss, 'court', 'arson') && has(ss, 'ban', 'maurice') && !has(ss, 'ban', 'morena'),
+      'только «Шпионаж»: карты шпионов и их знамёна, стена; ни проклятий, ни козней');
+    const sg = MK(['lords', 'great', 'sieges']);
+    ok(curses(sg) === 0 && walls(sg) === 3 && has(sg, 'court', 'ram') && !has(sg, 'court', 'blackmailer') && has(sg, 'ban', 'luca') && !sg.holdDeck.length && !sg.holdRow.length,
+      'только «Осады»: орудия и войска, их знамёна, стена; твердынь нет');
+    const sh = MK(['lords', 'holds']);
+    ok(walls(sh) === 0 && curses(sh) === 0 && sh.holdDeck.length + sh.holdRow.length > 0 && !has(sh, 'ban', 'helga'), 'только «Твердыни»: ряд твердынь, без стены и без Хельги');
+    const sbs = MK(['lords', 'bad', 'sieges']); ok(deckOf(sbs).includes('ashes'), 'Беды + Осады: в колоде и «Пепелище»');
+    ok(D.HOUSES.wolf && D.NEEDS.house.wolf === 'sieges' && D.NEEDS.house.rose === 'spy', 'Дом Волка — с Осадами, Дом Розы — со Шпионажем');
+    ok(D.MODULE_PICK.join() === 'faith,sieges,spy,bad,holds,court' && !D.MODULES.conflict, 'на выбор: Вера, Осады, Шпионаж, Беды, Твердыни, Двор — «Вражды» больше нет'); }
   /* убрано */
 
   // содержание лордов: 2🪙 каждый в начале хода; не хватает — лишний уходит и замешивается в колоду (10.24)
@@ -659,7 +679,7 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     ok(ids.every(id => W[id].steps.map(st => st.k).sort().join() === 'abst,alms,deed,have,trash'), 'в каждом ритуале по одному условию каждого вида');
     ok(ids.every(id => W[id].miracle && W[id].miracle.name && W[id].miracle.text && Object.keys(W[id].miracle.mods).length === 1), 'у каждого ритуала — чудо со свойством');
     eq(Object.keys(D.NEEDS.ritual).sort().join(), 'blade_a,flame_a,shade_a', 'ритуалы с модулями: Испытание огнём, Посвящение, Ночной совет');
-    const S = mk(['tA', 'tB'], ['faith', 'lords']); ok(!E.ritualsFor(S, 'flame').includes('flame_a') && E.ritualsFor(S, 'flame').includes('flame_b'), 'без «Вражды» у Пламени — один ритуал'); }
+    const S = mk(['tA', 'tB'], ['faith', 'lords']); ok(!E.ritualsFor(S, 'flame').includes('flame_a') && E.ritualsFor(S, 'flame').includes('flame_b'), 'без «Осад» у Пламени — один ритуал'); }
   { // начать: только в вере, без грехов и реликвии
     const S = mk(), [a] = S.players;
     ok(/вера/.test(E.ritualBlock(S, a, 'grain_a') || ''), 'без веры ритуал не начать');
