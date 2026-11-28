@@ -876,6 +876,10 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { // ошибка с 10.18: бот оценивал игрока с Похотью и «Щитом ордена» в колоде — оценка броска звала саму себя без конца (переполнение стека)
     const S = mk(), [a, b] = S.players; est(S, a, 'barracks', 'outpost'); b.sins = ['sin_lust']; b.deck = ['ordershield', 'tax', 'tax']; b._mode = null;
     let fine = true; try { E.Bot.mode(S, b); E.Bot.avgPower(S, b); } catch (e) { fine = false; } ok(fine, 'Похоть + «Щит ордена»: оценка броска без бесконечной рекурсии'); }
+  { // ошибка в 10.22: Медведь с Похотью и «Спячкой» — сила Спячки считает бросок, бросок с Похотью — среднюю силу карт, а та — снова Спячку
+    const S = mk(['bear', 'rose']), [a] = S.players; a.sins = ['sin_lust']; a.hand = ['bear_sleep', 'tax']; a.deck = ['bear_sleep', 'tax', 'tax']; a._mode = null; a.turn.rolled = false;
+    let v = null; try { v = E.Bot.power(S, a, 'bear_sleep', 1); E.Bot.avgPower(S, a); E.Bot.rollEV(S, a, 1); } catch (e) { v = e.message; }
+    ok(typeof v === 'number' && isFinite(v), 'Похоть + «Спячка»: бот оценивает карты без бесконечного круга — ' + v); }
 
   // ================= v10.22: Дома — стартовые владения, фамильные карты, способности Розы и Солнца, наследники =================
   const RR = (S, who, r, ro) => T.resolveRoll(S, who, r, ro || {});

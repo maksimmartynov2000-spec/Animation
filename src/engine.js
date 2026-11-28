@@ -3089,8 +3089,11 @@ const Engine = (() => {
     avgPower(S, p) {
       const all = this.allCards(p);
       if (!all.length) return 1;
-      let s = 0; for (const id of all) s += this.power(S, p, id, 1.2);
-      return s / all.length;
+      // повторный вход — средняя сила считается внутри силы карты (Похоть → avgPower → «Спячка» → бросок → Похоть → …):
+      // без защиты это бесконечный круг и переполнение стека (найдено в 10.22). Внутри круга берём обычную среднюю силу
+      if (this._avg) return 1.5;
+      this._avg = true;
+      try { let s = 0; for (const id of all) s += this.power(S, p, id, 1.2); return s / all.length; } finally { this._avg = false; }
     },
     // ценность n лишних значков s по их правилу до конца партии: ⚖️ — скидка на рынке, 📜 — карта в руку, 🕯 — золото в начале хода
     symRule(S, p, s, n = 1) {
