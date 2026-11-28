@@ -1350,7 +1350,7 @@
     for (let g = 0; g < 9; g++) {
       const own = q.own.map(uid => p.estates.find(e => e.uid === uid)).filter(Boolean);
       const give = await choiceSheet('⇄ Меняла: какое владение отдаёте?', '<p class="note">Ваше владение уйдёт в ряд рынка, а вы возьмёте владение из ряда. Новое дороже — доплатите разницу; дешевле — разницу не возвращают.</p>',
-        [...own.map(e => { const d = D.ESTATES[e.id]; return { icon: D.ETYPE[d.t].mark, value: e.uid, right: `${d.cost}🪙`, html: `<b>${esc(d.name)}</b><br><span class="muted">${forMe(d, p)}</span>` }; }),
+        [...own.map(e => { const d = D.ESTATES[e.id]; return { icon: D.ETYPE[d.t].mark, value: e.uid, right: `цена ${d.cost}🪙`, html: `<b>${esc(d.name)}</b><br><span class="muted">${forMe(d, p)}</span>` }; }),
           { icon: '✋', value: null, html: '<b>Не меняться</b>' }]);
       if (give == null) return null;
       const e = p.estates.find(x => x.uid === give); if (!e) return null;
