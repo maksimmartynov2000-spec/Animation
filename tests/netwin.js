@@ -134,7 +134,8 @@ function broker() {
   // 3. Похоть: итог 2 на одном кубике — окно «откуда возьмут карту» у гостя
   ok('гость завершил ход', await gEnd());
   ok('следующий ход гостя', await guestTurn());
-  await hostSet((S, g) => { g.discard = ['tax', 'tax']; g.inPlay = []; g.miracles = []; g.turn.setUsed = true; });
+  // v10.22: владения, которые дают карту (Скрипторий Сов на 2–3), изменили бы руку — на этот шаг их убираем
+  await hostSet((S, g) => { g.discard = ['tax', 'tax']; g.inPlay = []; g.miracles = []; g.turn.setUsed = true; g.estates = g.estates.filter(e => !DATA.ESTATES[e.id].draw); });
   await seedDie([2]);
   const b3 = await hostQ((S, g, h) => ({ hand: g.hand.length, disc: g.discard.length + g.inPlay.length, hd: h.discard.length }));
   await gClick('.abar [data-act="roll"][data-n="1"]');
