@@ -40,7 +40,7 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   ok('на кнопке «Двор» — 😈1', /😈1/.test(my1.badge), my1.badge);
   await closeAll();
   // 3. покаяние: вера есть, до броска — кнопка работает, шаг 1: 5🪙 самому бедному
-  await p.evaluate(() => { const V = window.__VD, S = V.S, me = S.players[V.ME]; me.faiths = [S.faithRow[0]]; me.turn.rolled = false; me.gold = 30; V.redraw(); });
+  await p.evaluate(() => { const V = window.__VD, S = V.S, me = S.players[V.ME]; me.faiths = [S.faithRow.find(f => DATA.FAITHS[f].oath !== 'oneDie') || S.faithRow[0]]; /* вера без обета «один кубик» — иначе подсказка Похоти в шаге 6 другая */ me.turn.rolled = false; me.gold = 30; V.redraw(); });
   await p.waitForTimeout(300); await p.click('.myb[data-act="my"]'); await p.waitForTimeout(600);
   const opGold0 = await p.evaluate(() => window.__VD.S.players[1 - window.__VD.ME].gold);
   const pb = await p.evaluate(() => { const x = document.querySelector('[data-act="penance"]'); return x ? { text: x.innerText, off: x.disabled } : null; });
@@ -57,7 +57,8 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   await buySin('sin_pride');
   const ask = await waitSheet(/Гордыня: кого нанять/);
   ok('Гордыня: окно «кого нанять»', /Гордыня: кого нанять/.test(ask) && /бесплатно/.test(ask), ask.slice(0, 120));
-  await p.evaluate(() => { const o = document.querySelector('.scrim:not(.out) .optlist [data-v]'); if (o) o.click(); }); await p.waitForTimeout(900);
+  // не Слепой Тобиас: его «Добросок» вставит своё окно перед окном Похоти в шаге 7
+  await p.evaluate(() => { const os = [...document.querySelectorAll('.scrim:not(.out) .optlist [data-v]')]; const o = os.find(x => !/Тобиас/.test(x.innerText)) || os[0]; if (o) o.click(); }); await p.waitForTimeout(900);
   const st4 = await p.evaluate(() => { const V = window.__VD, me = V.S.players[V.ME]; return { v: me.vassals.length, gold: me.gold, sins: me.sins.length }; });
   ok('Гордыня: вассал нанят бесплатно, грехов два', st4.v === v0 + 1 && st4.gold === gp && st4.sins === 2, JSON.stringify(st4));
   await closeAll();
