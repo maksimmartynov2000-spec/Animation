@@ -319,6 +319,8 @@ const Engine = (() => {
     if (S.holdRow && S.holdDeck) while (S.holdRow.length < (R.holdRow || 3) && S.holdDeck.length) S.holdRow.push(S.holdDeck.pop());
     for (const [row, deck, n] of [[S.vRow, S.vDeck, R.vRow], [S.lRow, S.lDeck, R.lRow], [S.gRow, S.gDeck, R.gRow]]) while (row && deck && row.length < n && deck.length) row.push(deck.pop());
   }
+  // v10.24 (решение владельца): карта, вернувшаяся в общую колоду (рынка или знамён), замешивается — колода перемешивается
+  function mixIn(S, deck, id) { if (!deck || id == null) return; deck.push(id); shuffle(S, deck); }
   // беды из игры не уходят: замешать обратно в колоду рынка (владений или двора)
   function backToDeck(S, kind, id) {
     const deck = kind === 'estate' ? S.estateDeck : S.courtDeck;
@@ -352,11 +354,11 @@ const Engine = (() => {
     return await HOOKS.ask(S, p, q);
   }
 
-  // ---------- содержание великих лордов: первым делом в начале хода ----------
-  // не хватает золота — игрок выбирает, кого оставить; остальные уходят под низ колоды великих лордов
-  // содержание: лорды и великие лорды — в начале хода
-  const upkeepList = (p) => [...p.lords, ...p.greats].filter(id => (D.BAN[id].upkeep || 0) > 0);
-  // чудо «Верность до гроба» (ритуал «Посвящение»): содержание каждого лорда и великого лорда — 1🪙
+  // ---------- содержание знамён: первым делом в начале хода ----------
+  // v10.24 (решение владельца): платят все знамёна — вассал 1🪙, лорд 2🪙, великий лорд 4🪙 (RULES)
+  // не хватает золота — игрок выбирает, кого оставить; остальные уходят и замешиваются в свою колоду
+  const upkeepList = (p) => [...p.vassals, ...p.lords, ...p.greats].filter(id => (D.BAN[id].upkeep || 0) > 0);
+  // чудо «Верность до гроба» (ритуал «Посвящение»): содержание каждого лорда и великого лорда — 1🪙 (вассал и так 1🪙)
   const upkeepCost = (p, id) => ((D.BAN[id].upkeep || 0) > 0 && miracleOn(p, 'upkeepOne') ? 1 : (D.BAN[id].upkeep || 0));
   const upkeepOf = (p) => upkeepList(p).reduce((s, id) => s + upkeepCost(p, id), 0);
   async function payUpkeep(S, p) {
@@ -378,8 +380,8 @@ const Engine = (() => {
     while (keep.length && keep.reduce((s, id) => s + upkeepCost(p, id), 0) + extra > p.gold) keep.pop();
     const pay = keep.length ? keep.reduce((s, id) => s + upkeepCost(p, id), 0) + extra : 0;
     const gone = list.filter(id => !keep.includes(id));
-    p.greats = p.greats.filter(id => !gone.includes(id)); p.lords = p.lords.filter(id => !gone.includes(id));
-    for (const id of gone) { if (!D.BAN[id].heir) (D.BAN[id].tier === 'g' ? S.gDeck : S.lDeck).unshift(id); p.stats.released++; log(S, `${nm(p)}: не хватило золота на содержание — «${D.regName(D.BAN[id])}» уходит под низ колоды великих лордов`, p.i, 'upkeep'); }
+    p.greats = p.greats.filter(id => !gone.includes(id)); p.lords = p.lords.filter(id => !gone.includes(id)); p.vassals = p.vassals.filter(id => !gone.includes(id));
+    for (const id of gone) { if (!D.BAN[id].heir) mixIn(S, deckOf(S, D.BAN[id].tier), id); p.stats.released++; log(S, `${nm(p)}: не хватило золота на содержание — «${D.regName(D.BAN[id])}» уходит${D.BAN[id].heir ? '' : ` и замешивается в колоду ${({ v: 'вассалов', l: 'лордов', g: 'великих лордов' })[D.BAN[id].tier]}`}`, p.i, 'upkeep'); }
     p.gold -= pay; p.stats.upkeep += pay;
     if (pay) log(S, `${nm(p)} платят содержание: −${pay}🪙`, p.i, 'upkeep');
     refill(S);
@@ -1016,7 +1018,7 @@ const Engine = (() => {
       return nothing();
     }
     if (effect === 'riot') {
-      if (upkeepList(t).length) {
+      if (t.greats.length) { // смута дорожит содержание великих лордов — как на картах и в окнах (с 10.24 содержание платят и вассалы)
         t.upkeepExtra = (t.upkeepExtra || 0) + param;
         log(S, `   Смута: в следующий ход ${nm(t)} заплатят за содержание на ${param}🪙 больше`, a.i, 'steal');
         done({ riot: param }); return;
@@ -1349,7 +1351,7 @@ const Engine = (() => {
     emit(S, 'deposit', { p: p.i, put: 1, total: p.deposit }); emit(S, 'change');
     return { ok: true, total: p.deposit };
   }
-  // Регент Северин (правки 10.21): снять с торгов — раз в ход до двух карт рынка (владения, твердыни, двор); карта — под низ своей колоды, на её место выходит новая
+  // Регент Северин (правки 10.21): снять с торгов — раз в ход до двух карт рынка (владения, твердыни, двор); карта (с 10.24) замешивается в колоду; было — под низ своей колоды, на её место выходит новая
   const DELIST_ROWS = ['estate', 'hold', 'court'];
   const delistLeft = (S, p) => Math.max(0, (mods(S, p).delist || 0) - (p.turn.delisted || 0));
   function delistOptions(S) { const out = []; for (const src of DELIST_ROWS) { const [row, deck] = rowPair(S, src); if (row && deck && deck.length) row.forEach((id, k) => out.push({ src, k, id })); } return out; }
@@ -1367,11 +1369,11 @@ const Engine = (() => {
     const [row, deck] = rowPair(S, src);
     if (id != null && row[k] !== id) k = row.indexOf(String(id)); // стол у гостя мог не успеть обновиться
     if (k < 0 || row[k] == null || !deck || !deck.length) return { ok: false, why: 'Такой карты на рынке нет' };
-    const old = row.splice(k, 1)[0]; deck.unshift(old); refill(S);
+    const old = row.splice(k, 1)[0]; refill(S); mixIn(S, deck, old); // сначала ряд добирается, потом снятая карта замешивается — сразу не вернётся
     p.turn.delisted = (p.turn.delisted || 0) + 1;
     const nmc = (x) => (x ? (src === 'court' ? D.COURT[x] : D.ESTATES[x]).name : '—');
     const now = row[row.length - 1];
-    log(S, `${nm(p)}: Регент Северин снял с торгов «${nmc(old)}» — под низ колоды; на рынке теперь «${nmc(now)}»`, p.i, 'market');
+    log(S, `${nm(p)}: Регент Северин снял с торгов «${nmc(old)}» — замешана в колоду; на рынке теперь «${nmc(now)}»`, p.i, 'market');
     emit(S, 'delist', { p: p.i, src, id: old, now }); emit(S, 'change');
     return { ok: true, id: old, now };
   }
@@ -2504,8 +2506,8 @@ const Engine = (() => {
     } else if (st.k === 'trash' && st.what === 'vassal') {
       let id = await ask(S, p, { type: 'ritualVassal', options: p.vassals.slice(), label: lab });
       if (!p.vassals.includes(id)) id = p.vassals[0];
-      p.vassals.splice(p.vassals.indexOf(id), 1); S.vDeck.unshift(id); p.stats.released++;
-      log(S, `✨ Жертва: ${nm(p)} отпустили вассала «${D.regName(D.BAN[id])}» — под низ колоды вассалов`, p.i, 'faith');
+      p.vassals.splice(p.vassals.indexOf(id), 1); mixIn(S, S.vDeck, id); p.stats.released++;
+      log(S, `✨ Жертва: ${nm(p)} отпустили вассала «${D.regName(D.BAN[id])}» — замешан в колоду вассалов`, p.i, 'faith');
     } else if (st.what === 'poor') {
       const t = await pickPoor(S, p);
       p.gold -= st.n; t.gold += st.n;
@@ -2645,11 +2647,11 @@ const Engine = (() => {
       S.cur = (S.cur + 1) % S.players.length;
       if (S.cur === S.first) {
         S.round++;
-        // обновление рынка в начале круга: самая старая карта ряда уходит под низ колоды, открывается новая
+        // обновление рынка в начале круга (поток, в правилах выключен): самая старая карта ряда замешивается в колоду, открывается новая
         for (const [flow, row, deck, what] of [[R.courtFlow, S.courtRow, S.courtDeck, 'court'], [R.estateFlow, S.estateRow, S.estateDeck, 'estate']]) {
           for (let k = 0; k < (flow || 0) && row.length && deck.length; k++) {
-            const id = row.shift(); deck.unshift(id);
-            log(S, `Рынок обновился: «${(what === 'court' ? D.COURT[id] : D.ESTATES[id]).name}» ${what === 'court' ? 'ушла' : 'ушло'} под низ колоды`, null, 'market');
+            const id = row.shift(); if (deck.length) row.push(deck.pop()); mixIn(S, deck, id);
+            log(S, `Рынок обновился: «${(what === 'court' ? D.COURT[id] : D.ESTATES[id]).name}» ${what === 'court' ? 'замешана' : 'замешано'} в колоду`, null, 'market');
           }
         }
         // ряды, из которых за круг ничего не взяли, обновит первый игрок в начале своего хода (refreshRows)
@@ -2673,7 +2675,7 @@ const Engine = (() => {
   // с какого числа знамён у лидера включается догоняющий наём: число или 'half' — половина цели (в «Знакомстве» — с 3)
   const cuFrom = (S) => (R.catchupFrom === 'half' ? Math.ceil(goal(S) / 2) : (R.catchupFrom || 0));
   // ---------- новый круг: обновление рядов ----------
-  // ряд, из которого за круг ничего не взяли (ни купили, ни наняли), сдвигается: крайняя карта — под низ своей колоды
+  // ряд, из которого за круг ничего не взяли (ни купили, ни наняли), сдвигается: крайняя карта замешивается в свою колоду (с 10.24; было — под низ)
   const ROWS = () => [['estate', 'владений'], ['court', 'двора'], ['hold', 'твердынь'], ['v', 'вассалов'], ['l', 'лордов'], ['g', 'великих лордов']];
   const rowPair = (S, k) => (k === 'estate' ? [S.estateRow, S.estateDeck] : k === 'court' ? [S.courtRow, S.courtDeck] : k === 'hold' ? [S.holdRow, S.holdDeck] : [rowOf(S, k), deckOf(S, k)]);
   function staleRows(S) {
@@ -2696,12 +2698,12 @@ const Engine = (() => {
       if (!row || !row.length || !deck || !deck.length) { S.refreshing.shift(); continue; }
       if (HOOKS.collect && !S.sim) await HOOKS.collect(S, { kind: 'refresh', p: S.cur, rows: rows.slice(j), row: k, id: row[0] });
       if (row[0] == null) { S.refreshing.shift(); continue; }
-      const id = row.shift(); deck.unshift(id);
+      const id = row.shift();
       const name = ['v', 'l', 'g'].includes(k) ? D.BAN[id].name : k === 'court' ? D.COURT[id].name : D.ESTATES[id].name;
-      refill(S);
+      refill(S); mixIn(S, deck, id); // сначала ряд добирается, потом ушедшая карта замешивается — сразу не вернётся
       const nw = row[row.length - 1];
       const nwName = nw == null ? null : ['v', 'l', 'g'].includes(k) ? D.BAN[nw].name : k === 'court' ? D.COURT[nw].name : D.ESTATES[nw].name;
-      log(S, `↻ Новый круг: из ряда ${ROWS().find(x => x[0] === k)[1]} за круг ничего не взяли — «${name}» уходит под низ колоды${nwName ? `, открылась «${nwName}»` : ''}`, null, 'market');
+      log(S, `↻ Новый круг: из ряда ${ROWS().find(x => x[0] === k)[1]} за круг ничего не взяли — «${name}» замешана в колоду${nwName ? `, открылась «${nwName}»` : ''}`, null, 'market');
       S.refreshing.shift();
       emit(S, 'refresh', { rows: [k], row: k, out: id, in: nw });
       emit(S, 'change');

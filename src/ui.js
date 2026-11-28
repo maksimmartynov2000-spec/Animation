@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.23'; // исправление: бот-Медведь с грехом Похоть и картой «Спячка» больше не зависает (бесконечный круг в оценке карт)
+  const VERSION = '10.24'; // содержание всех знамён (вассал 1🪙, лорд 2🪙, великий 4🪙); карты, вернувшиеся в колоду рынка, замешиваются; 10.23 — бот-Медведь с Похотью и «Спячкой» не зависает
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -463,7 +463,7 @@
         }
         break;
       case 'upkeep':
-        if (d.released && d.released.length) { const nmz = d.released.map(id => `«${esc(D.BAN[id].name)}»`).join(', '); toast(d.p === ME ? `🪙 Не хватило на содержание: ${nmz} уходит под колоду великих лордов` : `${pname(S.players[d.p])}: не хватило на содержание — ${nmz} уходит`, 4400); }
+        if (d.released && d.released.length) { const nmz = d.released.map(id => `«${esc(D.BAN[id].name)}»`).join(', '); toast(d.p === ME ? `🪙 Не хватило на содержание: ${nmz} — ${d.released.length > 1 ? 'уходят, их замешивают' : 'уходит, его замешивают'} в колоду` : `${pname(S.players[d.p])}: не хватило на содержание — ${nmz} уходит`, 4400); }
         break;
       case 'faith': {
         const F = D.FAITHS[d.id];
@@ -482,7 +482,7 @@
         if (rfTapped) { rfTapped = false; break; }
         if (WATCH || ME === null) break;
         const k = d.row, nmOf = (id) => (id == null ? '' : ['v', 'l', 'g'].includes(k) ? D.BAN[id].name : k === 'court' ? D.COURT[id].name : D.ESTATES[id].name);
-        const L1 = (kk, out, inn) => ({ row: RF_NAME[kk] || '', one: `ряд ${RF_NAME[kk] || ''} — «${esc(out)}» ушла под колоду${inn ? `, открылась «${esc(inn)}»` : ''}` });
+        const L1 = (kk, out, inn) => ({ row: RF_NAME[kk] || '', one: `ряд ${RF_NAME[kk] || ''} — «${esc(out)}» замешана в колоду${inn ? `, открылась «${esc(inn)}»` : ''}` });
         // несколько рядов за раз — одной подсказкой
         rfBuf.push(L1(k, nmOf(d.out), d.in != null ? nmOf(d.in) : null));
         if (!rfTimer) rfTimer = setTimeout(() => { const Ls = rfBuf.splice(0); rfTimer = null; if (Ls.length) toast(Ls.length === 1 ? `<b>↻ Новый круг:</b> ${Ls[0].one}` : `<b>↻ Новый круг:</b> обновились ряды ${Ls.map(x => x.row).join(', ')}`, 3200); }, 60);
@@ -833,7 +833,7 @@
     return new Promise(res => { stepReq = { s, d, res }; schedule(); });
   }
   function stepDone() { const r = stepReq; stepReq = null; if (r) { if (r.d && r.d.kind === 'refresh') rfTapped = true; if (sound) Sfx.card(); r.res(); } schedule(); }
-  // ↻ обновление рядов: в последний ход круга помечаем крайнюю карту ряда, из которого ещё ничего не взяли, — она уйдёт под колоду
+  // ↻ обновление рядов: в последний ход круга помечаем крайнюю карту ряда, из которого ещё ничего не взяли, — её замешают в колоду (10.24)
   const RF_NAME = { estate: 'владений', court: 'двора', hold: 'твердынь', v: 'вассалов', l: 'лордов', g: 'великих лордов' };
   function rfSoon(k) {
     if (!S || S.winner !== null || (stepReq && stepReq.d.kind === 'refresh')) return false;
@@ -848,11 +848,11 @@
   // метка на крайней карте ряда: сейчас обновляется (нажать) или уйдёт в начале круга
   function rfMark(k, idx) {
     if (idx !== 0) return null;
-    if (rfNow(k)) return { cls: 'rf-out', badge: '<span class="pcb rf now">↻ под колоду</span>', act: 'refresh-tap' };
+    if (rfNow(k)) return { cls: 'rf-out', badge: '<span class="pcb rf now">↻ в колоду</span>', act: 'refresh-tap' };
     if (rfSoon(k)) return { cls: 'rf-soon', badge: '<span class="pcb rf">↻ уйдёт</span>' };
     return null;
   }
-  const rfSub = (k) => (rfNow(k) ? '↻ обновляется — нажмите на крайнюю карту' : rfSoon(k) ? '↻ ничего не возьмёте — крайняя уйдёт под колоду' : '');
+  const rfSub = (k) => (rfNow(k) ? '↻ обновляется — нажмите на крайнюю карту' : rfSoon(k) ? '↻ ничего не возьмёте — крайнюю замешают в колоду' : '');
   function coinsSettled(s) {
     return new Promise(res => {
       const chk = () => { if (s !== S || !coinQ.some(c => !c.done)) res(); else coinWaiters.push(chk); };
@@ -1097,7 +1097,7 @@
         q.options.map(uid => { const e = p.estates.find(x => x.uid === uid); const d = D.ESTATES[e.id]; return { icon: D.ETYPE[d.t].mark, value: uid, right: `${d.cost}🪙`, html: `<b>${esc(d.name)}</b>${e.ruined ? ' · в руинах' : ''}<br><span class="muted">${esc(D.estateText ? D.estateText(d) : '')}</span>` }; }));
       case 'ritualCard': return choiceSheet(q.give ? `✨ ${esc(q.label)}: какую карту отдать?` : `✨ ${esc(q.label)}: какую карту убрать из игры?`, `<p class="note">${q.give ? 'Карта уйдёт в сброс самому бедному сопернику.' : `Карта двора ценой от ${q.min}🪙 уходит из игры навсегда.`}</p>`,
         q.options.map(k => { const c = D.COURT[p.hand[k]]; return { icon: '🂠', value: k, right: `${c.cost}🪙`, html: `<b>${esc(c.name)}</b><br><span class="muted">${D.fxText(c.fx)}</span>` }; }));
-      case 'ritualVassal': return choiceSheet(`✨ ${esc(q.label)}: кого из вассалов отпустить?`, '<p class="note">Вассал уходит под низ колоды вассалов — его можно будет нанять снова.</p>',
+      case 'ritualVassal': return choiceSheet(`✨ ${esc(q.label)}: кого из вассалов отпустить?`, '<p class="note">Вассала замешивают в колоду вассалов — его можно будет нанять снова, когда он откроется в ряду.</p>',
         q.options.map(id => ({ icon: D.SYM[D.BAN[id].dir], value: id, right: '', html: banLine(id) })));
       case 'borrow': return choiceSheet('🌑 Чужими руками: какую карту взять на ход?', '<p class="note">Карта из сброса соперника — вам в руку до конца хода. Сыграть можно, убрать из игры, в отставку, ко двору и замыслом — нельзя. В конце хода она вернётся в его сброс.</p>',
         [...q.options.map((o, k) => { const c = D.COURT[o.id]; return { icon: H(S.players[o.i]).sigil, value: k, right: '', html: `<b>${esc(c.name)}</b><br><span class="muted">${D.fxText(c.fx)}</span>` }; }), { icon: '✕', value: null, right: '', html: '<b>Не брать</b>' }]);
@@ -1108,15 +1108,15 @@
     return Promise.resolve(null);
   }
   const banLine = (id) => { const b = D.BAN[id]; return `<b>${esc(D.regName(b))}</b><br><span class="muted">${esc(b.text)}</span>`; };
-  // содержание великих лордов: золота не хватает — кого оставить (остальные уйдут под низ колоды)
+  // содержание знамён (v10.24: вассалы, лорды, великие): золота не хватает — кого оставить (остальные уйдут и замешаются в свои колоды)
   function askUpkeep(p, q) {
     const uc = (id) => (q.costs && q.costs[id] != null ? q.costs[id] : D.BAN[id].upkeep); // чудо «Верность до гроба»: по 1🪙
     return new Promise(res => {
       let keep = [];
       const cost = () => keep.reduce((s, id) => s + uc(id), 0) + (keep.length ? (q.extra || 0) : 0);
       const list = () => q.options.map(id => `<button class="opt" data-id="${id}"><span class="big">${keep.includes(id) ? '☑️' : '⬜'}</span><span>${banLine(id)}</span><span class="r">${uc(id)}🪙</span></button>`).join('');
-      const body = `<p class="note">Содержание великих лордов платится первым делом. У вас ${q.gold}🪙 — на всех не хватает${q.extra ? ` (ещё ${q.extra}🪙 — смута)` : ''}. Отметьте, кого оставить; остальные уйдут под низ колоды великих лордов.</p><div class="optlist">${list()}</div><div class="acts"><button class="btn primary wide" data-ok>Оставить · ${cost()}🪙</button></div>`;
-      const sh = openSheet({ title: '🧭 Содержание великих лордов', body, dismiss: false });
+      const body = `<p class="note">Содержание знамён платится первым делом: вассал ${R.vassalUpkeep}🪙, лорд ${R.lordUpkeep}🪙, великий лорд ${R.greatUpkeep}🪙. У вас ${q.gold}🪙 — на всех не хватает${q.extra ? ` (ещё ${q.extra}🪙 — смута)` : ''}. Отметьте, кого оставить; остальные уйдут — их замешают в свои колоды.</p><div class="optlist">${list()}</div><div class="acts"><button class="btn primary wide" data-ok>Оставить · ${cost()}🪙</button></div>`;
+      const sh = openSheet({ title: '🪙 Содержание знамён', body, dismiss: false });
       sh.el.addEventListener('click', (e) => {
         const b = e.target.closest('[data-id]');
         if (b) { const id = b.dataset.id; if (keep.includes(id)) keep = keep.filter(x => x !== id); else if (cost() + uc(id) + (keep.length ? 0 : q.extra || 0) <= q.gold) keep.push(id); sh.el.querySelector('.optlist').innerHTML = list(); sh.el.querySelector('[data-ok]').textContent = `Оставить · ${cost()}🪙`; return; }
@@ -2263,7 +2263,7 @@
   async function doDelist(p) {
     const left = E.delistLeft(S, p), KIND = { estate: 'владение', hold: 'твердыня', court: 'двор' };
     const opts = E.delistOptions(S).map(o => { const est = o.src !== 'court', d = est ? D.ESTATES[o.id] : D.COURT[o.id]; return { icon: est ? D.ETYPE[d.t].mark : '🂠', value: `${o.src}|${o.k}|${o.id}`, right: `${d.cost}🪙`, html: `<b>${esc(d.name)}</b> · ${KIND[o.src]}<br><span class="muted">${esc(est ? D.estateText(d) : d.bad ? d.badText || '' : D.fxText(d.fx))}</span>` }; });
-    const v = await choiceSheet('📜 Северин: что снять с торгов?', `<p class="note">Карта уйдёт под низ своей колоды, на её место выйдет новая. ${left > 1 ? 'В этот ход можно снять ещё одну.' : 'Это последняя в этот ход.'}</p>`, opts.concat([{ icon: '✖️', value: '', html: '<b>Не сейчас</b>' }]));
+    const v = await choiceSheet('📜 Северин: что снять с торгов?', `<p class="note">На место карты выйдет новая, а её замешают в колоду. ${left > 1 ? 'В этот ход можно снять ещё одну.' : 'Это последняя в этот ход.'}</p>`, opts.concat([{ icon: '✖️', value: '', html: '<b>Не сейчас</b>' }]));
     if (!v || !isMyTurn()) return;
     const [src, k, id] = v.split('|');
     if (guest()) netDoWait('delist', { src, k: +k, id }); else guarded(async () => { const r = E.delistCard(S, p, src, +k, id); if (!r.ok) toast(esc(r.why || 'Нельзя')); else if (r.now) { const d = src === 'court' ? D.COURT[r.now] : D.ESTATES[r.now]; toast(`На рынке вместо неё — «${esc(d.name)}»`); } });
@@ -2688,7 +2688,7 @@
     if (stepReq && stepReq.d.kind === 'refresh') {
       const d = stepReq.d, isBan = ['v', 'l', 'g'].includes(d.row);
       const card = mcard(isBan ? 'ban' : d.row === 'court' ? 'court' : 'estate', d.id, { act: 'refresh-tap', cls: 'rf-out' });
-      return { cls: '', html: `${row}<div class="cmid rf"><div class="rfw">${card}</div></div><div class="cfoot"><div class="why">ряд ${RF_NAME[d.row] || ''}: за круг ничего не взяли — <b>«${esc(pcName(isBan ? 'ban' : d.row === 'court' ? 'court' : 'estate', d.id))}»</b> уходит под колоду</div></div>` };
+      return { cls: '', html: `${row}<div class="cmid rf"><div class="rfw">${card}</div></div><div class="cfoot"><div class="why">ряд ${RF_NAME[d.row] || ''}: за круг ничего не взяли — <b>«${esc(pcName(isBan ? 'ban' : d.row === 'court' ? 'court' : 'estate', d.id))}»</b> уходит — её замешают в колоду</div></div>` };
     }
     const dv = diceView, air = !!stg && !stg.leaving, landing = !!stg && !!stg.leaving;
     const fresh = !!dv && dv.tk === turnKey();
@@ -3094,7 +3094,7 @@
       else if (isEstate && !E.canOwnEstate(p, id)) why = D.ESTATES[id].t === 'hold' ? 'уже есть твердыня' : 'уже есть'; else if (src === 'basic' && E.basicLeft(S, id) <= 0) why = 'кончились'; else if (p.gold < price) why = `не хватает ${price - p.gold}`;
       return `<button class="buyb${why ? '' : ' ok'}" data-act="buy" data-src="${src}" data-key="${key}" ${why || busy || adjustReq ? 'disabled' : ''} aria-label="${why.trim() ? esc(why) : `Купить за ${price}`}"><span>${freeOk && !why ? 'Ярмарка · ' : ''}${pr}</span>${why.trim() ? `<span>${esc(why)}</span>` : ''}</button>`;
     };
-    const mark = (k, idx) => { const m = rfMark(k, idx); return m ? { cls: m.cls, badge: `<span class="tag rf">${m.act ? '↻ под колоду' : '↻ уйдёт'}</span>`, act: m.act } : {}; };
+    const mark = (k, idx) => { const m = rfMark(k, idx); return m ? { cls: m.cls, badge: `<span class="tag rf">${m.act ? '↻ в колоду' : '↻ уйдёт'}</span>`, act: m.act } : {}; };
     const fe = flipsFor('est', S.estateRow), fc = flipsFor('court', S.courtRow);
     let dealing = false;
     const slot = (kind, id, o, below) => { const fd = dealOf(o.flip); if (fd != null) dealing = true; return `<div class="mslot">${mcard(kind, id, { cls: [o.cls || '', fd != null ? 'deal' : ''].join(' ').trim(), badge: o.badge, act: o.act, fd })}${below}</div>`; };
@@ -3134,7 +3134,7 @@
       const have = tierList(p, t).length, ids = (row || []).slice();
       const fg = flipsFor('ban' + t, ids);
       const done = have >= need;
-      const cards = ids.map((id, k) => { const m = rfMark(t, k) || {}; const fd = dealOf(fg[k]); if (fd != null) dealing = true; return `<div class="mslot">${mcard('ban', id, { o: p.i, cls: [m.cls || '', done ? 'dim' : '', fd != null ? 'deal' : ''].join(' ').trim(), badge: m.badge ? `<span class="tag rf">${m.act ? '↻ под колоду' : '↻ уйдёт'}</span>` : '', act: m.act, fd })}${done ? '' : hire(id)}</div>`; }).join('')
+      const cards = ids.map((id, k) => { const m = rfMark(t, k) || {}; const fd = dealOf(fg[k]); if (fd != null) dealing = true; return `<div class="mslot">${mcard('ban', id, { o: p.i, cls: [m.cls || '', done ? 'dim' : '', fd != null ? 'deal' : ''].join(' ').trim(), badge: m.badge ? `<span class="tag rf">${m.act ? '↻ в колоду' : '↻ уйдёт'}</span>` : '', act: m.act, fd })}${done ? '' : hire(id)}</div>`; }).join('')
         + (t === 'l' && p.heir && !done ? `<div class="mslot">${mcard('ban', p.heir, { o: p.i, cls: 'mine' })}${hire(p.heir)}</div>` : '')
         + (!WATCH && !done && E.mods(S, p).deckTop && E.deckTopOf(deck) ? `<div class="mslot">${mcard('ban', E.deckTopOf(deck), { o: p.i, cls: 'seer', badge: '<span class="tag eye">👁 верх колоды</span>' })}${hire(E.deckTopOf(deck))}</div>` : ''); // чудо «Ясновидение»
       const ups = [...new Set(ids.concat(t === 'l' && p.heir ? [p.heir] : []).map(id => D.BAN[id].upkeep || 0))].filter(Boolean);
@@ -3751,7 +3751,7 @@
     } else if (s === 'gold') {
       const m = E.mods(S, q), dg = E.dawnGold(S, q, m), up = E.upkeepOf(q);
       for (const x of dg.src) { const mm = /^(.*) \+(\d+)$/.exec(x); rows.push(mm ? [`в начале хода: ${mm[1]}`, +mm[2]] : [x, 0]); }
-      if (up) rows.push(['содержание лордов в начале хода', -up]);
+      if (up) rows.push(['содержание знамён в начале хода', -up]);
       const e1 = E.Bot.rollEV(S, q, 1), e2 = E.Bot.rollEV(S, q, 2);
       const f = (v) => `${v >= 0 ? '+' : '−'}${Math.abs(Math.round(v * 10) / 10).toString().replace('.', ',')}🪙`;
       return `<dl class="kv">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v)}🪙</dd>`).join('') || '<dt>В начале хода</dt><dd>ничего</dd>'}</dl><p class="note">Свой бросок в среднем приносит: 1 кубик — ${f(e1)}, 2 кубика — ${f(e2)} (владения минус чужие Набеги и беды).</p>`;
@@ -4035,7 +4035,7 @@
       <li>За престол борются 2–${R.maxPlayers} Дома. У каждого — три стартовых владения своего Дома; стартовое золото (${Math.min(...golds)}–${Math.max(...golds)}🪙, указано на карте Дома${R.seatGold ? `; кто ходит не первым — ещё +${R.seatGold}🪙` : ''}); колода — ${R.startTax}× Подать и 3 карты Дома, в руке ${R.hand}.${on('lords') ? ' Наследник Дома лежит рядом с картой Дома.' : ''}</li>
       <li>Рынок: открыты ${R.estateRow} владения и ${R.courtRow} карты двора. Знамёна: ряд из ${R.vRow} вассалов${on('lords') ? `, ${R.lRow} лордов` : ''}${on('great') ? `, ${R.gRow} великих лордов` : ''} — каждый из своей колоды.</li></ul>`;
     b += `<h3>Ход</h3><ol>
-      ${on('great') ? '<li><b>Содержание:</b> первым делом заплатите за великих лордов. Не хватает — лишние уходят под низ своей колоды.</li>' : ''}
+      <li><b>Содержание:</b> первым делом заплатите за знамёна — вассал ${R.vassalUpkeep}🪙${on('lords') ? `, лорд ${R.lordUpkeep}🪙` : ''}${on('great') ? `, великий лорд ${R.greatUpkeep}🪙` : ''}. Не хватает — выберите, кого оставить; остальные уходят, их замешивают в свои колоды.</li>
       <li><b>Доход начала хода</b> от свойств знамён и Дома и 🕯 Подаяния.</li>
       <li><b>Карты двора</b> из руки можно играть до броска и после, сколько угодно. Сыгранная карта сразу уходит в ваш сброс. <b>Отставка:</b> раз в ход уберите из игры одну карту руки и возьмите новую из колоды.</li>
       <li><b>Бросок:</b> 1 или 2 кубика — на выбор, с начала партии. Бросок обязателен.</li>
@@ -4054,8 +4054,8 @@
       ${on('sieges') || on('spy') ? '<li>⚔️ — сила нападения, 🔗 — сила шпионажа и стража.</li>' : ''}</ul>`;
     b += `<h3>Знамёна</h3><ul>
       <li><b>Цена — только золото.</b> Каждый ваш значок направления карты — скидка 1🪙: у вассала не больше ${R.discCap.v}, у лорда ${R.discCap.l}, у великого лорда ${R.discCap.g}.</li>
-      <li><b>Вассалы</b> помогают зарабатывать. ${on('lords') ? '<b>Лорды</b> дороже и меняют правила лично для вас; каждый даёт ещё место при дворе. Наследник Дома — ваш личный лорд.' : ''}${on('great') ? ' <b>Великие лорды</b> — власть над столом и награда при найме, но содержание каждый ход.' : ''}</li>
-      <li>Любой ряд (рынка и знамён), из которого за круг ничего не взяли, в начале нового круга обновляется: крайняя карта уходит под низ колоды.</li>${R.catchupGap ? `
+      <li><b>Вассалы</b> помогают зарабатывать (содержание ${R.vassalUpkeep}🪙 в ход). ${on('lords') ? '<b>Лорды</b> дороже и меняют правила лично для вас; каждый даёт ещё место при дворе. Наследник Дома — ваш личный лорд.' : ''}${on('great') ? ' <b>Великие лорды</b> — власть над столом и награда при найме, но содержание каждый ход.' : ''}</li>
+      <li>Любой ряд (рынка и знамён), из которого за круг ничего не взяли, в начале нового круга обновляется: крайнюю карту замешивают в колоду, колоду перемешивают.</li>${R.catchupGap ? `
       <li><b>Догоняющий наём.</b> Если в начале круга у лидера ${E.cuFrom(S)}+ знамён, каждый, у кого знамён меньше, в этом круге может нанять ещё одного вассала — сверх действия.${on('balance') ? ' В этой партии вместо него — Зависть и Поддержка (модуль «Баланс»).' : ''}</li>` : ''}</ul>`;
     b += `<h3>Карты двора и свита</h3><p>Роли: ⚖️ Купец, 📜 Учёный, ⚔️ Рыцарь, 🔗 Шпион, 🕯 Жрец. <b>Свита</b>: вторая карта той же роли за ход — срабатывает её «Свита». Третья и дальше — «Свита» срабатывает дважды. У карты без блока «Свита» бонуса нет. У Сборщика податей свиту запускает «Подать»: сыграйте до него хоть одну; бонус — за каждую «Подать». Если до него сыграны ещё и два других Купца — дважды, как у всех.</p>`;
     { const H0 = D.HOUSES.deer, dg = R.startGold + (H0.gold || 0), C0 = D.COURT.collector, pp = (C0.ally.find(o => o[0] === 'perPlayed') || [0, 0, 0])[2], cb = (C0.fx.find(o => o[0] === 'gold') || [0, 0])[1];
