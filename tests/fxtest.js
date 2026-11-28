@@ -1,6 +1,7 @@
 // Сверка «написано на карте = делает движок»: по тесту на каждый эффект, свойство и правило
 const G = require('path').join(__dirname, '..', 'src') + '/';
 const E = require(G + 'engine.js'), D = E.D, T = E._t;
+const CardFX = require(G + 'cardfx.js'); // значки на картах (v10.26: Бьорн)
 let ans = null;
 E.setHooks({ ask: async (S, p, q) => (ans ? ans(q, p, S) : E.Bot.decide(S, p, q)) });
 const FULL = D.MODULE_KEYS.slice();
@@ -419,8 +420,15 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     S.estateRow = ['field', 'shop', 'pasture', 'mine']; const n0 = a.estates.length;
     ok((await E.buy(S, a, 'estate', 0)).ok, 'Ярмарка Земли (Колос III)'); ok((await E.buy(S, a, 'estate', 0)).ok, 'Ярмарка владения (Элинор)'); eq(a.turn.buysUsed, 0, 'обе — без действия');
     ok((await E.buy(S, a, 'estate', 0)).ok && a.turn.buysUsed === 1, 'третья покупка — уже действием'); }
-  { // Бьорн Секира: каждый ваш Набег даёт +1⚔️
-    const S = mk(), [a] = S.players; const w0 = E.prod(S, a).war; a.vassals = ['halvdan']; const w1 = E.prod(S, a).war; est(S, a, 'barracks', 'outpost'); eq(E.prod(S, a).war, w1 + 2 + 2, 'Бьорн: 2 Набега — +2⚔️ (и ещё по ⚔️ с самих Набегов)'); eq(w1 - w0, 1, 'Бьорн сам — 1⚔️ как знамя Войны'); }
+  { // Бьорн Секира (v10.26): +1⚔️ за каждые 2 ваших Набега (было — за каждый)
+    const S = mk(), [a] = S.players; const w0 = E.prod(S, a).war; a.vassals = ['halvdan']; const w1 = E.prod(S, a).war; eq(w1 - w0, 1, 'Бьорн сам — 1⚔️ как знамя Войны');
+    const bj = () => E.prodSources(S, a).filter(x => x.k === 'raidSym').reduce((t, x) => t + x.n, 0);
+    est(S, a, 'barracks'); eq(bj(), 0, 'Бьорн: 1 Набег — 0⚔️');
+    est(S, a, 'barracks', 'outpost'); eq(bj(), 1, 'Бьорн: 2 Набега — +1⚔️'); eq(E.prod(S, a).war, w1 + 2 + 1, 'Бьорн: 2 Набега — +1⚔️ (и ещё по ⚔️ с самих Набегов)');
+    est(S, a, 'barracks', 'outpost', 'barracks'); eq(bj(), 1, 'Бьорн: 3 Набега — всё ещё +1⚔️');
+    est(S, a, 'barracks', 'outpost', 'barracks', 'outpost'); eq(bj(), 2, 'Бьорн: 4 Набега — +2⚔️');
+    a.estates[0].ruined = true; eq(bj(), 1, 'Бьорн: Набег в руинах не в счёт');
+    ok(/каждые 2 ваших/.test(CardFX.mods(D.BAN.halvdan.mods).map(x => x.c || '').join(' ')), 'Бьорн: значок на карте — «за каждые 2 ваших Набега»'); }
   { // Толкователь снов при дворе: вещий сон — 2 верхние карты: сверху или под низ
     const S = mk(), [a] = S.players; a.seats = ['dreamer']; a.deck = ['herald', 'tax', 'collector', 'scribe']; let seen = null; ans = (q) => (q.type === 'dream' ? (seen = q, [0]) : null);
     await startGain(S, a); ok(seen && seen.cards[0] === 'scribe' && seen.cards[1] === 'collector', 'Вещий сон: видны 2 верхние карты');
@@ -438,7 +446,13 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { const S = mk(), [a] = S.players; a.house = 'serpent'; est(S, a, 'barracks'); const g0 = a.gold; await T.resolveRoll(S, a, 4); eq(a.gold - g0, 3, 'Змеи: свой Набег на своём броске, из банка, +1'); }
   /* убрано: карта или правило изменены */
   /* убрано: карта удалена */
-  { const S = mk(), [a, b] = S.players; b.greats = ['edward']; est(S, b, 'shop'); eq(E.capturable(S, b, a).length + E.destroyable(S, b).length, 0, 'Эдуард: нельзя захватить и разрушить'); }
+  { // Лорд-протектор Эдуард (v10.26): 🧱 Стены +10 вместо неприкосновенности; Набеги и Твердыни — на 2🪙 меньше, как было
+    const S = mk(), [a, b] = S.players; est(S, b, 'shop'); const w0 = E.walls(S, b), g0 = E.guardOf(S, b), d0 = E.siegeOdds(S, a, b, 3).D, v0 = E.prod(S, b).war; b.greats = ['edward'];
+    eq(E.walls(S, b) - w0, 10, 'Эдуард: 🧱 Стены +10'); eq(E.guardOf(S, b) - g0, 10, 'Эдуард: и против шпионов +10 — целиком, не вполовину, как замок');
+    eq(E.siegeOdds(S, a, b, 3).D - d0 - (E.prod(S, b).war - v0), 10, 'Эдуард: оборона от нападения +10 (и ещё ⚔️ самого знамени Войны)'); eq(E.mods(S, b).raidShield, 2, 'Эдуард: Набеги и Твердыни забирают на 2🪙 меньше');
+    ok(E.capturable(S, b, a).length > 0, 'Эдуард: владения больше не неприкосновенны — захват возможен, но против 🧱+10');
+    ok(E.siegeOdds(S, a, b, 3).p === 0, 'Эдуард: обычное нападение (+3⚔️) против 🧱+10 не проходит');
+    big(a); ok(E.siegeOdds(S, a, b, 0).p > 0.9, 'Эдуард: очень сильное нападение всё же проходит — это Стены, а не неуязвимость'); }
   { const S = mk(), [a] = S.players; a.vassals = ['baltazar']; eq(E.marketPrice(S, a, 1), 1, 'Бальтазар: рынок −1, но не дешевле 1'); eq(E.marketPrice(S, a, 3), 2, 'Бальтазар: 3 → 2'); }
   /* убрано: карта или правило изменены */
   { const S = mk(), [a] = S.players; a.house = 'lion'; a.turn.rolled = true; S.courtRow = ['scribe']; await E.buy(S, a, 'court', 0); ok(a.hand.includes('scribe'), 'Львы: купленная карта двора — сразу в руку'); }
@@ -1022,10 +1036,16 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { // Восход: 1 карта; есть вера — ещё по карте за каждую ступень
     const S = mk(), [a] = S.players; await fx(S, a, D.COURT.sun_dawn.fx); eq(a.hand.length, 1, 'Восход без веры: 1 карта');
     a.faiths = ['seer']; const st = E.faithStage(S, a); await fx(S, a, D.COURT.sun_dawn.fx); eq(a.hand.length, 1 + 1 + st, `Восход с верой на ${st} ступени: ещё ${1 + st}`); }
-  { // Святое перемирие: до своего хода — ни нападений, ни шпионов
-    const S = mk(), [a, b] = S.players; await fx(S, a, D.COURT.sun_truce.fx); ok(a.sanctum && !E.targetsOf(S, b).includes(a), 'Святое перемирие: соперник не может выбрать вас целью');
-    big(b); const s0 = b.stats.sieges; await T.applyFx(S, b, [['siege', 2]]); eq(b.stats.sieges, s0, 'Святое перемирие: нападения нет');
-    await T.startOfTurn(S, a); ok(!a.sanctum, 'Святое перемирие кончилось в начале своего хода'); }
+  { // Святое перемирие (v10.26): до своего следующего хода 🧱 Стены +10 (было — неприкосновенность: ни нападений, ни шпионов)
+    const S = mk(), [a, b] = S.players; const w0 = E.walls(S, a), g0 = E.guardOf(S, a); await fx(S, a, D.COURT.sun_truce.fx);
+    eq(E.walls(S, a) - w0, 10, 'Святое перемирие: 🧱 Стены +10'); eq(E.guardOf(S, a) - g0, 10, 'Святое перемирие: и против шпионов, проклятий и козней +10');
+    ok(E.targetsOf(S, b).includes(a), 'Святое перемирие: целью выбрать можно — защищают Стены');
+    eq(E.spyInfo(S, b, a, 3).p, 0, 'Святое перемирие: обычный шпионаж (+3🔗) не проходит');
+    ans = null; const s1 = b.stats.sieges; await T.applyFx(S, b, [['siege', 2]]); eq(b.stats.sieges, s1, 'бот не нападает при шансе 0%');
+    eq(await E.Bot.decide(S, b, { type: 'target', kind: 'spy', effect: 'steal', param: 3, options: [{ i: a.i, p: 0, A: 3, G: 20 }] }), null, 'бот не шпионит при шансе 0%');
+    big(b); const s0 = b.stats.sieges; await T.applyFx(S, b, [['siege', 2]]); eq(b.stats.sieges, s0 + 1, 'Святое перемирие: очень сильное нападение всё же случается');
+    await T.startOfTurn(S, a); eq(E.walls(S, a), w0, 'Святое перемирие кончилось в начале своего хода — Стены как были');
+    a.sanctum = true; eq(E.walls(S, a) - w0, 10, 'сохранение до 10.26 (перемирие = true) — тоже 🧱 +10'); }
   // ---- способности Домов и наследники ----
   { // Озарение (Солнце): с верой в начале хода карта
     const S = mk(['sun', 'tB']), [a] = S.players; a.hand = []; await T.startOfTurn(S, a); eq(a.hand.length, 0, 'Озарение: без веры карты нет');

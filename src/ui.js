@@ -54,7 +54,7 @@
   const LINKS = (typeof window !== 'undefined' && window.PRETENDENTY_LINKS) || { tutorial: 'https://claude.ai/artifact/WNWYKTBRrNXw52Xu4i5yim', catalog: 'https://claude.ai/artifact/CHiCATm6NWdmUw7e3e1rku' };
   // путь к картинке: в отдельной сборке картинки встроены в файл, ASSET_URL отдаёт их адрес
   const IMG = (p) => (typeof ASSET_URL === 'function' ? ASSET_URL(p) : p);
-  const VERSION = '10.25'; // «Вражда» разделена на четыре модуля: Осады, Шпионаж, Беды, Твердыни (решение владельца); Каменная стена — при Осадах, Шпионаже или Бедах
+  const VERSION = '10.26'; // Бьорн Секира — +1⚔️ за каждые 2 Набега; Лорд-протектор Эдуард и Святое перемирие — 🧱 Стены +10 вместо неприкосновенности (решение владельца)
   const TUT_SEED = 140; // базовые правила, Дом Оленя против Дома Змея: первая рука — Подать, Подать, Сборщик податей; первый бросок 4
 
   const app = document.getElementById('app');
@@ -347,7 +347,7 @@
         else if (d.t === ME) toast(`🌹 ${esc(H(S.players[d.a]).short)}: Подмена — забрали у вас ${cn(d.take)}, дали ${cn(d.give)}`, 4800);
         break;
       }
-      case 'sanctum': if (d.p !== ME) toast(`🕊 ${esc(H(S.players[d.p]).short)}: Святое перемирие — до их хода на них не нападают и не шпионят`, 4200); break;
+      case 'sanctum': if (d.p !== ME) toast(`🕊 ${esc(H(S.players[d.p]).short)}: Святое перемирие — до их хода 🧱 Стены +${d.walls || 10}`, 4200); break;
       case 'sleep': if (d.p !== ME) toast(`🌙 ${esc(H(S.players[d.p]).short)}: Спячка — без броска, +${d.gold}🪙`, 3600); break;
       case 'landUp': if (d.p !== ME) { const e = S.players[d.p].estates.find(x => x.uid === d.uid); if (e) toast(`🍯 ${esc(H(S.players[d.p]).short)}: «${esc(D.ESTATES[e.id].name)}» теперь приносит на ${d.up}🪙 больше`, 3600); } break;
       case 'swapEstate': if (d.p !== ME) toast(`⇄ ${esc(H(S.players[d.p]).short)}: Меняла — «${esc(D.ESTATES[d.give].name)}» на рынок, себе «${esc(D.ESTATES[d.take].name)}»`, 4200); break;
@@ -3220,7 +3220,8 @@
     h += `<div class="sec-h"><h3>Значки</h3><span>правила, которые работают сами</span></div><div class="rtiles">${ruleTiles(p)}</div>`;
     if (modOn('balance')) h += `<div class="sec-h"><h3>Общий стол</h3><span>Зависть и поддержка</span></div><div class="pgrid mini">${balanceCards().join('')}</div>`;
     const m = E.mods(S, p), sg = modOn('sieges'), sp = spyModOn();
-    if (sg || sp) h += `<div class="sec-h"><h3>Оборона</h3><span>${sg && sp ? 'против нападений и шпионов' : sg ? 'против нападений' : 'против шпионов'}</span></div><dl class="kv">${sg ? `<dt>Против захвата и разрушения</dt><dd>⚔️ ${pr.war} + 🧱 ${E.walls(S, p)}${(m.defense || 0) + (m.shield || 0) ? ` + ${(m.defense || 0) + (m.shield || 0)} (свойства)` : ''} + кубик${m.captureImmune ? '. Ваши владения нельзя захватить и разрушить' : ''}</dd>` : ''}${sp ? `<dt>Против шпиона</dt><dd>🔗 ${pr.int} + 🧱 ${E.spyWalls(S, p)}${E.spyWalls(S, p) < E.walls(S, p) ? ' (замок — вполовину)' : ''}${(m.guard || 0) + (m.shield || 0) ? ` + ${(m.guard || 0) + (m.shield || 0)} (свойства)` : ''} + кубик</dd>` : ''}</dl>`;
+    const truceTxt = p.sanctum ? ` (Святое перемирие +${p.sanctum === true ? 10 : p.sanctum} до хода)` : ''; // v10.26
+    if (sg || sp) h += `<div class="sec-h"><h3>Оборона</h3><span>${sg && sp ? 'против нападений и шпионов' : sg ? 'против нападений' : 'против шпионов'}</span></div><dl class="kv">${sg ? `<dt>Против захвата и разрушения</dt><dd>⚔️ ${pr.war} + 🧱 ${E.walls(S, p)}${truceTxt}${(m.defense || 0) + (m.shield || 0) ? ` + ${(m.defense || 0) + (m.shield || 0)} (свойства)` : ''} + кубик${m.captureImmune ? '. Ваши владения нельзя захватить и разрушить' : ''}</dd>` : ''}${sp ? `<dt>Против шпиона</dt><dd>🔗 ${pr.int} + 🧱 ${E.spyWalls(S, p)}${E.spyWalls(S, p) < E.walls(S, p) ? ' (замок — вполовину)' : ''}${truceTxt}${(m.guard || 0) + (m.shield || 0) ? ` + ${(m.guard || 0) + (m.shield || 0)} (свойства)` : ''} + кубик</dd>` : ''}</dl>`;
     openSheet({ title: `${H(p).sigil} ${esc(H(p).name)}`, body: `<div class="oppbody">${h}</div>` });
   }
   // итог броска подробно: кто что получил и почему
@@ -3752,7 +3753,8 @@
       rows.push([`Родовой замок`, R.baseWalls || 0]);
       const g = new Map(); for (const e of q.estates) { if (e.ruined) continue; const w = D.ESTATES[e.id].walls || 0; if (w) { const k = D.ESTATES[e.id].name; const x = g.get(k) || { n: 0, v: 0 }; x.n++; x.v += w; g.set(k, x); } }
       for (const [k, x] of g) rows.push([x.n > 1 ? `${k} ×${x.n}` : k, x.v]);
-      const mw = E.mods(S, q).walls || 0; if (mw) rows.push(['свойства знамён и придворных', mw]);
+      const mw = E.mods(S, q).walls || 0; if (mw) { const ms = E.modSources(S, q, 'walls'); rows.push([ms.length ? ms.join(', ') : 'свойства знамён и придворных', mw]); }
+      if (q.sanctum) rows.push(['Святое перемирие — до своего хода', q.sanctum === true ? 10 : q.sanctum]); // v10.26
     } else if (s === 'gold') {
       const m = E.mods(S, q), dg = E.dawnGold(S, q, m), up = E.upkeepOf(q);
       for (const x of dg.src) { const mm = /^(.*) \+(\d+)$/.exec(x); rows.push(mm ? [`в начале хода: ${mm[1]}`, +mm[2]] : [x, 0]); }
