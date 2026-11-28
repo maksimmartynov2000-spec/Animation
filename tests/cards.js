@@ -5,7 +5,9 @@ const PICK = JSON.parse(process.env.PICK || '[]');
 (async () => {
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 393, height: 852 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true }); const p = await ctx.newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.addInitScript(() => { try { localStorage.setItem('velikie-doma-prefs-v1', JSON.stringify({ v2: 1, v3: 1, v10: 1, house: 'serpent', opps: 1, speed: 'slow', mods: ['lords', 'great', 'faith', 'plots', 'seats', 'balance', 'sieges', 'spy'], tut: 0, coins: false, sound: false, music: false })); } catch (e) {} });
+  // v10.22: соперник — любой Дом, кроме Розы: её Тайная канцелярия шпионит в начале её хода, и окно откупа открылось бы ещё до вашего хода
+  const OPP = ['deer', 'owl', 'wolf', 'serpent', 'bear', 'lion', 'sun'].filter(h => h !== 'serpent')[Math.floor(Math.random() * 6)];
+  await p.addInitScript((opp) => { try { localStorage.setItem('velikie-doma-prefs-v1', JSON.stringify({ v2: 1, v3: 1, v10: 1, house: 'serpent', seats: [{ type: 'bot', house: opp }], opps: 1, speed: 'slow', mods: ['lords', 'great', 'faith', 'plots', 'seats', 'balance', 'sieges', 'spy'], tut: 0, coins: false, sound: false, music: false })); } catch (e) {} }, OPP);
   await p.goto('file://' + SP + 'test-embed.html');
   await p.waitForSelector('#splash', { state: 'detached', timeout: 5000 }).catch(() => {});
   await p.click('[data-act="setup"]'); await p.waitForTimeout(400); await p.click('[data-act="start"]');
