@@ -183,11 +183,11 @@ function broker() {
   ok('Евстафий по сети: карта сброшена, новая взята', await until((S, g) => g.turn.cycled && g.hand.length === 3), JSON.stringify(await hostQ((S, g) => ({ hand: g.hand, c: g.turn.cycled }))));
   await gClick('[data-act="ex"][data-k="swap"]'); await gSheet(/какую карту отдать/); await pickG(/Писарь/); await gSheet(/какую карту взять/); await pickG(/Торговец пряностями/);
   ok('Ортензия по сети: обмен с рынком у хозяина', await until((S, g) => g.hand.includes('spicer') && S.courtRow[0] === 'scribe'), JSON.stringify(await hostQ((S, g) => ({ hand: g.hand, row: S.courtRow }))));
-  // Северин: снять с торгов с устройства гостя — карта двора уходит под низ колоды у хозяина
+  // Северин: снять с торгов с устройства гостя — карта двора замешивается в колоду у хозяина (10.24)
   await hostSet((S, g) => { g.greats = ['ortensia', 'severin']; g.turn.delisted = 0; });
   const dl = await hostQ((S) => ({ id: S.courtRow[0], name: DATA.COURT[S.courtRow[0]].name }));
   await gClick('[data-act="ex"][data-k="delist"]'); await gSheet(/что снять с торгов/); await pickG(new RegExp(dl.name));
-  ok('Северин по сети: карта снята с торгов у хозяина', await until((S, g, h, id) => g.turn.delisted === 1 && S.courtDeck[0] === id, dl.id), JSON.stringify(await hostQ((S, g) => ({ n: g.turn.delisted, bottom: S.courtDeck[0] }))) + ' ждали ' + dl.id);
+  ok('Северин по сети: карта снята с торгов у хозяина', await until((S, g, h, id) => g.turn.delisted === 1 && S.courtDeck.includes(id), dl.id), JSON.stringify(await hostQ((S, g) => ({ n: g.turn.delisted, inDeck: S.courtDeck.length }))) + ' ждали ' + dl.id);
   // Эльвира: +1🪙 во вклад с устройства гостя
   await hostSet((S, g) => { g.greats = ['ortensia', 'elvira']; g.turn.deposited = false; g.deposit = 0; g.gold = 20; });
   await gClick('[data-act="ex"][data-k="deposit"]');

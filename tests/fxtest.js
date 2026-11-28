@@ -77,8 +77,8 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { // штрафы в начале хода: Алчность — 1🪙 за каждые 5🪙; Гордыня — 1🪙 за знамя, не хватает — сколько есть
     const S = mk(), [a] = S.players; a.sins = ['sin_greed']; a.gold = 23; S.cur = 0; await E.startOfTurn(S, a);
     ok(S.log.some(x => /Алчность — −4🪙/.test(x.t || x.text || '')), 'Алчность: при 23🪙 — 4🪙 в банк');
-    const S2 = mk(), [b] = S2.players; b.vassals = ['fuller', 'grain', 'baltazar']; b.sins = ['sin_pride']; b.gold = 2; S2.cur = 0; await E.startOfTurn(S2, b);
-    ok(S2.log.some(x => /Гордыня — −2🪙/.test(x.t || x.text || '')), 'Гордыня: 3 знамени, а золота 2 — платите сколько есть'); }
+    const S2 = mk(), [b] = S2.players; b.vassals = ['fuller', 'grain', 'baltazar']; b.sins = ['sin_pride']; b.gold = 2 + 3 * D.RULES.vassalUpkeep; /* v10.24: сначала содержание вассалов */ S2.cur = 0; await E.startOfTurn(S2, b);
+    ok(S2.log.some(x => /Гордыня — −2🪙/.test(x.t || x.text || '')), 'Гордыня: 3 знамени, а после содержания золота 2 — платите сколько есть'); }
   { // Гордыня сейчас: вассал из ряда бесплатно и без действия; Заговор не пускает
     const S = mk(), [a] = S.players; a.turn.rolled = true; a.gold = 5; S.courtRow = ['sin_pride']; S.vRow = ['fuller', 'grain']; S.lRow = []; S.lDeck = []; // лордов нет: при раздаче с новыми знамёнами (10.21) бот выбирал лорда из пополненного ряда
     await E.buy(S, a, 'court', 0); ok(a.vassals.length === 1 && a.gold === 5, 'Гордыня: вассал бесплатно');
@@ -365,7 +365,7 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { const S = mk(), [a] = S.players; a.vassals = ['grain']; est(S, a, 'field'); await T.resolveRoll(S, a, 1); eq(a.gold, 22, 'Грейн: Земля +1'); }
   /* убрано: карта или правило изменены */
   /* убрано: карта удалена */
-  { const S = mk(), [a] = S.players; a.vassals = ['cornelia']; eq(await startGain(S, a), 2, 'Корнелия: +2 в начале хода'); }
+  { const S = mk(), [a] = S.players; a.vassals = ['cornelia']; eq(await startGain(S, a), 2 - D.RULES.vassalUpkeep, 'Корнелия: +2 в начале хода (и −1🪙 её содержание)'); }
   /* убрано: Знаменосец удалён */
   { const S = mk(), [a] = S.players; a.vassals = ['ilanna']; eq(E.handSize(S, a), 4, 'Иланна: рука 4'); }
   { const S = mk(), [a, b] = S.players; a.house = 'bear'; est(S, a, 'field'); const g0 = a.gold; await T.resolveRoll(S, b, 1); eq(a.gold - g0, 2, 'Медведи: Земля приносит +1 (и в чужой ход)'); }
@@ -495,7 +495,7 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { const S = E.newGame({ seed: 4, modules: ['lords', 'sieges'], players: [{ house: 'deer' }, { house: 'owl' }] }); ok(S.holdDeck.length + S.holdRow.length > 0, 'с «Осадами» Твердыни есть'); }
   /* убрано */
 
-  // содержание лордов: 2🪙 каждый в начале хода; не хватает — лишний уходит под низ колоды
+  // содержание лордов: 2🪙 каждый в начале хода; не хватает — лишний уходит и замешивается в колоду (10.24)
   /* убрано */
 
   // новые эффекты: смута дорожит содержание лордов, Звездочёт даёт ход на дубле, Летописец возвращает из сброса
@@ -533,7 +533,7 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { const S = mk(), [a] = S.players; a.faiths = ['star']; ok(!!E.faithBan(S, a, 'attack'), 'Звёздный Свет: нападать нельзя'); }
   { const S = mk(), [a] = S.players; a.faiths = ['grain']; a.temp.faith = 5; a.turn.rolled = true; a.turn.buysUsed = 1; S.estateRow = ['pasture']; ok((await E.buy(S, a, 'estate', 0)).ok, 'Колос III: Землю без действия'); S.estateRow = ['shop']; ok(!(await E.buy(S, a, 'estate', 0)).ok, 'Колос III: Ремесло — нет'); }
   { const S = mk(), [a, b] = S.players; a.faiths = ['harvest']; a.temp.faith = 5; est(S, a, 'shop'); const g0 = a.gold; await T.resolveRoll(S, b, 4); eq(a.gold - g0, 2, 'Урожай III: Ремесло в чужой ход (Лавка 1 + ступень I)'); }
-  { const S = mk(['tA', 'tB'], FULL.filter(k => k !== 'balance')), [a] = S.players; a.faiths = ['blade']; a.temp.faith = 5; a.vassals = ['gunnar', 'ida', 'sabina', 'emmerich']; S.cur = 0; const g0 = a.gold; await E.startOfTurn(S, a); eq(a.gold - g0, 2, 'Клинок III: +1🪙 за каждые 2 знамени'); }
+  { const S = mk(['tA', 'tB'], FULL.filter(k => k !== 'balance')), [a] = S.players; a.faiths = ['blade']; a.temp.faith = 5; a.vassals = ['gunnar', 'ida', 'sabina', 'emmerich']; S.cur = 0; const g0 = a.gold; await E.startOfTurn(S, a); eq(a.gold - g0, 2 - 4 * D.RULES.vassalUpkeep, 'Клинок III: +1🪙 за каждые 2 знамени (и содержание 4 вассалов)'); }
   { const S = mk(), [a] = S.players; a.faiths = ['cathedral']; a.temp.faith = 3; S.cur = 0; const g0 = a.gold; await E.rite(S, a, 'cathedral'); eq(a.gold - g0, 2, 'Месса: +1🪙 за ступень (II)'); }
   { const S = mk(), [a] = S.players; a.faiths = ['cathedral']; eq(await startGain(S, a), 2, 'Собор: +2 в начале хода, десятины больше нет'); }
   /* убрано */
@@ -568,7 +568,7 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { const S = mk(), [a, b] = S.players; a.temp.int = 60; b.lords = []; ans = (q) => (q.type === 'target' ? 1 : null); const g = a.gold, gb = b.gold; await fx(S, a, D.COURT.courtesan.fx); ok(a.gold === g && b.gold === gb, 'Куртизанка: лордов нет — ничего'); ans = null; }
 
   // ================= F. общий стол, содержание =================
-  { const S = mk(), [a, b] = S.players; a.vassals = ['ida', 'gunnar', 'sabina']; eq(await startGain(S, a, true), -3, 'Зависть: единственный лидер платит 1 за каждое знамя отрыва'); eq(await startGain(S, b, true), 1, 'Поддержка: отстаёт на 2+ — +1'); }
+  { const S = mk(), [a, b] = S.players; a.vassals = ['ida', 'gunnar', 'sabina']; eq(await startGain(S, a, true), -3 - 3 * D.RULES.vassalUpkeep, 'Зависть: единственный лидер платит 1 за каждое знамя отрыва (и содержание 3 вассалов)'); eq(await startGain(S, b, true), 1, 'Поддержка: отстаёт на 2+ — +1'); }
   /* убрано */
 
   // ================= G. запас знамён и знамёна v7 =================
@@ -581,14 +581,14 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
       if (ls.includes('great')) ok(g >= R0.needG * P, `${tag} великих ${g}: хватит ${P} игрокам по ${R0.needG}`);
     } }
   { const S = mk(), [a] = S.players; const p0 = E.marketPrice(S, a, 5, true); a.vassals = ['ferran']; eq(p0 - E.marketPrice(S, a, 5, true), 2, 'Ферран: карты двора на 2 дешевле'); eq(E.marketPrice(S, a, 5, false), 5, 'Ферран: владения — без скидки'); }
-  { const S = mk(), [a] = S.players; a.vassals = ['frida']; est(S, a, 'bakery', 'shop', 'field'); eq(await startGain(S, a), 1, 'Фрида: 2 Ремесла — +1'); est(S, a, 'bakery', 'shop', 'bakery', 'harvesttemple'); eq(await startGain(S, a), 2, 'Фрида: 4 Ремесла — +2'); }
+  { const S = mk(), [a] = S.players; a.vassals = ['frida']; est(S, a, 'bakery', 'shop', 'field'); eq(await startGain(S, a), 1 - D.RULES.vassalUpkeep, 'Фрида: 2 Ремесла — +1 (и −1🪙 её содержание)'); est(S, a, 'bakery', 'shop', 'bakery', 'harvesttemple'); eq(await startGain(S, a), 2 - D.RULES.vassalUpkeep, 'Фрида: 4 Ремесла — +2 (и −1🪙 содержание)'); }
   { let seen = { y: 0, n: 0 };
     for (let sd = 1; sd < 40 && !(seen.y && seen.n); sd++) { const S = mk(); S.seed = sd; const [a] = S.players; a.vassals = ['orvin']; const g0 = a.gold; await E.roll(S, a, 2); const one = S.lastRoll.vals.includes(1); seen[one ? 'y' : 'n']++; eq(a.gold - g0, one ? 3 : 0, `Орвин: ${S.lastRoll.vals.join('+')}`); } }
   { const S = mk(['tA', 'tB']), [a, b] = S.players; est(S, b, 'barracks'); a.vassals = ['olaf']; const g0 = a.gold; await T.resolveRoll(S, a, 4); eq(g0 - a.gold, 0, 'Олаф: чужой Набег (2🪙) берёт на 2 меньше'); }
   { const S = mk(['tA', 'tB']), [a, b] = S.players; est(S, a, 'barracks'); a.vassals = ['vigo']; S.cur = 1; await T.resolveRoll(S, b, 4); eq(a.hand.length, 1, 'Вигго: сработал Набег — карта'); }
   { const S = mk(['tA', 'tB']), [a, b] = S.players; a.vassals = ['rosalinda']; S.cur = 1; b.turn.rolled = true; b.gold = 50; S.vRow = ['fuller']; const g0 = a.gold; ok((await E.hire(S, b, 'fuller')).ok, 'соперник нанял вассала'); eq(a.gold - g0, 1, 'Розалинда: +1🪙'); }
   { const S = mk(['tA', 'tB']), [a, b] = S.players; est(S, a, 'pasture'); a.vassals = ['mirra']; let g0 = a.gold; await T.resolveRoll(S, b, 2); eq(a.gold - g0, 3, 'Мирра: Земля в чужой ход 1+2'); g0 = a.gold; await T.resolveRoll(S, a, 2); eq(a.gold - g0, 1, 'Мирра: в свой ход — без прибавки'); }
-  { const S = mk(), [a] = S.players; a.vassals = ['benedikt']; est(S, a, 'pasture', 'field', 'runestone'); eq(await startGain(S, a), 3, 'Бенедикт: 3 провинции — +3'); est(S, a, 'pasture', 'field', 'runestone', 'orchard'); eq(await startGain(S, a), 4, 'Бенедикт: 4 провинции — +4'); }
+  { const S = mk(), [a] = S.players; a.vassals = ['benedikt']; est(S, a, 'pasture', 'field', 'runestone'); eq(await startGain(S, a), 3 - D.RULES.vassalUpkeep, 'Бенедикт: 3 провинции — +3 (и −1🪙 его содержание)'); est(S, a, 'pasture', 'field', 'runestone', 'orchard'); eq(await startGain(S, a), 4 - D.RULES.vassalUpkeep, 'Бенедикт: 4 провинции — +4 (и −1🪙 содержание)'); }
   for (const [id, pv, est1, n] of [['hagen', 'N', 'pasture', 2], ['theodor', 'E', 'runestone', 5], ['rowena', 'W', 'apiary', 1], ['sebastian', 'S', 'field', 1]]) {
     const S = mk(['tA', 'tB'], ['lords']), [a, b] = S.players; est(S, a, est1); a.lords = [id]; const inc = D.ESTATES[est1].inc, g0 = a.gold; await T.resolveRoll(S, b, n); eq(a.gold - g0, inc + 2, `${D.BAN[id].name}: владение провинции ${pv} — +2`); }
   { const S = E.newGame({ seed: 7, modules: ['lords', 'sieges', 'spy'], players: [{ house: 'deer' }, { house: 'owl' }], first: 0 }), a = S.players[0]; const all = [...S.estateDeck, ...S.estateRow];
@@ -798,7 +798,7 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     const S = mk(), [a] = S.players; a.vassals = ['klara']; a.gold = 5;
     ok(E.takeLoan(S, a).ok && a.gold === 8 && a.loan === 4, 'Клара: +3🪙 в долг, отдать 4🪙'); ok(!E.takeLoan(S, a).ok, 'второй долг за ход нельзя');
     a.gold = 10; await T.startOfTurn(S, a); ok(a.loan === 0 && S.log.some(x => /долг Кларе Меняле — −4🪙/.test(x.t)), 'в начале хода долг −4🪙');
-    a.loan = 4; a.gold = 3; const n0 = S.log.length; await T.startOfTurn(S, a); ok(a.loan === 0 && S.log.slice(n0).some(x => /долг Кларе Меняле — −3🪙 \(из 4🪙/.test(x.t)), 'нет 4🪙 — списали сколько есть (3🪙), остаток прощён');
+    a.loan = 4; a.gold = 3 + D.RULES.vassalUpkeep; /* v10.24: сначала 1🪙 содержания Клары, на долг остаётся 3🪙 */ const n0 = S.log.length; await T.startOfTurn(S, a); ok(a.loan === 0 && S.log.slice(n0).some(x => /долг Кларе Меняле — −3🪙 \(из 4🪙/.test(x.t)), 'нет 4🪙 — списали сколько есть (3🪙), остаток прощён');
     a.loan = 4; a.gold = 9; const n1 = S.log.length; await T.startOfTurn(S, a); ok(a.loan === 0 && S.log.slice(n1).some(x => /долг Кларе Меняле — −4🪙$/.test(x.t)), 'больше 4🪙 не берут', S.log.slice(n1).map(x => x.t).join(' | ')); }
   { // Сводня Мелания: соперник взял грех — 4🪙 у него
     const S = mk(), [a, b] = S.players; b.vassals = ['melania']; a.turn.rolled = true; a.gold = 10; S.courtRow = ['sin_gluttony']; const gb = b.gold;
@@ -852,14 +852,36 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     S.courtRow = ['scribe', 'spicer', 'herald', 'collector']; S.courtDeck = ['miller', 'archivist']; S.estateRow = ['field', 'bakery', 'pasture', 'barracks']; S.estateDeck = ['smithy'];
     ok(!!E.delistBlock(S, b) && !E.delistBlock(S, a), 'с торгов: без Северина нельзя, с ним — можно');
     let r = E.delistCard(S, a, 'court', 1, 'spicer');
-    ok(r.ok && !S.courtRow.includes('spicer') && S.courtDeck[0] === 'spicer' && S.courtRow.length === 4 && r.now === 'archivist', 'Торговец пряностями — под низ колоды двора, вместо него — верхняя карта колоды');
+    ok(r.ok && !S.courtRow.includes('spicer') && S.courtDeck.includes('spicer') && S.courtRow.length === 4 && r.now === 'archivist', 'Торговец пряностями замешан в колоду двора (с 10.24), вместо него — верхняя карта колоды');
     r = E.delistCard(S, a, 'estate', 0, 'field');
-    ok(r.ok && S.estateRow.includes('smithy') && S.estateDeck[0] === 'field', 'второе — владение: Поле под низ, вышла Кузница');
+    ok(r.ok && S.estateRow.includes('smithy') && S.estateDeck.includes('field'), 'второе — владение: Поле замешано в колоду, вышла Кузница');
     ok(!E.delistCard(S, a, 'court', 0, 'scribe').ok && E.delistLeft(S, a) === 0, 'третью за ход нельзя');
     await T.startOfTurn(S, a); eq(E.delistLeft(S, a), 2, 'новый ход — снова две');
     S.courtDeck = []; S.estateDeck = []; S.holdDeck = []; eq(E.delistBlock(S, a), 'Снимать нечего: колоды рынка пусты', 'колоды пусты — снимать нечего');
     const S2 = mk(), [c] = S2.players; c.greats = ['severin']; S2.cur = 0; S2.courtRow = ['scribe', 'spicer', 'herald', 'collector']; S2.courtDeck = ['miller'];
-    ok(E.delistCard(S2, c, 'court', 0, 'spicer').ok && S2.courtDeck[0] === 'spicer', 'номер устарел — карта находится по имени'); }
+    ok(E.delistCard(S2, c, 'court', 0, 'spicer').ok && S2.courtDeck.includes('spicer') && !S2.courtRow.includes('spicer'), 'номер устарел — карта находится по имени'); }
+  // ---------- v10.24: содержание всех знамён (вассал 1🪙, лорд 2🪙, великий 4🪙) и замешивание в колоды ----------
+  { const S = mk(), [a] = S.players; a.vassals = ['ida', 'gunnar']; a.lords = ['anselm']; a.greats = ['jacob']; a.gold = 20;
+    eq(E.upkeepOf(a), 1 + 1 + 2 + 4, 'содержание: 2 вассала + лорд + великий = 1 + 1 + 2 + 4');
+    await T.payUpkeep(S, a); eq(a.gold, 12, 'в начале хода списали 8🪙');
+    a.faiths = ['blade']; a.miracles = ['blade_a']; ok(E.miraclesOn(a).includes('blade_a') && E.upkeepOf(a) === 4, '«Верность до гроба»: каждое знамя — 1🪙 (вассалы и так по 1🪙)'); }
+  { const S = mk(), [a] = S.players; a.vassals = ['ida', 'gunnar', 'sabina']; a.gold = 2; S.vDeck = ['fuller'];
+    ans = (q) => (q.type === 'upkeep' ? ['ida', 'gunnar'] : null); await T.payUpkeep(S, a); ans = null;
+    ok(a.vassals.join() === 'ida,gunnar' && a.gold === 0 && S.vDeck.includes('sabina') && S.vDeck.length === 2, 'не хватает: оставили двух вассалов, третий замешан в колоду вассалов'); }
+  { // Смута — только если есть великие лорды (как на картах): вассалы и лорды, которые с 10.24 тоже платят, её не включают
+    const spyRiot = async (S, a) => { a.temp.int = 99; ans = (q) => (q.type === 'target' ? 1 : q.type === 'buyoff' ? false : null); await T.doSpy(S, a, 1, 'riot', 3, {}); ans = null; };
+    const S = mk(), [a, b] = S.players; b.vassals = ['ida']; b.lords = ['anselm']; await spyRiot(S, a);
+    ok(!(b.upkeepExtra > 0), 'Смута: у цели вассал и лорд, великих нет — ничего');
+    const S2 = mk(), [c, d] = S2.players; d.greats = ['jacob']; await spyRiot(S2, c);
+    eq(d.upkeepExtra, 3, 'Смута: у цели великий лорд — содержание на 3🪙 дороже'); }
+  { // обновление ряда в новом круге: ушедшая карта замешивается в колоду и сразу не возвращается
+    const S = mk(), [a] = S.players; S.estateRow = ['field', 'bakery', 'pasture', 'barracks']; S.estateDeck = ['smithy', 'mine', 'shop', 'orchard', 'granary']; S.refreshDue = ['estate'];
+    await T.refreshRows(S);
+    ok(!S.estateRow.includes('field') && S.estateRow.length === 4 && S.estateDeck.includes('field') && S.estateDeck.length === 5, 'новый круг: Поле ушло из ряда и замешано в колоду, ряд добран');
+    let moved = false; for (let k = 0; k < 8 && !moved; k++) { const S2 = mk(); S2.seed = 1000 + k * 77; S2.estateRow = ['field', 'bakery', 'pasture', 'barracks']; S2.estateDeck = ['smithy', 'mine', 'shop', 'orchard', 'granary']; S2.refreshDue = ['estate']; await T.refreshRows(S2); if (S2.estateDeck[0] !== 'field') moved = true; }
+    ok(moved, 'колода перемешивается: ушедшая карта не всегда под низом'); }
+  { // цены содержания на картах
+    ok(typeof E.upkeepOf === 'function' && D.BAN.ida.upkeep === 1 && D.BAN.anselm.upkeep === 2 && D.BAN.jacob.upkeep === 4, 'на картах: вассал 1🪙, лорд 2🪙, великий 4🪙'); }
   { // Банкирша Эльвира (правки 10.21): раз в ход 1🪙 во вклад; в начале каждого хода +столько, сколько во вкладе; уйдёт Эльвира — вклад пропадёт
     const S = mk(), [a, b] = S.players; a.greats = ['elvira']; a.gold = 10; S.cur = 0;
     ok(!!E.depositBlock(S, b), 'вклад: без Эльвиры нельзя');
@@ -876,6 +898,10 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { // ошибка с 10.18: бот оценивал игрока с Похотью и «Щитом ордена» в колоде — оценка броска звала саму себя без конца (переполнение стека)
     const S = mk(), [a, b] = S.players; est(S, a, 'barracks', 'outpost'); b.sins = ['sin_lust']; b.deck = ['ordershield', 'tax', 'tax']; b._mode = null;
     let fine = true; try { E.Bot.mode(S, b); E.Bot.avgPower(S, b); } catch (e) { fine = false; } ok(fine, 'Похоть + «Щит ордена»: оценка броска без бесконечной рекурсии'); }
+  { // ошибка в 10.22: Медведь с Похотью и «Спячкой» — сила Спячки считает бросок, бросок с Похотью — среднюю силу карт, а та — снова Спячку
+    const S = mk(['bear', 'rose']), [a] = S.players; a.sins = ['sin_lust']; a.hand = ['bear_sleep', 'tax']; a.deck = ['bear_sleep', 'tax', 'tax']; a._mode = null; a.turn.rolled = false;
+    let v = null; try { v = E.Bot.power(S, a, 'bear_sleep', 1); E.Bot.avgPower(S, a); E.Bot.rollEV(S, a, 1); } catch (e) { v = e.message; }
+    ok(typeof v === 'number' && isFinite(v), 'Похоть + «Спячка»: бот оценивает карты без бесконечного круга — ' + v); }
 
   // ================= v10.22: Дома — стартовые владения, фамильные карты, способности Розы и Солнца, наследники =================
   const RR = (S, who, r, ro) => T.resolveRoll(S, who, r, ro || {});
