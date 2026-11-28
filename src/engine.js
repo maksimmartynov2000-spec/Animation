@@ -669,13 +669,6 @@ const Engine = (() => {
         case 'drawPerSym': { const n = Math.floor(sym(S, p, a) / b); if (n) drawCards(S, p, n); else log(S, `   ${D.SYM[a]} меньше ${b} — карт нет`, p.i, 'quiet'); break; } // Мудрость предков
         case 'ownRoll': await ownRoll(S, p); break; // Астролябия
         case 'goldPerCapture': { const n = p.stats.captured || 0; p.gold += n ? a * n : b; if (!n) log(S, `   Захватов за партию пока нет — +${b}🪙`, p.i, 'quiet'); break; } // Трофеи
-        case 'levyRaid': { // Абордаж: самый богатый соперник отдаёт по a🪙 за каждый ваш Набег
-          const n = p.estates.filter(e => !e.ruined && ES(e).t === 'raid').length, o = richest(S, p, x => x.gold > 0);
-          if (!n || !o) { log(S, `   Абордаж: ${n ? 'у соперников нет золота' : 'Набегов нет — брать нечего'}`, p.i, 'quiet'); break; }
-          const amt = Math.min(a * n, o.gold); o.gold -= amt; p.gold += amt;
-          log(S, `   Абордаж: ${nm(p)} забрали ${amt}🪙 у ${nmG(o)} — по ${a}🪙 за каждый Набег`, p.i, 'steal');
-          break;
-        }
         case 'raidNow': raidNow(S, p, a, b); break; // Пиратский рейд (a — сколько забирает каждый Набег, если задано; b — только один лучший Набег)
         case 'landUp': await landUp(S, p, a); break; // Медовые соты
         case 'sleep': { // Спячка: до броска — в этот ход без броска, +a🪙 за каждую вашу Землю
@@ -3076,8 +3069,7 @@ const Engine = (() => {
             case 'drawPerSym': v += Math.floor(sym(S, p, a) / b) * avg; break;
             case 'ownRoll': v += Math.max(this.ownRollEV(S, p, 1), this.ownRollEV(S, p, 2)); break;
             case 'goldPerCapture': v += (p.stats.captured || 0) ? a * p.stats.captured : b; break;
-            case 'levyRaid': v += a * p.estates.filter(e => !e.ruined && ES(e).t === 'raid').length * this.zs(S); break;
-            case 'raidNow': { const m = mods(S, p); v += opps(S, p).reduce((t, o) => t + p.estates.filter(e => ES(e).t === 'raid' && !e.ruined).reduce((u, e) => u + Math.min(ES(e).inc + (m.redBonus || 0), Math.max(1, o.gold)), 0), 0) * this.zs(S); break; }
+            case 'raidNow': { const m = mods(S, p); v += opps(S, p).reduce((t, o) => t + p.estates.filter(e => ES(e).t === 'raid' && !e.ruined).reduce((u, e) => u + Math.min(a != null ? a : ES(e).inc + (m.redBonus || 0), Math.max(1, o.gold)), 0), 0) * this.zs(S); break; } // a — «по 1🪙» (v10.22)
             case 'landUp': v += p.estates.some(e => ES(e).t === 'land') ? 0.6 * this.horizon(S) * 0.45 : 0; break;
             case 'sleep': v += p.turn && p.turn.rolled ? 0 : Math.max(0, a * p.estates.filter(e => !e.ruined && ES(e).t === 'land' && !ES(e).bad).length - this.rollEV(S, p, this.diceCount(S, p))); break;
             case 'goldPerPlay': v += a * ((p.turn && p.turn.played ? p.turn.played.length : 0) + 1.5); break;

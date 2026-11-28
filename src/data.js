@@ -134,13 +134,13 @@ const DATA = (() => {
     exchange: { name: 'Меняльная контора', n: [3], t: 'land', per: 'trade', perN: 1, cost: 2, p: 'S', house: 'deer' },
     fairsquare: { name: 'Ярмарочная площадь', n: [4, 5], t: 'land', inc: 2, cost: 3, p: 'S', sym: 'trade', walls: 2, house: 'deer' },
     herbgarden: { name: 'Аптекарский огород', n: [1], t: 'land', inc: 1, draw: 1, cost: 1, p: 'E', house: 'owl' },
-    scriptorium: { name: 'Скрипторий', n: [2, 3], t: 'craft', per: 'sci', perN: 1, perDiv: 2, draw: 1, cost: 2, p: 'E', house: 'owl' },
-    observatory: { name: 'Звездочётная башня', n: [4, 5], t: 'craft', inc: 0, draw: 2, cost: 3, p: 'E', sym: 'sci', walls: 2, house: 'owl' },
+    scriptorium: { name: 'Скрипторий', n: [2, 3], t: 'craft', per: 'sci', perN: 1, draw: 1, cost: 2, p: 'E', house: 'owl' },
+    observatory: { name: 'Звездочётная башня', n: [4, 5], t: 'craft', inc: 2, draw: 2, cost: 3, p: 'E', sym: 'sci', walls: 2, house: 'owl' },
     huntground: { name: 'Охотничьи угодья', n: [6, 8], t: 'land', inc: 2, cost: 1, p: 'N', house: 'wolf' },
     armory: { name: 'Оружейная', n: [9, 10, 11], t: 'craft', per: 'war', perN: 1, temp: { war: 1 }, cost: 2, p: 'N', house: 'wolf' },
     wolfden: { name: 'Волчье логово', n: [4, 7], t: 'raid', inc: 3, cost: 3, p: 'N', sym: 'war', house: 'wolf' },
     fishvillage: { name: 'Рыбацкая деревня', n: [6], t: 'land', inc: 2, cost: 1, p: 'W', house: 'serpent' },
-    privateer: { name: 'Верфь', n: [8, 9], t: 'craft', per: 'raid', perN: 2, cost: 2, p: 'W', house: 'serpent' },
+    privateer: { name: 'Верфь', n: [8, 9], t: 'craft', per: 'raid', perN: 1, cost: 2, p: 'W', house: 'serpent' },
     piratecove: { name: 'Пиратская бухта', n: [5, 7], t: 'raid', inc: 2, cost: 3, p: 'S', sym: 'war', house: 'serpent' },
     apiary: { name: 'Пасека', n: [1, 4], t: 'land', inc: 1, cost: 1, p: 'W', house: 'bear' },
     meadery: { name: 'Ягодная поляна', n: [2, 5], t: 'land', inc: 1, cost: 2, p: 'W', house: 'bear' },
@@ -277,8 +277,8 @@ const DATA = (() => {
     owl_astro: { name: 'Астролябия', role: 'scholar', cost: 0, sig: true, fx: [['ownRoll']] },
     wolf_hunt: { name: 'Волчья охота', role: 'knight', cost: 0, sig: true, fx: [['siege', 1], ['siege', 1]] },
     wolf_trophy: { name: 'Трофеи', role: 'knight', cost: 0, sig: true, fx: [['goldPerCapture', 2, 1]] },
-    serpent_board: { name: 'Абордаж', role: 'knight', cost: 0, sig: true, fx: [['levyRaid', 1], ['gold', 1]] },
-    serpent_raid: { name: 'Пиратский рейд', role: 'knight', cost: 0, sig: true, fx: [['raidNow']] },
+    serpent_board: { name: 'Абордаж', role: 'knight', cost: 0, sig: true, fx: [['goldPerRaid', 1], ['gold', 1]] }, // v10.22: из банка, как до 10.22 (решение владельца)
+    serpent_raid: { name: 'Пиратский рейд', role: 'knight', cost: 0, sig: true, fx: [['raidNow', 1]] }, // каждый Набег — по 1🪙 с каждого соперника
     bear_honey: { name: 'Медовые соты', role: 'merchant', cost: 0, sig: true, fx: [['landUp', 1]] },
     bear_sleep: { name: 'Спячка', role: 'merchant', cost: 0, sig: true, fx: [['sleep', 2]], preRoll: true },
     lion_pride: { name: 'Прайд', role: 'merchant', cost: 0, sig: true, fx: [['goldPerPlay', 1]] },
@@ -719,8 +719,7 @@ const DATA = (() => {
       case 'drawPerSym': return `возьмите по карте за каждые ${b} ваших ${SYM[a]}`;
       case 'ownRoll': return 'бросьте кубики ещё раз — этот бросок только для вас: срабатывают ваши владения, у соперников — ничего';
       case 'goldPerCapture': return `+${a}🪙 за каждое владение, захваченное вами за партию (пока ни одного — +${b}🪙)`;
-      case 'levyRaid': return `самый богатый соперник отдаёт вам ${a}🪙 за каждый ваш 🟥 Набег`;
-      case 'raidNow': return 'ваши 🟥 Набеги срабатывают прямо сейчас — у каждого соперника';
+      case 'raidNow': return a ? `каждый ваш 🟥 Набег прямо сейчас забирает у каждого соперника ${a}🪙` : 'ваши 🟥 Набеги срабатывают прямо сейчас — у каждого соперника';
       case 'landUp': return `одна ваша 🟦 Земля до конца партии приносит на ${a}🪙 больше`;
       case 'sleep': return `до броска: в этот ход не бросайте кубики — вместо этого +${a}🪙 за каждую вашу 🟦 Землю`;
       case 'goldPerPlay': return `+${a}🪙 за каждую карту, сыгранную вами в этот ход (и эту тоже)`;

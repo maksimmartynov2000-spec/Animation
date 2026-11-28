@@ -893,14 +893,14 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
   { // Аптекарский огород: Земля на 1 — +1🪙 и карта, в ход любого игрока
     const S = mk(), [a, b] = S.players; est(S, a, 'herbgarden'); a.gold = 0;
     await RR(S, b, 1); ok(a.gold === 1 && a.hand.length === 1, 'Аптекарский огород: +1🪙 и карта в ход соперника'); }
-  { // Скрипторий: карта и +1🪙 за каждые 2 📜; Звездочётная башня: 2 карты
+  { // Скрипторий: карта и +1🪙 за каждый 📜; Звездочётная башня: +2🪙 и 2 карты (v10.22, ответ владельца 4.2 «а» + 2 карты)
     const NOU = FULL.filter(k => k !== 'unions'); // без «Союзов»: три владения одной провинции дали бы ещё значки
     const S = mk(['tA', 'tB'], NOU), [a] = S.players; est(S, a, 'scriptorium', 'observatory', 'observatory'); a.gold = 0;
-    await RR(S, a, 2); ok(a.gold === 1 && a.hand.length === 1, 'Скрипторий: 📜2 — +1🪙 и карта');
-    await RR(S, a, 4); eq(a.hand.length, 5, 'Звездочётная башня ×2 на 4: по 2 карты с каждой'); }
-  { // Оружейная: +1🪙 за ⚔️ и +1⚔️ до конца хода; Верфь: +2🪙 за каждый Набег; Голубятня: +2🪙 и +2🔗 до конца хода
+    await RR(S, a, 2); ok(a.gold === 2 && a.hand.length === 1, 'Скрипторий: 📜2 — +2🪙 и карта');
+    await RR(S, a, 4); ok(a.hand.length === 5 && a.gold === 2 + 4, 'Звездочётная башня ×2 на 4: по +2🪙 и 2 карты с каждой'); }
+  { // Оружейная: +1🪙 за ⚔️ и +1⚔️ до конца хода; Верфь: +1🪙 за каждый Набег (ответ 4.1 «б»); Голубятня: +2🪙 и +2🔗 до конца хода
     const S = mk(['tA', 'tB'], FULL.filter(k => k !== 'unions')), [a] = S.players; est(S, a, 'armory', 'wolfden', 'privateer', 'dovecote'); a.gold = 0;
-    await RR(S, a, 9); ok(a.gold === 1 + 2 + 2 && a.temp.war === 1 && a.temp.int === 2, 'на 9: Оружейная +1🪙 и +1⚔️, Верфь +2🪙, Голубятня +2🪙 и +2🔗'); }
+    await RR(S, a, 9); ok(a.gold === 1 + 1 + 2 && a.temp.war === 1 && a.temp.int === 2, 'на 9: Оружейная +1🪙 и +1⚔️, Верфь +1🪙, Голубятня +2🪙 и +2🔗'); }
   { // значки «до конца хода» гаснут у всех — Священная роща дала +2🕯 в чужой ход
     const S = mk(), [a, b] = S.players; est(S, a, 'sacredgrove'); a.gold = 0;
     await RR(S, b, 3); ok(a.temp.faith === 2 && a.gold === 0, 'Священная роща: +2🕯 до конца хода, золота нет');
@@ -949,11 +949,12 @@ const big = (p, s = 'war') => { p.temp[s] = 60; };
     await fx(S, a, D.COURT.owl_astro.fx); ans = null; ok(S.log.some(x => /Астролябия/.test(x.t)) && b.gold === 5, 'Астролябия: ещё бросок — соперник ничего не получил и не забрал'); }
   { const S = mk(), [a, b] = S.players; big(a); est(S, b, 'field', 'mine'); await fx(S, a, D.COURT.wolf_hunt.fx); eq(a.stats.sieges, 2, 'Волчья охота: два нападения подряд'); }
   { const S = mk(), [a] = S.players; a.gold = 0; await fx(S, a, D.COURT.wolf_trophy.fx); eq(a.gold, 1, 'Трофеи: захватов нет — +1🪙'); a.stats.captured = 3; await fx(S, a, D.COURT.wolf_trophy.fx); eq(a.gold, 7, 'Трофеи: 3 захвата — +6🪙'); }
-  { const S = mk(), [a, b] = S.players; est(S, a, 'wolfden', 'piratecove'); a.gold = 0; b.gold = 10; await fx(S, a, D.COURT.serpent_board.fx); ok(a.gold === 3 && b.gold === 8, 'Абордаж: самый богатый отдал 1🪙 за каждый Набег (2) и +1🪙'); }
+  { const S = mk(), [a, b] = S.players; est(S, a, 'wolfden', 'piratecove'); a.gold = 0; b.gold = 10; await fx(S, a, D.COURT.serpent_board.fx); ok(a.gold === 3 && b.gold === 10, 'Абордаж: +1🪙 за каждый Набег (2) и +1🪙 — из банка, соперник ничего не теряет'); }
   { // Пиратский рейд: Набеги сейчас у каждого соперника; Щит ордена защищает
     const S = mk(['tA', 'tB', 'tC']), [a, b, c] = S.players; est(S, a, 'wolfden'); a.gold = 0; b.gold = 10; c.gold = 10;
-    await fx(S, a, D.COURT.serpent_raid.fx); ok(a.gold === 6 && b.gold === 7 && c.gold === 7, 'Пиратский рейд: по 3🪙 с каждого соперника');
-    b.shield = 2; await fx(S, a, D.COURT.serpent_raid.fx); ok(b.gold === 7 && c.gold === 4, 'Пиратский рейд: у кого Щит ордена — ничего'); }
+    await fx(S, a, D.COURT.serpent_raid.fx); ok(a.gold === 2 && b.gold === 9 && c.gold === 9, 'Пиратский рейд: Набег забирает по 1🪙 с каждого соперника');
+    est(S, a, 'wolfden', 'piratecove'); await fx(S, a, D.COURT.serpent_raid.fx); ok(a.gold === 6 && b.gold === 7 && c.gold === 7, 'Пиратский рейд: два Набега — по 1🪙 за каждый с каждого');
+    b.shield = 2; await fx(S, a, D.COURT.serpent_raid.fx); ok(b.gold === 7 && c.gold === 5, 'Пиратский рейд: у кого Щит ордена — ничего'); }
   { // Медовые соты: метка «+1» на Земле до конца партии
     const S = mk(), [a, b] = S.players; est(S, a, 'apiary'); const uid = a.estates[0].uid; a.gold = 0; ans = (q) => (q.type === 'landUp' ? uid : null);
     await fx(S, a, D.COURT.bear_honey.fx); await fx(S, a, D.COURT.bear_honey.fx); ans = null;
