@@ -52,7 +52,7 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   const face = (id) => p.evaluate((id) => { const d = document.createElement('div'); d.innerHTML = __VD.infoParts({ act: 'info-court', id }).body; return d.querySelector('.ex-pc').innerText; }, id);
   const fb = await face('scribe'), fm = await face('siegeband');
   ok('у карты основы плашка «Основа»', /Основа/i.test(fb), fb.replace(/\s+/g, ' ').slice(-40));
-  ok('у карты модуля — модуль, без «Основы»', /Вражда/i.test(fm) && !/Основа/i.test(fm), fm.replace(/\s+/g, ' ').slice(-40));
+  ok('у карты модуля — модуль, без «Основы»', /Осады/i.test(fm) && !/Основа/i.test(fm), fm.replace(/\s+/g, ' ').slice(-40)); // v10.25: «Вражда» разделена — у Осадного отряда плашка «⚔️ Осады»
   console.log(res.join('\n')); console.log('ошибки', errs.slice(0, 5));
   await b.close();
 })();

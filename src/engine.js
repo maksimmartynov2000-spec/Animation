@@ -69,6 +69,9 @@ const Engine = (() => {
   // ---------- модули (части правил, которые можно выключить) ----------
   // S.mod нет (старые сохранения) — значит включено всё
   const on = (S, k) => !S.mod || S.mod[k] !== false;
+  // v10.25: бросок «🔗 против стражи» — общий для Шпионажа и Бед; защита (🧱 Стены, щит, Хельга) — при Осадах, Шпионаже или Бедах
+  const spyOn = (S) => on(S, 'spy') || on(S, 'bad');
+  const fightOn = (S) => on(S, 'sieges') || spyOn(S);
   // сколько знамён яруса нужно для победы: вассалы — всегда, лорды и великие — если включён их модуль
   const needOf = (S, t) => (t === 'v' ? R.needV : t === 'l' ? (on(S, 'lords') ? R.needL : 0) : (on(S, 'great') ? R.needG : 0));
   const goal = (S) => needOf(S, 'v') + needOf(S, 'l') + needOf(S, 'g');
@@ -2835,7 +2838,7 @@ const Engine = (() => {
           const rich = rivals(S, o, q => q.gold > 0).length;
           return live('raid').reduce((a, x) => a + ES(x).inc * (any(x) - own(x)), 0) + live('hold').reduce((a, x) => a + ES(x).inc * own(x) * Math.max(1, rich), 0);
         }
-        case 'walls': return on(S, 'sieges') ? 0.6 : 0;
+        case 'walls': return fightOn(S) ? 0.6 : 0;
         case 'quarantine': return 0.7; // покупка владений закрыта: Земли, Ремёсла, Твердыни и проклятия в ответ
         case 'evileye': return Math.max(0, this.rollEV(S, o, 2) - this.rollEV(S, o, 1)) + 0.2;
         case 'relic': return faithsOf(S, o).length ? 1 + 0.5 * faithStage(S, o) : 0;
@@ -3130,7 +3133,7 @@ const Engine = (() => {
       const all = this.allCards(p).concat(p.plots.map(pl => pl.id));
       const has = (k) => all.filter(id => D.COURT[id].fx.some(op => op[0] === k) || (D.COURT[id].pfx || []).some(op => op[0] === k)).length;
       const ob = F.oath;
-      if ((ob === 'spy' || ob === 'peace') && on(S, 'spy')) v -= has('spy') * 3 + ((mods(S, p).spy || 0) > 0 ? 6 : 0) + 1;
+      if ((ob === 'spy' || ob === 'peace') && spyOn(S)) v -= has('spy') * 3 + ((mods(S, p).spy || 0) > 0 ? 6 : 0) + 1;
       if ((ob === 'attack' || ob === 'peace') && on(S, 'sieges')) v -= has('siege') * 3 + ((mods(S, p).siege || 0) + (mods(S, p).warCry || 0) > 0 ? 8 : 0) + 1;
       if (ob === 'no_role_spy') v -= all.filter(id => D.COURT[id].role === 'spy').length * 2.5;
       if (ob === 'no_retire') v -= 0.15 * T;
@@ -3150,7 +3153,7 @@ const Engine = (() => {
       }
       // единоверцы не нападают друг на друга: в мирной вере с агрессором — плюс, агрессору — минус
       const sameWith = D.FAITHS[f].truce === false ? 0 : opps(S, p).filter(o => faithsOf(S, o).includes(f)).length;
-      if (sameWith) v += ((on(S, 'sieges') || on(S, 'spy')) ? 1.5 : 0) * sameWith - ((mods(S, p).spy || 0) + (mods(S, p).warCry || 0) > 0 ? 4 : 0);
+      if (sameWith) v += (fightOn(S) ? 1.5 : 0) * sameWith - ((mods(S, p).spy || 0) + (mods(S, p).warCry || 0) > 0 ? 4 : 0);
       return v;
     },
     // грубая ценность обряда для оценки веры заранее (до принятия)
@@ -3237,7 +3240,7 @@ const Engine = (() => {
         const uv = base + (m.unionGold ? T * m.unionGold * 0.9 : 0) + (m.unionBounty || 0);
         val += need === 1 ? uv : need === 2 ? uv * 0.3 : uv * 0.1;
       }
-      if (d.walls && on(S, 'sieges')) {
+      if (d.walls && fightOn(S)) { // 🧱 защищают и от шпионов (v10.25: стены — при любом из трёх модулей)
         // угроза осады: насколько соперники сильнее нашей обороны
         const myDef = prod(S, p).war + walls(S, p) + (m.defense || 0);
         // стены: сколько захватов они предотвратят до конца партии. Осадную карту соперник играет раз в «колода / рука» ходов
@@ -3257,7 +3260,7 @@ const Engine = (() => {
       }
       // постоянное свойство твердыни — та же оценка, что у свойств знамён и придворных (до конца партии)
       if (d.mods) val += this.modValue(S, p, d.mods, {}) * 0.9 + (d.mods.holdBonus ? d.mods.holdBonus * this.horizon(S) * pOwnN(d.n) : 0);
-      if (d.guard && on(S, 'spy')) val += d.guard * (0.4 + 0.5 * opps(S, p).filter(o => (mods(S, o).spy || 0) > 0 || o.plots.length).length);
+      if (d.guard && spyOn(S)) val += d.guard * (0.4 + 0.5 * opps(S, p).filter(o => (mods(S, o).spy || 0) > 0 || o.plots.length).length);
       const P = this.P(p);
       if (P.type && P.type[d.t] != null) val *= P.type[d.t];
       if (d.sym && P.sym && P.sym[d.sym]) val += P.sym[d.sym];
@@ -3395,14 +3398,14 @@ const Engine = (() => {
           case 'faithGold': v += on(S, 'faith') ? n * T * (faithsOf(S, p).length ? 1 : 0.55) : 0; break;
           case 'faithEase': case 'faithAdoptGold': case 'freeRenounce': v += on(S, 'faith') && !faithsOf(S, p).length ? n * 0.9 : 0; break;
           case 'infidelTithe': case 'faithTithe': v += on(S, 'faith') ? n * T * Math.min(nRiv, opps(S, p).length) * 0.6 : 0; break;
-          case 'shield': v += (on(S, 'sieges') || on(S, 'spy')) ? n * 1.2 : 0; break;
+          case 'shield': v += fightOn(S) ? n * 1.2 : 0; break;
           case 'spyWinGold': v += on(S, 'spy') ? n * T * 0.2 : 0; break;
           case 'freeSpy': v += on(S, 'spy') ? n * T * 1.3 : 0; break;
           case 'spy': v += on(S, 'spy') ? n * 1.2 : 0; break;
-          case 'guard': v += on(S, 'spy') ? n * 0.5 : 0; break;
+          case 'guard': v += spyOn(S) ? n * 0.5 : 0; break;
           case 'stealBonus': v += on(S, 'spy') ? n * T * 0.15 : 0; break;
-          case 'walls': v += on(S, 'sieges') ? n * 0.6 : 0; break;
-          case 'captureImmune': v += on(S, 'sieges') ? 4 : 0; break;
+          case 'walls': v += fightOn(S) ? n * 0.6 : 0; break;
+          case 'captureImmune': v += on(S, 'sieges') || on(S, 'spy') ? 4 : 0; break; // захват и шпион-вымогатель
           case 'siegeWinGold': v += on(S, 'sieges') ? n * T * 0.1 : 0; break;
           case 'tribute': { const xs = opps(S, p).map(o => (prod(S, o).war < prod(S, p).war + (pr.war || 0) ? 0.85 : 0.25)); v += n * T * (R.oneRival === false ? xs.reduce((a, b) => a + b, 0) : 1 - xs.reduce((a, x) => a * (1 - x), 1)); break; }
           case 'timedPlotBonus': v += on(S, 'plots') ? n * T * 0.15 : 0; break;
@@ -3422,23 +3425,23 @@ const Engine = (() => {
           case 'riteGold': v += on(S, 'faith') ? n * T * (faithsOf(S, p).length ? 0.9 : 0.35) : 0; break;
           case 'riteExtra': v += on(S, 'faith') ? (faithsOf(S, p).length ? T * 0.6 : 0.5) : 0; break;
           case 'peekTop': v += T * 0.25; break;
-          case 'darkGuard': v += on(S, 'spy') ? n * 0.6 : 0; break;
-          case 'darkSpy': v += on(S, 'spy') ? n * (0.5 + T * 0.08) : 0; break;
-          case 'darkWinGold': v += on(S, 'spy') ? n * T * 0.15 : 0; break;
+          case 'darkGuard': v += on(S, 'bad') ? n * 0.6 : 0; break;
+          case 'darkSpy': v += on(S, 'bad') ? n * (0.5 + T * 0.08) : 0; break;
+          case 'darkWinGold': v += on(S, 'bad') ? n * T * 0.15 : 0; break;
           case 'loan': v += T * 0.35; break;
-          case 'defendGold': v += (on(S, 'sieges') || on(S, 'spy')) ? n * T * 0.12 : 0; break;
+          case 'defendGold': v += fightOn(S) ? n * T * 0.12 : 0; break;
           case 'sinFee': v += on(S, 'faith') ? n * 1.5 : 0; break;
           case 'markGold': v += on(S, 'faith') ? n * (faithsOf(S, p).length ? 4 : 2) : 0; break;
-          case 'schemeKeep': v += on(S, 'spy') ? 2 : 0; break;
+          case 'schemeKeep': v += on(S, 'bad') ? 2 : 0; break;
           case 'cycle': v += T * 0.5; break;
-          case 'freePurge': v += on(S, 'spy') ? (p.estates.some(e => ES(e).bad) ? 4 : 1.5) + T * 0.1 : 0; break;
+          case 'freePurge': v += on(S, 'bad') ? (p.estates.some(e => ES(e).bad) ? 4 : 1.5) + T * 0.1 : 0; break;
           case 'siegeLossFee': v -= on(S, 'sieges') ? n * T * 0.05 : 0; break;
           case 'sinGold': v += on(S, 'faith') ? n * T * ((p.sins || []).length + 0.3) : 0; break;
           case 'twoRituals': v += on(S, 'faith') ? (faithsOf(S, p).length ? 5 : 1.5) : 0; break;
           case 'cleanCapture': v += on(S, 'sieges') ? 2.5 : 0; break;
           case 'freeSin': v += on(S, 'faith') ? 2 : 0; break;
-          case 'curseSure': v += on(S, 'spy') ? T * 0.3 + 2 : 0; break;
-          case 'curseIncome': v += on(S, 'spy') ? n * T * (opps(S, p).reduce((t, o) => t + o.estates.filter(e => ES(e).bad && e.by === p.i).length, 0) + 0.3) : 0; break;
+          case 'curseSure': v += on(S, 'bad') ? T * 0.3 + 2 : 0; break;
+          case 'curseIncome': v += on(S, 'bad') ? n * T * (opps(S, p).reduce((t, o) => t + o.estates.filter(e => ES(e).bad && e.by === p.i).length, 0) + 0.3) : 0; break;
           case 'marketSwap': v += T * 0.6; break;
           case 'freeSiege': v += on(S, 'sieges') ? T * 0.9 : 0; break;
           case 'sinTax': v += on(S, 'faith') ? n * T * (opps(S, p).reduce((t, o) => t + (o.sins || []).length, 0) + 0.3) * 0.9 : 0; break;
@@ -3624,7 +3627,7 @@ const Engine = (() => {
     ritualScore(S, p, id) {
       const W = RIT[id];
       const own = (f) => p.estates.filter(e => !ES(e).bad && f(ES(e))).length;
-      const DEED = { siegeWin: on(S, 'sieges') ? -1 : -9, spyWin: on(S, 'spy') ? -1 : -9, hireLord: on(S, 'lords') ? 0 : -9, double: -0.5, rollGold: -0.5, playTurn: handSize(S, p) >= 4 ? 0.5 : -1, hire: 0.5, buy: 0.5, buyCourt: 0.3, buyLand: 0, rite: 0 };
+      const DEED = { siegeWin: on(S, 'sieges') ? -1 : -9, spyWin: spyOn(S) ? -1 : -9, hireLord: on(S, 'lords') ? 0 : -9, double: -0.5, rollGold: -0.5, playTurn: handSize(S, p) >= 4 ? 0.5 : -1, hire: 0.5, buy: 0.5, buyCourt: 0.3, buyLand: 0, rite: 0 };
       const ABST = { attack: 0.5, retire: 0.5, rite: 0.5, twoDice: 0, hire: -0.5, buyEstate: -0.3, market: -0.8 };
       let v = 0;
       for (const st of W.steps) {
