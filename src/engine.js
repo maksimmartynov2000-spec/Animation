@@ -216,8 +216,8 @@ const Engine = (() => {
     for (const e of p.estates) { if (e.ruined) continue; const d = ES(e); if (d.sym) add(d.sym, 1, { k: 'estate', id: e.id }); }
     for (const id of allBans(p)) { const b = D.BAN[id]; add(b.dir, 1, { k: 'ban', id }); for (const k in b.prod) add(k, b.prod[k], { k: 'ban', id }); }
     if (on(S, 'seats')) for (const id of p.seats || []) { const pr = (D.COURT[id].seat || {}).prod; for (const k in pr || {}) add(k, pr[k], { k: 'seat', id }); }
-    // Бьорн Секира: каждый ваш Набег даёт ⚔️ (свойства знамён читаем прямо — mods() сам зависит от prod через ступень веры)
-    for (const id of allBans(p)) { const rs = (D.BAN[id].mods || {}).raidSym || 0; if (rs) add('war', rs * p.estates.filter(e => !e.ruined && ES(e).t === 'raid').length, { k: 'raidSym', id }); }
+    // Бьорн Секира: ⚔️ за ваши Набеги — v10.26: +1 за каждые 2 (raidPer) (свойства знамён читаем прямо — mods() сам зависит от prod через ступень веры)
+    for (const id of allBans(p)) { const bm = D.BAN[id].mods || {}, rs = bm.raidSym || 0; if (rs) add('war', rs * Math.floor(p.estates.filter(e => !e.ruined && ES(e).t === 'raid').length / (bm.raidPer || 1)), { k: 'raidSym', id }); }
     // союз даёт 2 значка своей провинции: Север ⚔️, Юг ⚖️, Восток 📜, Запад 🔗
     if (on(S, 'unions')) { const u = unionsOf(p); for (const q of ['N', 'S', 'E', 'W']) add(D.PROV[q].sym, u[q] * (R.unionSyms || 1), { k: 'union', id: q }); }
     // чудо «Святая земля» (ритуал «Великая жатва»): каждая ваша Земля — ещё и 🕯
@@ -238,6 +238,7 @@ const Engine = (() => {
     let w = R.baseWalls || 0;
     for (const e of p.estates) if (!e.ruined) w += ES(e).walls || 0;
     w += mods(S, p).walls || 0;
+    if (p.sanctum) w += p.sanctum === true ? 10 : p.sanctum; // v10.26: Святое перемирие — 🧱 Стены +10 до своего следующего хода (true — из сохранения до 10.26)
     return w;
   }
   const handSize = (S, p) => R.hand + (mods(S, p).hand || 0) + (R.sciStep ? Math.floor(prod(S, p).sci / R.sciStep) : 0) - (sinned(p, 'gluttony') ? 1 : 0); // 📜 Знания; грех Чревоугодие — на 1 меньше
@@ -687,7 +688,7 @@ const Engine = (() => {
         case 'goldPerPlay': p.gold += a * playedOf(p).length; break; // Прайд: за каждую сыгранную в этот ход карту, и эту тоже
         case 'swapHand': await swapHandCard(S, p); break; // Подмена
         case 'drawPerStage': { const st = stageOf(S, p); drawCards(S, p, a + st * (st ? faithsOf(S, p).length : 0)); break; } // Восход
-        case 'truce': p.sanctum = true; log(S, `   Святое перемирие: до своего следующего хода ${nm(p)} неприкосновенны — ни нападений, ни шпионов`, p.i, 'info'); emit(S, 'sanctum', { p: p.i }); break;
+        case 'truce': p.sanctum = a || 10; log(S, `   Святое перемирие: до своего следующего хода у ${nmG(p)} 🧱 Стены +${p.sanctum}`, p.i, 'info'); emit(S, 'sanctum', { p: p.i, walls: p.sanctum }); break;
         case 'ambush': {
           const act = ctx.active;
           if (act && act !== p) {
@@ -712,9 +713,9 @@ const Engine = (() => {
   const sameFaith = (S, a, t) => faithsOf(S, a).some(f => faithsOf(S, t).includes(f));
   // перемирие: общая вера, которая запрещает единоверцам нападать (у Пламени, Клинка, Тени и Круга перемирия нет)
   const truce = (S, a, t) => faithsOf(S, a).some(f => D.FAITHS[f].truce !== false && faithsOf(S, t).includes(f));
-  // v10.22: Святое перемирие — до своего следующего хода на игрока не нападают и не шпионят
-  const targetsOf = (S, a) => opps(S, a).filter(o => !truce(S, a, o) && !o.sanctum);
-  const noTargetWhy = (S, a) => (opps(S, a).some(o => o.sanctum) ? 'у соперников Святое перемирие или общая вера' : 'соперники — единоверцы');
+  // v10.26: Святое перемирие больше не запрещает выбирать игрока целью — оно даёт 🧱 Стены +10 (см. walls)
+  const targetsOf = (S, a) => opps(S, a).filter(o => !truce(S, a, o));
+  const noTargetWhy = () => 'соперники — единоверцы';
   function siegeOdds(S, a, t, bonus) {
     const A = sym(S, a, 'war') + bonus + (mods(S, a).siege || 0);
     const Dv = sym(S, t, 'war') + walls(S, t) + (mods(S, t).defense || 0) + (mods(S, t).shield || 0);
@@ -883,6 +884,7 @@ const Engine = (() => {
   const buyoffCost = (info) => (R.spyBuyoff || 0) * Math.max(1, info.A - info.G);
   async function buyoff(S, a, t, info, extra) {
     if (!R.spyBuyoff) return false;
+    if (!(info.p > 0)) return false; // v10.26: шпиону не пробить защиту (например, 🧱+10 у Эдуарда или в Святое перемирие) — откуп не предлагаем
     const cost = buyoffCost(info);
     if (t.gold < cost) return false;
     const yes = await ask(S, t, Object.assign({ type: 'buyoff', cost, from: a.i, A: info.A, G: info.G, odds: info.p }, extra || {}));
@@ -3416,7 +3418,8 @@ const Engine = (() => {
           case 'rerollOne': v += n * T * 0.35; break;
           case 'doubleDraw': v += n * T * (this.mode(S, p) === 2 ? 1 / 6 : 0.03) * 1.2; break;
           case 'peek': v += T * 0.5; break;
-          case 'raidSym': v += n * (est('raid').length + 0.5) * (1.2 + this.symNeed(S, p, 'war') * 0.9 * symWorth(S, p)); break;
+          case 'raidSym': v += n * (est('raid').length + 0.5) / (m.raidPer || 1) * (1.2 + this.symNeed(S, p, 'war') * 0.9 * symWorth(S, p)); break; // v10.26: Бьорн — за каждые 2 Набега
+          case 'raidPer': break;
           case 'riteTwice': v += on(S, 'faith') ? (faithsOf(S, p).length ? T * 0.8 : 0.6) : 0; break;
           case 'candleGold': v += n * T * (prod(S, p).faith + 0.3); break;
           case 'estateGold': v += n * T * (Math.floor(p.estates.filter(e => !e.ruined && !ES(e).bad).length / 2) + 0.3); break;
@@ -4071,6 +4074,8 @@ const Engine = (() => {
           return best;
         }
         case 'target': {
+          // v10.26: шанс 0% у всех целей (например, 🧱+10 у Эдуарда или в Святое перемирие) — бот не нападает и не шпионит, как человек кнопкой «Не осаждать» / «Отказаться»
+          if ((q.kind === 'siege' || q.kind === 'raze' || q.kind === 'spy') && q.options.length && q.options.every(o => o.p === 0)) return null;
           let best = null, bv = -Infinity;
           for (const o of q.options) {
             const t = S.players[o.i];
