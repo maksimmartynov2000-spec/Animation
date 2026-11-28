@@ -48,7 +48,9 @@ const MODS = (ARGS.mods || 'lords,great,faith,plots,seats,unions,balance,sieges,
         if (sh) {
           const title = (sh.querySelector('h2') || {}).innerText || '';
           // свёрнутое окно («Свернуть ▾»): вернуться к выбору — иначе его варианты скрыты и робот застревает (так было с окном «Обряд: уберите 1 карту»)
-          if (sh.classList.contains('mini')) { const rb = sh.querySelector('[data-ret]'); if (vis(rb) && Math.random() < 0.7) { rb.click(); return 'sheet-return'; } const dc = document.querySelector('.drawer [data-act="drawer-close"]'); if (vis(dc)) { dc.click(); return 'drawer-close'; } if (vis(rb)) { rb.click(); return 'sheet-return'; } }
+          // плашка «Вернуться» закреплена на экране (position: fixed), а у таких offsetParent всегда null — видимость смотрим по её прямоугольникам;
+          // шторку закрываем, только если она открыта (иначе робот жал невидимую «закрыть» по кругу и застревал)
+          if (sh.classList.contains('mini')) { const rb = sh.querySelector('[data-ret]'), shown = !!rb && rb.getClientRects().length > 0; if (shown && Math.random() < 0.7) { rb.click(); return 'sheet-return'; } const dc = document.querySelector('.board.d-open .drawer [data-act="drawer-close"]'); if (vis(dc)) { dc.click(); return 'drawer-close'; } if (shown) { rb.click(); return 'sheet-return'; } }
           const opts = [...sh.querySelectorAll('[data-v]')].filter(vis);
           if (opts.length) { pick(opts).click(); return 'sheet:' + title.slice(0, 40); }
           const acts = [...sh.querySelectorAll('[data-act="purge"], [data-act="fetch"], [data-act="discard-seat"]')].filter(vis);

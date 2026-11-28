@@ -29,7 +29,7 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
     return out;
   };
 
-  ok('кнопки наборов: Основа, Вера, Осады, Шпионаж, Двор, Великие', (await chips()).join(',') === 'base,faith,sieges,spy,court,great', (await chips()).join(','));
+  ok('кнопки наборов: Основа, Вера, Осады, Шпионаж, Беды, Твердыни, Двор, Великие', (await chips()).join(',') === 'base,faith,sieges,spy,bad,holds,court,great', (await chips()).join(','));
   ok('сначала — весь набор', /^Все \d+ разных карт/.test(await note()), await note());
   await p.click('[data-cm="spy"]'); await p.waitForTimeout(300);
   const spy = await visible();
@@ -39,7 +39,7 @@ const FILE = process.argv[2] || (SP + 'test-embed.html');
   const both = await visible();
   ok('«Шпионаж» + «Основа»: добавились карты основы', both.some(([a, id]) => a === 'info-court' && id === 'scribe') && both.length > spy.length, `${spy.length} → ${both.length}`);
   await p.click('[data-cf="game"]'); await p.waitForTimeout(300);
-  ok('«Выбранный набор» — наборы партии', (await chips()).filter(x => x.endsWith('*')).join(',') === 'base*,faith*,sieges*,spy*,court*', (await chips()).join(','));
+  ok('«Выбранный набор» — наборы партии (старые настройки со «Враждой» — с Бедами и Твердынями)', (await chips()).filter(x => x.endsWith('*')).join(',') === 'base*,faith*,sieges*,spy*,bad*,holds*,court*', (await chips()).join(','));
   await p.click('[data-cm="great"]'); await p.waitForTimeout(300);
   const g = await visible();
   ok('кнопка «Великие» добавляет великих лордов', g.some(([a, , , t]) => a === 'info-ban' && t === 'g'), '');
